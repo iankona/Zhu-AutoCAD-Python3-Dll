@@ -1,0 +1,6 @@
+F:\CADdll\pythonscripts\academit.py:9: SyntaxWarning: invalid escape sequence '\A'
+  assemly = Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\accoremgd.dll")
+Python: 'll_line' 加载出错 ??? 
+name 'win32com' is not defined
+Python: '测试' 加载成功 ... 
+保存程序集：ZhuAcadPlugin.dll
