@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "CADpythondll": {
+      "commandName": "Project",
+      "workingDirectory": "E:\\AutoCAD\\AutoCAD 2023",
+      "nativeDebugging": false
+    }
+  }
+}
