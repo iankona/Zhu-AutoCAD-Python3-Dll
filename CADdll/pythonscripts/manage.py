@@ -11,9 +11,9 @@ class NetConsole:
     
     def write(self, message): # 1个print(), 调用2次write()
         message = str(message)
-        if message == '\n': return
-        if message[-1] != '\n': message += "\n"
-        with open(r"F:\CADdll\pythonscripts\outputlog.txt", "a+") as log:
+        # if message == '\n': return
+        # if message[-1] != '\n': message += "\n"
+        with open(r"E:\CADdll\pythonscripts\outputlog.txt", "a+") as log:
             log.write(message)
 
     def flush(self):
@@ -24,7 +24,7 @@ sys.stderr = NetConsole()
 
 
 # print(os.getcwd()) # C:\Users\Administrator\user\Documents
-os.chdir("F:\\CADdll")
+os.chdir("E:\\CADdll")
 
 
 import academit
@@ -32,7 +32,7 @@ import academit
 
 def 生成命令():
     名称列表 = []
-    basenamelist = os.listdir(r"F:\CADdll\pythonscripts\functions")
+    basenamelist = os.listdir(r"E:\CADdll\pythonscripts\functions")
     for basename in basenamelist:
         if '__pycache__' in basename: continue
         charlist = basename.split('.')
