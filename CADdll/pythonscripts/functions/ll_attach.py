@@ -11,6 +11,8 @@ def 命令():
     pass
 
 attach_length = 2.0
+
+
 def ll_attach_line():
     global attach_length
     acad.GetActiveDocument()

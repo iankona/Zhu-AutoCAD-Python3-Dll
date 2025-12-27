@@ -27,18 +27,18 @@ def 命令():
     academit.添加命令("ll-get-osmode", 函数2)
     academit.添加命令("ll-set-osmode", 函数3)
 
-def ll_line():
-    acad.GetActiveDocument()
-    acad.GetOSMODE()
-    acad.AddLine([50.5,50], [500,500])
-    acad.AddPLine([100,100], [100,300], [300,500], [400,600], [100,100])
-    acad.AddRect([1000,1000], [1500,1800])
-    acad.AddCircle([1000,1000], 500)
-    acad.AddCircle([1500,1000], 300)
-    print(acad.EntLast())
-    print(acad.OffSet(acad.EntLast(), 120, [0,0]))
 
-    acad.SetOSMODE()
+@acad.decorator_command
+def ll_line():
+    with acad.transaction() as trans:
+        acad.AddLine([50.5,50], [500,500])
+        acad.AddPolyline([[100,100], [100,300], [300,500], [400,600], [100,100]], "图层2", 2)
+        # acad.AddRect([1000,1000], [1500,1800])
+        # acad.AddCircle([1000,1000], 500)
+        # acad.AddCircle([1500,1000], 300)
+
+
+
 
 
 def ll_pline_point():
