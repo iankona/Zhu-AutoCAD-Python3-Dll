@@ -9,6 +9,7 @@ import academit
 
 def 命令(): 
     academit.添加命令("ll-hello3", 函数)
+    academit.添加命令("ll-ro3d", ll_ro3d)
 
 @acad.test_decorator2
 @acad.test_decorator1
@@ -18,6 +19,15 @@ def 函数():
     with acad.test_context2(), acad.test_context1():
         doc.Editor.WriteMessage("Hello, autocad, 鹅鹅鹅\n")
 
+
+
+
+@acad.decorator_command
+def ll_ro3d():
+    objid = acad.EntSel("请点击复制对象: ")
+    angle = acad.GetDouble(0, "请输入旋转角度: ") 
+    with acad.transaction() as trans:
+        acad.Rotate3d(objid, angle, [100, 100])
 
 
 # 装饰器2.1之前...

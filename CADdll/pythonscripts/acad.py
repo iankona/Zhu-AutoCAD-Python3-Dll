@@ -9,9 +9,9 @@ from Autodesk.AutoCAD.ApplicationServices import Application
 from Autodesk.AutoCAD.EditorInput import PromptStatus, SelectionFilter, PromptSelectionOptions, SelectionSet, PromptIntegerOptions, PromptPointOptions, PromptDoubleOptions
 # from Autodesk.AutoCAD.Runtime
 from Autodesk.AutoCAD.DatabaseServices import Line, ObjectId, Transaction, OpenMode, BlockTable, BlockTableRecord, LayerTableRecord, ObjectIdCollection, TypedValue, DxfCode, DwgVersion
-from Autodesk.AutoCAD.DatabaseServices import Extents3d, Polyline, Line, Circle
+from Autodesk.AutoCAD.DatabaseServices import Extents3d, Polyline, Polyline3d, Line, Circle, Poly3dType, DBText, Region
 
-from Autodesk.AutoCAD.Geometry import Point2d, Point3d
+from Autodesk.AutoCAD.Geometry import Point2d, Point3d, Point3dCollection, Matrix3d, Vector3d
 # from Autodesk.AutoCAD.Internal.Utils import EntLast
 from Autodesk.AutoCAD.Colors import Color, ColorMethod
 
@@ -106,6 +106,9 @@ def decorator_command(func):
             func()
         except Exception as e:
             print(e)
+            # print(f"错误信息: {e}")
+            # print(f"发生错误的文件: {e.__traceback__.tb_frame.f_globals['__file__']}")
+            # print(f"发生错误的行号: {e.__traceback__.tb_lineno}")
             Prompt(f"...函数{func}出错...\n")
     return wrapper
 
@@ -214,7 +217,7 @@ def AddLine(start_point, final_point, layer_name="", color_index=0):
     return line
 
 
-def AddPolyline(ptlist, layer_name="", color_index=0):
+def AddLWPolyLine(ptlist, layer_name="", color_index=0):
     pline = Polyline()
     for i, pt1 in enumerate(ptlist):
         pline.AddVertexAt(i, ToPoint2d(pt1), 0, 0, 0)
@@ -224,14 +227,83 @@ def AddPolyline(ptlist, layer_name="", color_index=0):
     return pline
 
 
+def AddPoint():pass
+
+def AddText(pt1, string="单行文字", size=50, layer_name="", color_index=0):
+    text = DBText()
+    text.Position = ToPoint3d(pt1) 
+    text.TextString = string
+    text.Height = size
+    text.Rotation = 0
+    # text.IsMirroredInX = True # 在X轴镜像
+    # text.HorizontalMode = TextHorizontalMode.TextCenter # 设置对齐方式
+    # text.AlignmentPoint = text.Position # 设置对齐点
+    CheckLayerAndColor(text, layer_name, color_index)
+    currentblock.AppendEntity(text)
+    trans.AddNewlyCreatedDBObject(text, True)
+    return text
+
+def AddPolyline3d(ptlist, layer_name="", color_index=0):
+    collection = Point3dCollection()
+    for pt1 in ptlist:
+        collection.Add(ToPoint3d(pt1))
+    pline = Polyline3d(Poly3dType.SimplePoly, collection, False) # Closed = True
+    CheckLayerAndColor(pline, layer_name, color_index)
+    currentblock.AppendEntity(pline)
+    trans.AddNewlyCreatedDBObject(pline, True)
+    return pline
+
+def GetObjectForRead(objid):
+    objref = trans.GetObject(objid, OpenMode.ForRead)
+    return objref
+
+def GetObjectForWrite(objid):
+    objref = trans.GetObject(objid, OpenMode.ForWrite)
+    return objref
 
 
 
 
+def Copy(objid, pt1, pt2, layer_name="", color_index=0):
+    dr = Direct(pt1, pt2)
+    vecdr = Vector3d(*dr)
+    matrix4x4 = Matrix3d.Displacement(vecdr)
+    objref = GetObjectForRead(objid)
+    copyentity = objref.GetTransformedCopy(matrix4x4)
+    CheckLayerAndColor(copyentity, layer_name, color_index)
+    currentblock.AppendEntity(copyentity)
+    trans.AddNewlyCreatedDBObject(copyentity, True)
+    return copyentity
+
+
+def Move(objid, pt1, pt2):
+    dr = Direct(pt1, pt2)
+    vecdr = Vector3d(*dr)
+    matrix4x4 = Matrix3d.Displacement(vecdr)
+    objref = GetObjectForWrite(objid)
+    objref.TransformBy(matrix4x4)
+
+def MoveCopy(objid, pt1, pt2, layer_name="", color_index=0):
+    return Copy(objid, pt1, pt2, layer_name, color_index)
+
+
+
+def Rotate3d(objid, angle=90, center=[0,0], axis=[0,0,1]):
+    matrix4x4 = Matrix3d.Rotation(System.Double(angle), Vector3d(*axis), ToPoint3d(center))
+    objref = GetObjectForWrite(objid)
+    objref.TransformBy(matrix4x4)
 
 
 
 
+def Rotate3dCopy(objid, angle=90, center=[0,0], axis=[0,0,1], layer_name="", color_index=0):
+    matrix4x4 = Matrix3d.Rotation(System.Double(angle), Vector3d(*axis), ToPoint3d(center))
+    objref = GetObjectForRead(objid)
+    copyentity = objref.GetTransformedCopy(matrix4x4)
+    CheckLayerAndColor(copyentity, layer_name, color_index)
+    currentblock.AppendEntity(copyentity)
+    trans.AddNewlyCreatedDBObject(copyentity, True)
+    return copyentity
 
 
 
@@ -247,19 +319,20 @@ def AddPolyline(ptlist, layer_name="", color_index=0):
 
 
 
-# def __EntLast():
-#     pass
-#     # 总是会 遇到 ss1 为 None, 出错， 不能用
-#     result = ed.SelectLast() # PromptSelectionResult # (OK,[((1375515652304),NonGraphical,0,)])
-#     ss1 = result.Value # SelectionSet (((2361431560400),NonGraphical,0,))
-#     idlist = ss1.GetObjectIds()
-#     return idlist[0]
+def EntLast():
+    # CommandAddLine后，获取entlast偶尔会出现ss1为None的错误，但大部分对象大部分时间获取还是能用的。
+    result = ed.SelectLast() # PromptSelectionResult # (OK,[((1375515652304),NonGraphical,0,)])
+    ss1 = result.Value # SelectionSet (((2361431560400),NonGraphical,0,))
+    if ss1 == None: raise ValueError(f"SelectionSet为None, 未能获取到entlast...")
+    idlist = ss1.GetObjectIds()
+    return idlist[0]
 
 
-# def __EntLastSet():
-#     result = ed.SelectLast()
-#     ss1 = result.Value
-#     return ss1
+def EntLastSet():
+    result = ed.SelectLast()
+    ss1 = result.Value
+    if ss1 == None: raise ValueError(f"SelectionSet为None, 未能获取到entlastset...")
+    return ss1
 
 
 def SelectionSetFromID(objid:ObjectId):
@@ -330,7 +403,7 @@ def CommandCopyMove(objid:ObjectId|SelectionSet, start_point, final_point):
     
 
 def CommandMove(objid:ObjectId|SelectionSet, start_point, final_point):
-    Command(["move", objid, ToPoint3d(start_point), ToPoint3d(final_point)]), Prompt("\n")
+    Command(["move", SelectionSetFromID(objid), "", ToPoint3d(start_point), ToPoint3d(final_point)]), Prompt("\n")
     
 
 def CommandOffSet(objid:ObjectId|SelectionSet, distance, directpt1=[], 图层=""): # directpt1 = [x, y]
@@ -391,6 +464,24 @@ def Vec3Add(pt1, pt2):
     return [x2+x1, y2+y1, z2+z1]
 
 
+def Vec3XYtoXZ(veclist=[]):
+    result = []
+    for vec in veclist:
+        x, y, z = Vec2toVec3(vec) 
+        result.append([x,z,y])
+    return result
+    
+
+def Absolute(value):
+    if isinstance(value, list):
+        result = []
+        for va in value:
+            result.append(-va) if va < 0 else result.append(va)
+        return result
+    if value < 0: return -value
+    return value
+
+
 def Distance(pt1, pt2):
     x1, y1, z1 = Vec2toVec3(pt1)
     x2, y2, z2 = Vec2toVec3(pt2)
@@ -401,6 +492,15 @@ def Direct(pt1, pt2):
     x1, y1, z1 = Vec2toVec3(pt1)
     x2, y2, z2 = Vec2toVec3(pt2)
     return [x2-x1, y2-y1, z2-z1]
+
+
+def DirectListToPointList(pt, drlist):
+    pt1 = pt
+    result = [pt1]
+    for dr1 in drlist:
+        pt1 = Vec3Add(pt1, dr1)
+        result.append(pt1)
+    return result
 
 
 def GetAttachNDirectPointList(pt1, pt2, length):
@@ -514,7 +614,7 @@ def CommandAddPoint(pt1):
     
 
 
-def CommandAddText(pt1, size, string): # pt1 = [x, y, z]
+def CommandAddText(pt1, string, size): # pt1 = [x, y, z]
     Command(["text", ToPoint3d(pt1), System.Int32(size), System.Int32(0), string]), Prompt("\n")
     
 
@@ -525,12 +625,12 @@ def CommandAddLine(pt1, pt2): # pt1 = [x, y, z]
 
 
 
-def CommandAsyncAddLine(pt1, pt2): # pt1 = [x, y, z]
-    entcalss.objid = None
-    casync, zhu = CommandAsync(["LINE", ToPoint3d(pt1), ToPoint3d(pt2), ""]), Prompt("\n")
-    casync.OnCompleted(System.Action(__GetEntLastFunc))
-    print("entcalss.objid = ", entcalss.objid)
-    return entcalss.objid
+# def CommandAsyncAddLine(pt1, pt2): # pt1 = [x, y, z] # Error 
+#     entcalss.objid = None
+#     casync, zhu = CommandAsync(["LINE", ToPoint3d(pt1), ToPoint3d(pt2), ""]), Prompt("\n")
+#     casync.OnCompleted(System.Action(__GetEntLastFunc))
+#     print("entcalss.objid = ", entcalss.objid)
+#     return entcalss.objid
     
 
 def CommandAddPLine(ptlist=[]): # 函数(pt1, pt2, pt3...)
@@ -562,6 +662,16 @@ def CommandAddCircle3P(pt1, pt2, pt3):
     Command(["CIRCLE", "3P", ToPoint3d(pt1), ToPoint3d(pt2), ToPoint3d(pt3), ""]), Prompt("\n")
     
 
+def GetStartPoint(objid):
+    objref = trans.GetObject(objid, OpenMode.ForRead)
+    start = objref.StartPoint
+    return [start.X, start.Y, start.Z]
+
+def GetFinalPoint(objid):
+    objref = trans.GetObject(objid, OpenMode.ForRead)
+    final = objref.EndPoint
+    return [final.X, final.Y, final.Z]
+
 
 def Prompt(string:str):
     ed.WriteMessage(str(string))
@@ -581,14 +691,17 @@ def EntSel(string: str=""):
 #     ed.SetImpliedSelection(ids)
 
 def SSGet(dxfcode_filter_list=[]): # [[0, "Circle"], [0, "Line"]]
-    # value = [TypedValue(System.Int32(0), "Circle")] # == AutoLisp (DxfCode . "Circle") 
-    typevalue_list = []
-    for [dxfcode, checkchar] in dxfcode_filter_list:
-        typevalue_list.append(TypedValue(System.Int32(dxfcode), checkchar))
-    # options = PromptSelectionOptions()
-    # print(typevalue_list)
-    filter = SelectionFilter(typevalue_list)
-    result = ed.GetSelection(filter) # PromptSelectionResult
+    if dxfcode_filter_list == []:
+        # value = [TypedValue(System.Int32(0), "Circle")] # == AutoLisp (DxfCode . "Circle") 
+        typevalue_list = []
+        for [dxfcode, checkchar] in dxfcode_filter_list:
+            typevalue_list.append(TypedValue(System.Int32(dxfcode), checkchar))
+        # options = PromptSelectionOptions()
+        # print(typevalue_list)
+        filter = SelectionFilter(typevalue_list)
+        result = ed.GetSelection(filter) # PromptSelectionResult
+    else:
+        result = ed.GetSelection()
     ss1 = result.Value # SelectionSet
     # ids = ss1.GetObjectIds()
     # ss2 = SelectionSet.FromObjectIds([ids[-1]])
@@ -596,7 +709,6 @@ def SSGet(dxfcode_filter_list=[]): # [[0, "Circle"], [0, "Line"]]
     return ss1 
 
 def SSGetIdList(dxfcode_filter_list=[]):
-    if dxfcode_filter_list == []: return []
     ss1 = SSGet(dxfcode_filter_list)
     if ss1 == None: return []
     return ss1.GetObjectIds()
@@ -652,10 +764,82 @@ def GetLWPolyLinePointList(objid:ObjectId):
         pline = trans.GetObject(objid, OpenMode.ForRead)
         result = []
         for i in range(pline.NumberOfVertices):
-            point = pline.GetPoint2dAt(i)
-            result.append([point.X, point.Y, 0])
+            point = pline.GetPoint3dAt(i)
+            result.append([point.X, point.Y, point.Z])
     if pline.Closed: return result + result[0:1]
     return result
+
+
+
+def GetLWPolyLineStartMid(objid:ObjectId):
+    pline = trans.GetObject(objid, OpenMode.ForRead)
+    point1 = pline.GetPoint3dAt(0)
+    point2 = pline.GetPoint3dAt(1)
+    pt1 = [point1.X, point1.Y, point1.Z]
+    pt2 = [point2.X, point2.Y, point2.Z]
+    mid = MidPt1Pt2(pt1, pt2)
+    return mid
+
+def GetLWPolyLineDirectList(objid:ObjectId):
+    ptlist = GetLWPolyLinePointList(objid)
+    drlist = []
+    for i in range(len(ptlist)-1):
+        pt1 = ptlist[i]
+        pt2 = ptlist[i+1]
+        dr1 = Direct(pt1, pt2)
+        drlist.append(dr1)
+    return drlist
+
+def GetLWPolyLineMidPointList(objid:ObjectId):
+    pline_point_list = GetLWPolyLinePointList(objid)
+    midptlist = []
+    for i in range(len(pline_point_list)-1):
+        pt1 = pline_point_list[i]
+        pt2 = pline_point_list[i+1]
+        midptlist.append(MidPt1Pt2(pt1, pt2))
+    return midptlist
+
+
+
+
+def ChangeCoordinateXY(drlist, target_coord1="-Y", target_coord2="X"):
+    result = []
+    for dr in drlist:
+        match target_coord1:
+            case "-X": x = -dr[0]
+            case  "X": x =  dr[0]
+            case "+X": x =  dr[0]
+            case "-Y": x = -dr[1]
+            case  "Y": x =  dr[1]
+            case "+Y": x =  dr[1]
+            case _: raise ValueError(f"...未支持的坐标参数{target_coord1}...")
+        match target_coord2:
+            case "-X": y = -dr[0]
+            case  "X": y =  dr[0]
+            case "+X": y =  dr[0]
+            case "-Y": y = -dr[1]
+            case  "Y": y =  dr[1]
+            case "+Y": y =  dr[1]
+            case _: raise ValueError(f"...未支持的坐标参数{target_coord2}...")
+        z = dr[2]
+        result.append([x ,y ,z])
+    return result
+
+
+
+
+
+
+
+
+
+def GetLWPolyLineNormal(objid:ObjectId):
+    with transaction() as trans:
+        pline = trans.GetObject(objid, OpenMode.ForRead)
+        return pline.Normal
+
+
+
 
 
 def GetString(string=""):
