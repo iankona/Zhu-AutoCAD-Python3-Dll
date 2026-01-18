@@ -11,8 +11,9 @@ def 命令():
 
 
 text_size = 50
+
+@acad.decorator_command
 def ll_text_songti():
-    acad.GetActiveDocument()
     acad.ChangeStandardFontStyle("宋体")
 
     

@@ -7,7 +7,6 @@ import System
 
 def 命令(): 
     # academit.添加命令("ll-calc", ll_calc)
-    # academit.添加命令("ll-entsel", ll_entsel)
     pass
 
 attach_length = 2.0

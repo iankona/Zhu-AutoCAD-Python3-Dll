@@ -1,6 +1,6 @@
 import math
 import copy
-
+import time
 import clr
 
 import System
@@ -9,7 +9,7 @@ from Autodesk.AutoCAD.ApplicationServices import Application
 from Autodesk.AutoCAD.EditorInput import PromptStatus, SelectionFilter, PromptSelectionOptions, SelectionSet, PromptIntegerOptions, PromptPointOptions, PromptDoubleOptions
 # from Autodesk.AutoCAD.Runtime
 from Autodesk.AutoCAD.DatabaseServices import Line, ObjectId, Transaction, OpenMode, BlockTable, BlockTableRecord, LayerTableRecord, ObjectIdCollection, TypedValue, DxfCode, DwgVersion
-from Autodesk.AutoCAD.DatabaseServices import Extents3d, Polyline, Polyline3d, Line, Circle, Poly3dType, DBText, Region
+from Autodesk.AutoCAD.DatabaseServices import Extents3d, Polyline, Polyline3d, Line, Circle, Poly3dType, DBText, Region, DBObjectCollection
 
 from Autodesk.AutoCAD.Geometry import Point2d, Point3d, Point3dCollection, Matrix3d, Vector3d
 # from Autodesk.AutoCAD.Internal.Utils import EntLast
@@ -174,6 +174,26 @@ def GetActiveDocument():
 
 
 
+
+
+# Point3d center = Point3d(1000, 0, 0)
+# Vector3d normal = Vector3d(0, 0, 1)
+# Circle circle1 = Circle(center, normal, 1000)
+# circle1.ColorIndex = 1
+# circle1.Thickness = 5
+def Copy(objid, sourcept=[0,0,0], targetpt=[0,0,0], layer_name="", color_index=0):
+    pt1, pt2 = Vec2toVec3(sourcept), Vec2toVec3(targetpt)
+    dr1 = Direct(sourcept, targetpt)
+    vecdr = Vector3d(*dr1)
+    matrix4x4 = Matrix3d.Displacement(vecdr)
+    entity = GetObjectForRead(objid)
+    copyentity = entity.GetTransformedCopy(matrix4x4)
+    CheckLayerAndColor(copyentity, layer_name, color_index)
+    currentblock.AppendEntity(copyentity)
+    trans.AddNewlyCreatedDBObject(copyentity, True)
+    return copyentity
+
+
 def ChangeObjectIdLayer(objid_list=[], layer_name="0"):
     AddLayer(layer_name)
     for objid in objid_list:
@@ -253,6 +273,36 @@ def AddPolyline3d(ptlist, layer_name="", color_index=0):
     trans.AddNewlyCreatedDBObject(pline, True)
     return pline
 
+
+def AddRegion(dbobj_collect:DBObjectCollection, layer_name="", color_index=0):
+    regions = Region.CreateFromCurves(dbobj_collect)
+    for objref in regions:
+        CheckLayerAndColor(objref, layer_name, color_index)
+        currentblock.AppendEntity(objref)
+        trans.AddNewlyCreatedDBObject(objref, True)
+    return regions
+
+
+def AddCircle(center, radius, layer_name="", color_index=0):
+    circle = Circle()
+    circle.Center = ToPoint3d(center)
+    circle.Normal = Vector3d(0, 0, 1)
+    circle.Radius = radius
+    CheckLayerAndColor(circle, layer_name, color_index)
+    currentblock.AppendEntity(circle)
+    trans.AddNewlyCreatedDBObject(circle, True)
+    return circle
+
+
+def AddDBObject(dbobjref, layer_name="", color_index=0):
+    CheckLayerAndColor(dbobjref, layer_name, color_index)
+    objid = currentblock.AppendEntity(dbobjref)
+    trans.AddNewlyCreatedDBObject(dbobjref, True)
+    return objid
+
+
+
+
 def GetObjectForRead(objid):
     objref = trans.GetObject(objid, OpenMode.ForRead)
     return objref
@@ -264,46 +314,6 @@ def GetObjectForWrite(objid):
 
 
 
-def Copy(objid, pt1, pt2, layer_name="", color_index=0):
-    dr = Direct(pt1, pt2)
-    vecdr = Vector3d(*dr)
-    matrix4x4 = Matrix3d.Displacement(vecdr)
-    objref = GetObjectForRead(objid)
-    copyentity = objref.GetTransformedCopy(matrix4x4)
-    CheckLayerAndColor(copyentity, layer_name, color_index)
-    currentblock.AppendEntity(copyentity)
-    trans.AddNewlyCreatedDBObject(copyentity, True)
-    return copyentity
-
-
-def Move(objid, pt1, pt2):
-    dr = Direct(pt1, pt2)
-    vecdr = Vector3d(*dr)
-    matrix4x4 = Matrix3d.Displacement(vecdr)
-    objref = GetObjectForWrite(objid)
-    objref.TransformBy(matrix4x4)
-
-def MoveCopy(objid, pt1, pt2, layer_name="", color_index=0):
-    return Copy(objid, pt1, pt2, layer_name, color_index)
-
-
-
-def Rotate3d(objid, angle=90, center=[0,0], axis=[0,0,1]):
-    matrix4x4 = Matrix3d.Rotation(System.Double(angle), Vector3d(*axis), ToPoint3d(center))
-    objref = GetObjectForWrite(objid)
-    objref.TransformBy(matrix4x4)
-
-
-
-
-def Rotate3dCopy(objid, angle=90, center=[0,0], axis=[0,0,1], layer_name="", color_index=0):
-    matrix4x4 = Matrix3d.Rotation(System.Double(angle), Vector3d(*axis), ToPoint3d(center))
-    objref = GetObjectForRead(objid)
-    copyentity = objref.GetTransformedCopy(matrix4x4)
-    CheckLayerAndColor(copyentity, layer_name, color_index)
-    currentblock.AppendEntity(copyentity)
-    trans.AddNewlyCreatedDBObject(copyentity, True)
-    return copyentity
 
 
 
@@ -322,10 +332,12 @@ def Rotate3dCopy(objid, angle=90, center=[0,0], axis=[0,0,1], layer_name="", col
 def EntLast():
     # CommandAddLine后，获取entlast偶尔会出现ss1为None的错误，但大部分对象大部分时间获取还是能用的。
     result = ed.SelectLast() # PromptSelectionResult # (OK,[((1375515652304),NonGraphical,0,)])
+    str(result)
     ss1 = result.Value # SelectionSet (((2361431560400),NonGraphical,0,))
+    str(ss1)
     if ss1 == None: raise ValueError(f"SelectionSet为None, 未能获取到entlast...")
-    idlist = ss1.GetObjectIds()
-    return idlist[0]
+    objidlist = ss1.GetObjectIds()
+    return objidlist[0]
 
 
 def EntLastSet():
@@ -430,9 +442,6 @@ def CommandErase(objid:ObjectId|SelectionSet):
     Command(["rotate", objid]), Prompt("\n")
 
 
-def CommandChangeLayer(obj, layername):
-    CommandAddLayer(layername)
-    obj.Layer = layername
 
 
 def Normalized(x, y, z = 0):
@@ -503,6 +512,30 @@ def DirectListToPointList(pt, drlist):
     return result
 
 
+
+def GetAttachGapAGapBPt1Pt2(pt1, pt2, gapa, gapb):
+    return GetAttachGapAGapBPointList(pt1, pt2, gapa, gapb)
+def GetAttachGapAGapBPointList(pt1, pt2, gapa, gapb):
+    dr1 = Direct(pt1, pt2)
+    dr1 = Vec3ResetLength(dr1, gapa)
+    dr2 = Direct(pt2, pt1)
+    dr2 = Vec3ResetLength(dr2, gapb)    
+    return [Vec3Add(pt1, dr1), Vec3Add(pt2, dr2)]
+
+
+def GetAttachExtandAExtandBPt1Pt2(pt1, pt2, extenda, extendb):
+    return GetAttachExtandAExtandBPointList(pt1, pt2, extenda, extendb)
+def GetAttachExtandAExtandBPointList(pt1, pt2, extenda, extendb):
+    dr1 = Direct(pt2, pt1)
+    dr1 = Vec3ResetLength(dr1, extenda)
+    dr2 = Direct(pt1, pt2)
+    dr2 = Vec3ResetLength(dr2, extendb)    
+    return [Vec3Add(pt1, dr1), Vec3Add(pt2, dr2)]
+
+
+
+def GetAttachNDirectPt1Pt2(pt1, pt2, length):
+    return GetAttachNDirectPointList(pt1, pt2, length)
 def GetAttachNDirectPointList(pt1, pt2, length):
     dr1 = Direct(pt1, pt2)
     dr1 = Vec3ResetLength(dr1, length)
@@ -523,6 +556,8 @@ def GetAttachNDirectPointPt2(pt1, pt2, length):
     return Vec3Add(pt2, dr2)
 
 
+def GetAttachWDirectPt1Pt2(pt1, pt2, length):
+    return GetAttachWDirectPointList(pt1, pt2, length)
 def GetAttachWDirectPointList(pt1, pt2, length):
     dr1 = Direct(pt2, pt1)
     dr1 = Vec3ResetLength(dr1, length)
@@ -662,18 +697,34 @@ def CommandAddCircle3P(pt1, pt2, pt3):
     Command(["CIRCLE", "3P", ToPoint3d(pt1), ToPoint3d(pt2), ToPoint3d(pt3), ""]), Prompt("\n")
     
 
+def GetStartFinalPoint(objid):
+    with transaction() as trans:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        start = objref.StartPoint
+        final = objref.EndPoint
+    Prompt([start, final])
+    return [start.X, start.Y, start.Z], [final.X, final.Y, final.Z]
+
+
 def GetStartPoint(objid):
-    objref = trans.GetObject(objid, OpenMode.ForRead)
-    start = objref.StartPoint
+    with transaction() as trans:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        start = objref.StartPoint
     return [start.X, start.Y, start.Z]
 
+
+
+
 def GetFinalPoint(objid):
-    objref = trans.GetObject(objid, OpenMode.ForRead)
-    final = objref.EndPoint
+    with transaction() as trans:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        final = objref.EndPoint
     return [final.X, final.Y, final.Z]
 
 
-def Prompt(string:str):
+
+
+def Prompt(string):
     ed.WriteMessage(str(string))
 
 
@@ -691,7 +742,7 @@ def EntSel(string: str=""):
 #     ed.SetImpliedSelection(ids)
 
 def SSGet(dxfcode_filter_list=[]): # [[0, "Circle"], [0, "Line"]]
-    if dxfcode_filter_list == []:
+    if dxfcode_filter_list != []:
         # value = [TypedValue(System.Int32(0), "Circle")] # == AutoLisp (DxfCode . "Circle") 
         typevalue_list = []
         for [dxfcode, checkchar] in dxfcode_filter_list:
@@ -705,7 +756,8 @@ def SSGet(dxfcode_filter_list=[]): # [[0, "Circle"], [0, "Line"]]
     ss1 = result.Value # SelectionSet
     # ids = ss1.GetObjectIds()
     # ss2 = SelectionSet.FromObjectIds([ids[-1]])
-    Highlight(ss1)
+    str(ss1) # 原理不明但有用，处理Error: eInvalidInput 在 Autodesk.AutoCAD.EditorInput.SelectionSetDelayMarshalled.GetObjectIds()
+    ed.SetImpliedSelection(ss1) # Highlight(ss1) # (sssetfirst nil ss1)
     return ss1 
 
 def SSGetIdList(dxfcode_filter_list=[]):
@@ -713,12 +765,87 @@ def SSGetIdList(dxfcode_filter_list=[]):
     if ss1 == None: return []
     return ss1.GetObjectIds()
 
+def SSGetDbObjectCollection(dxfcode_filter_list=[]):
+    ss1 = SSGet(dxfcode_filter_list)
+    if ss1 == None: return None
+    with transaction() as trans:
+        dbobj_collect = DBObjectCollection()
+        for objid in ss1.GetObjectIds():
+            objref_write = trans.GetObject(objid, OpenMode.ForWrite)
+            dbobj_collect.Add(objref_write)
+
+    return dbobj_collect
+
+
+# error e not openforwrite
+# def SSGetDbObjectList(dxfcode_filter_list=[]):
+#     ss1 = SSGet(dxfcode_filter_list)
+#     if ss1 == None: return None
+#     with transaction() as trans:
+#         dbobj_list = []
+#         for objid in ss1.GetObjectIds():
+#             objref_write = trans.GetObject(objid, OpenMode.ForWrite)
+#             dbobj_list.append(objref_write)
+#     return dbobj_list
+
+
+
+
+def SSSetFromIdList(objidlist=[]):
+    if objidlist == []: return None
+    ss2 = SelectionSet.FromObjectIds(objidlist)
+    return ss2
 
 def Highlight(ss1:SelectionSet):
     with transaction() as trans:
         for objid in ss1.GetObjectIds():
             objref = trans.GetObject(objid, OpenMode.ForRead)
             objref.Highlight()
+
+def SSSetFirst(ss1):
+    ed.SetImpliedSelection(ss1) # (sssetfirst nil ss1)
+
+
+
+def GetEntityColorIndex(objid:ObjectId):
+    with transaction() as trans:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        color_index = objref.ColorIndex
+    return color_index
+
+def GetEntityLayerName(objid:ObjectId):
+    with transaction() as trans:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        layer_name = objref.Layer
+    return layer_name
+
+
+def GetIdListColorIndexList(objidlist=[]):
+    with transaction() as trans:
+        color_index_list = []
+        for objid in objidlist:
+            objref = trans.GetObject(objid, OpenMode.ForRead)
+            color_index = objref.ColorIndex
+            if color_index == 0: pass
+            if color_index == 256:
+                layer_name = objref.Layer
+                layer_table = trans.GetObject(db.LayerTableId, OpenMode.ForRead)
+                layer_record_id = layer_table[layer_name]
+                layer_record = trans.GetObject(layer_record_id, OpenMode.ForRead)
+                color_index = layer_record.Color.ColorIndex
+            color_index_list.append(color_index)
+    return color_index_list
+
+def GetIdListLayerNameList(objidlist=[]):
+    with transaction() as trans:
+        layer_name_list = []
+        for objid in objidlist:
+            objref = trans.GetObject(objid, OpenMode.ForRead)
+            layer_name = objref.Layer
+            layer_name_list.append(layer_name)
+    return layer_name_list
+
+
 
 def GetEntityBound(objid:ObjectId):
     with transaction() as trans:
@@ -732,8 +859,8 @@ def GetEntityBoundXY(objid:ObjectId):
     [x1,y1,z1],[x2,y2,z2] = GetEntityBound(objid)
     return [x1, y1, 0], [x2, y2, 0]
 
-def GetEntityBoundCenterXY(ss1:SelectionSet):
-    [x1,y1,z1],[x2,y2,z2] = GetEntityBoundXY(ss1)
+def GetEntityBoundCenterXY(objid:ObjectId):
+    [x1,y1,z1],[x2,y2,z2] = GetEntityBoundXY(objid)
     return [(x1+x2)/2, (y1+y2)/2, 0]
 
 
@@ -789,6 +916,17 @@ def GetLWPolyLineDirectList(objid:ObjectId):
         dr1 = Direct(pt1, pt2)
         drlist.append(dr1)
     return drlist
+
+def GetLWPolyLineLengthList(objid:ObjectId):
+    ptlist = GetLWPolyLinePointList(objid)
+    lengthlist = []
+    for i in range(len(ptlist)-1):
+        pt1 = ptlist[i]
+        pt2 = ptlist[i+1]
+        length = Distance(pt1, pt2)
+        lengthlist.append(length)
+    return lengthlist
+
 
 def GetLWPolyLineMidPointList(objid:ObjectId):
     pline_point_list = GetLWPolyLinePointList(objid)
@@ -904,7 +1042,7 @@ def GetDouble(default_double:float, string=""):
     return None
 
 
-def GetDoubleListLimitCount(count=10):
+def GetDoubleListLimitCount(count=100):
     列表 = []
     for i in range(count):
         result = ed.GetDouble(f"请输入第{i+1}个数据:") 

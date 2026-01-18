@@ -5,8 +5,11 @@ from System.Reflection import Assembly, AssemblyName, TypeAttributes, FieldAttri
 from System.Reflection.Emit import AssemblyBuilderAccess, AssemblyBuilder, ModuleBuilder, TypeBuilder, FieldBuilder, MethodBuilder, PropertyBuilder, ConstructorBuilder, ILGenerator, OpCodes, ParameterBuilder, LocalBuilder, CustomAttributeBuilder
 
 # from Autodesk.AutoCAD.Runtime import CommandClassAttribute, CommandMethodAttribute # accoremgd.dll
+Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\acdbmgdbrep.dll")
+Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\AcMPolygonMGD.dll")
 
-assemly = Assembly.LoadFile("D:\\Program Files\\Autodesk\\AutoCAD 2023\\accoremgd.dll")
+
+assemly = Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\accoremgd.dll")
 classattribute = assemly.GetType("Autodesk.AutoCAD.Runtime.CommandClassAttribute")
 methodattribute = assemly.GetType("Autodesk.AutoCAD.Runtime.CommandMethodAttribute")
 commandflags = assemly.GetType("Autodesk.AutoCAD.Runtime.CommandFlags")
@@ -20,7 +23,7 @@ commandflags = assemly.GetType("Autodesk.AutoCAD.Runtime.CommandFlags")
 
 def 保存程序集():
     程序集.Save(程序集名称 + ".dll")
-    # 程序集.Save(f"E:\\CADdll\\{程序集名称}.dll")
+    # 程序集.Save(f"F:\\CADdll\\{程序集名称}.dll")
     print(f"保存程序集：{程序集名称}.dll")
 
 
@@ -86,7 +89,7 @@ def 添加命令(命令:str, Python函数):
 
 
 def 设置程序集():
-    assemly = Assembly.LoadFile(f"E:\\CADdll\\{程序集名称}.dll")
+    assemly = Assembly.LoadFile(f"F:\\CADdll\\{程序集名称}.dll")
     for typename, [classtype, 委托实例] in 类型字典.items():
         classtype = assemly.GetType(typename)
         classtype.GetMethod("SetAction").Invoke(System.Void,[委托实例]) 

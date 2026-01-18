@@ -2,6 +2,15 @@ import os
 import sys
 import importlib
 
+
+dirpath = os.path.dirname(__file__)
+# sys.path.append(dirpath+"\\libs") # 已经由dll加载
+sys.path.append(dirpath+"\\ttks")
+sys.path.append(dirpath+"\\liby")
+os.environ['TK_LIBRARY'] = dirpath+"\\ttks\\tcl\\tk8.6"
+os.environ['TCL_LIBRARY'] = dirpath+"\\ttks\\tcl\\tcl8.6"
+
+
 import clr
 # from System import Console #, ConsoleColor
 
@@ -13,7 +22,7 @@ class NetConsole:
         message = str(message)
         # if message == '\n': return
         # if message[-1] != '\n': message += "\n"
-        with open(r"E:\CADdll\pythonscripts\outputlog.txt", "a+") as log:
+        with open(r"F:\CADdll\pythonscripts\outputlog.txt", "a+") as log:
             log.write(message)
 
     def flush(self):
@@ -24,7 +33,7 @@ sys.stderr = NetConsole()
 
 
 # print(os.getcwd()) # C:\Users\Administrator\user\Documents
-os.chdir("E:\\CADdll")
+os.chdir("F:\\CADdll")
 
 
 import academit
@@ -32,7 +41,7 @@ import academit
 
 def 生成命令():
     名称列表 = []
-    basenamelist = os.listdir(r"E:\CADdll\pythonscripts\functions")
+    basenamelist = os.listdir(r"F:\CADdll\pythonscripts\functions")
     for basename in basenamelist:
         if '__pycache__' in basename: continue
         charlist = basename.split('.')

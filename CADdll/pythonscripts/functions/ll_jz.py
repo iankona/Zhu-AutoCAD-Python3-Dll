@@ -16,7 +16,7 @@ tube_length = 40
 @acad.decorator_command
 def lljz_gaiban_njfor(): # 盖板
     global tube_length
-    length = acad.GetDouble(tube_length, "请输入方管宽度: ") 
+    length = acad.GetDouble(tube_length, f"请输入方管宽度: ") 
     if length != None: tube_length = length
     length_list = [tube_length, tube_length, 15]
     objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
@@ -107,8 +107,7 @@ def lljz_geban_njfor(): # 隔板
 # acad.GetOSMODE()
 # acad.AddRect(pt1, pt2)
 # acad.SetOSMODE() 
-
-# ss1 = acad.SSGetIdlist([[-4, "<OR"],[0, "LWPOLYLINE"],[0, "CIRCLE"], [-4, "OR>"]])
+# ss1 = acad.SSGet([[-4, "<OR"],[0, "LWPOLYLINE"],[0, "CIRCLE"], [-4, "OR>"]])
 
 # TypedValue[] typeValue = {
 #  new TypedValue((int) DxfCode.Operator, "<or"),
