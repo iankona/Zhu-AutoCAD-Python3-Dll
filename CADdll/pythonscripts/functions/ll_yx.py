@@ -7,7 +7,7 @@ import System
 
 def 命令(): 
     academit.添加命令("llyx-for", llyx_for)
-    academit.添加命令("llyx-side3", llyx_side3)
+    academit.添加命令("llyx-side3-for", llyx_side3_for)
     academit.添加命令("llyx-sidex-for", llyx_sidex_for)
     academit.添加命令("llyx-sidex-n-for", llyx_sidex_n_for)
     academit.添加命令("llyx-sidex-w-for", llyx_sidex_w_for)
@@ -19,7 +19,6 @@ def 命令():
     pass
 
 offset_length = 50
-
 @acad.decorator_command
 def llyx_for():
     global offset_length
@@ -36,19 +35,20 @@ def llyx_for():
 
 
 @acad.decorator_command_undo
-def llyx_side3():
+def llyx_side3_for():
     global offset_length
     length = acad.GetDouble(offset_length, "请输入偏移大小: ")
     if length != None: offset_length = length
-    pt1, pt2, pt3 = acad.GetPoint3("请选择第1个顶点: ", "请选择第2个顶点: ", "请点击方向顶点: ")
-    if pt1 == None: return
-    dr1 = acad.GetPerDirectResetLengthXY(pt1, pt2, pt3, offset_length) # 点在线上，WhichSideOfLineXY 会出现cannot access local variable 'result' where it is not associated with a value
-    po1 = acad.Vec3Add(pt1, dr1)
-    po2 = acad.Vec3Add(pt2, dr1)
-    with acad.transaction() as trans:
-        acad.AddLine(pt1, po1)
-        acad.AddLine(pt2, po2)
-        acad.AddLine(po1, po2)
+    while True:
+        pt1, pt2, pt3 = acad.GetPoint3("请选择第1个顶点: ", "请选择第2个顶点: ", "请点击方向顶点: ")
+        if pt1 == None: break
+        dr1 = acad.GetPerDirectResetLengthXY(pt1, pt2, pt3, offset_length) # 点在线上，WhichSideOfLineXY 会出现cannot access local variable 'result' where it is not associated with a value
+        po1 = acad.Vec3Add(pt1, dr1)
+        po2 = acad.Vec3Add(pt2, dr1)
+        with acad.transaction() as trans:
+            acad.AddLine(pt1, po1)
+            acad.AddLine(pt2, po2)
+            acad.AddLine(po1, po2)
 
 
 

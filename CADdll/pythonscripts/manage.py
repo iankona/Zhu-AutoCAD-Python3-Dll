@@ -6,6 +6,7 @@ import importlib
 dirpath = os.path.dirname(__file__)
 # sys.path.append(dirpath+"\\libs") # 已经由dll加载
 sys.path.append(dirpath+"\\ttks")
+sys.path.append(dirpath+"\\libk")
 sys.path.append(dirpath+"\\liby")
 os.environ['TK_LIBRARY'] = dirpath+"\\ttks\\tcl\\tk8.6"
 os.environ['TCL_LIBRARY'] = dirpath+"\\ttks\\tcl\\tcl8.6"

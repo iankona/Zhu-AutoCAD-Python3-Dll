@@ -8,6 +8,10 @@ from System.Reflection.Emit import AssemblyBuilderAccess, AssemblyBuilder, Modul
 Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\acdbmgdbrep.dll")
 Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\AcMPolygonMGD.dll")
 
+# # Com的方式
+# Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\Autodesk.AutoCAD.Interop.dll")
+# Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\Autodesk.AutoCAD.Interop.Common.dll")
+
 
 assemly = Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\accoremgd.dll")
 classattribute = assemly.GetType("Autodesk.AutoCAD.Runtime.CommandClassAttribute")

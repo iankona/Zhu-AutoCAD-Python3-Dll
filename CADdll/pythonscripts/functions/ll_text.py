@@ -1,19 +1,102 @@
-import clr
 
 import acad
 import academit
 
-import System
 
 
 def 命令(): 
-    academit.添加命令("ll-text-songti", ll_text_songti)
+    academit.添加命令("lltext-songti", lltext_songti)
+    academit.添加命令("lltext-count-point-x-for", lltext_count_point_x_for)
+    academit.添加命令("lltext-count-point-y-for", lltext_count_point_y_for)
+    academit.添加命令("lltext-count-rec-for", lltext_count_rec_for)   
+    academit.添加命令("lltext-count-frence-for", lltext_count_frence_for) 
 
 
-text_size = 50
+zhu_count = 1
+zhu_text_pre = ""
+zhu_text_post = ""
+zhu_text_size = 50
+def zhu_uitext_count():
+    global zhu_count, zhu_text_size, zhu_text_pre, zhu_text_post
+    count = acad.GetInt(zhu_count, "请输入计数起点:")
+    pre = acad.GetString(zhu_text_pre, "请输入前置文本")
+    post = acad.GetString(zhu_text_post, "请输入后置文本")
+    size = acad.GetInt(zhu_text_size, "请输入文字大小:")
+    if count == None: count = 1
+    if pre == None or pre == "0": pre = ""
+    if post == None or post == "0": post = ""
+    if size == None: size = 50
+    zhu_count = count
+    zhu_text_pre = pre
+    zhu_text_post = post
+    zhu_text_size = size
+
 
 @acad.decorator_command
-def ll_text_songti():
+def lltext_songti():
     acad.ChangeStandardFontStyle("宋体")
 
     
+@acad.decorator_command_undo
+def lltext_count_point_x_for():
+    zhu_uitext_count()
+    global zhu_count
+    pt0 = acad.GetPoint()
+    if pt0 == None: return
+    x0, y0, z0 = pt0
+    char = f"{zhu_text_pre}{zhu_count}{zhu_text_post}"
+    acad.CommandAddText(pt0, char, zhu_text_size)
+    while True:
+        pt1 = acad.GetPoint()
+        zhu_count += 1
+        if pt1 == None: break
+        x1, y1, z1 = pt1
+        pt1 = [x1, y0, z1]
+        char = f"{zhu_text_pre}{zhu_count}{zhu_text_post}"
+        acad.CommandAddText(pt1, char, zhu_text_size)
+
+@acad.decorator_command_undo
+def lltext_count_point_y_for():
+    zhu_uitext_count()
+    global zhu_count
+    pt0 = acad.GetPoint()
+    if pt0 == None: return
+    x0, y0, z0 = pt0
+    char = f"{zhu_text_pre}{zhu_count}{zhu_text_post}"
+    acad.CommandAddText(pt0, char, zhu_text_size)
+    while True:
+        pt1 = acad.GetPoint()
+        zhu_count += 1
+        if pt1 == None: break
+        x1, y1, z1 = pt1
+        pt1 = [x0, y1, z1]
+        char = f"{zhu_text_pre}{zhu_count}{zhu_text_post}"
+        acad.CommandAddText(pt1, char, zhu_text_size)
+
+
+@acad.decorator_command
+def lltext_count_rec_for():
+    zhu_uitext_count()
+    global zhu_count
+    objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
+    with acad.transaction() as trans:
+        for objid in objidlist:
+            pt1 = acad.GetEntityBoundCenterXY(objid)
+            zhu_count += 1
+            char = f"{zhu_text_pre}{zhu_count}{zhu_text_post}"
+            acad.AddText(pt1, char, zhu_text_size)
+        
+
+
+@acad.decorator_command
+def lltext_count_frence_for():
+    zhu_uitext_count()
+    pt1 = acad.GetPoint()
+    pt2 = acad.GetPoint(base_point=pt1)
+    ss1 = acad.GetSelectFence(pt1, pt2)
+    objidlist = ss1.GetObjectIds()
+    with acad.transaction() as trans:
+        for i, objid in enumerate(objidlist):
+            pt1 = acad.GetEntityBoundCenterXY(objid)
+            char = f"{zhu_text_pre}{i+1}{zhu_text_post}"
+            acad.AddText(pt1, char, zhu_text_size)

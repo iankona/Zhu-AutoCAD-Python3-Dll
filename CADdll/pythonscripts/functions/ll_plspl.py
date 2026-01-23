@@ -11,7 +11,7 @@ def 命令():
     academit.添加命令("llpl-zj-to-zj-y-forward-for", llpl_zj_to_zj_y_forward_for)
     academit.添加命令("llpl-zj-to-zj-y-backward-for", llpl_zj_to_zj_y_backward_for)
 
-    academit.添加命令("llpl-connet-pl-and-pl", llpl_connet_pl_and_pl)
+    academit.添加命令("llpl-connet-pl-and-pl-for", llpl_connet_pl_and_pl_for)
 
     academit.添加命令("llpl-to-midpl", llpl_to_midpl)
     academit.添加命令("llpl-print", llpl_print)
@@ -170,58 +170,61 @@ def llpl_zj_to_zj_y_backward_for():
 
 
 @acad.decorator_command
-def llpl_connet_pl_and_pl():
-    objid1 = acad.EntSel("请点击第1条对象:") # ed.GetEntity 与 While True 循环不兼容，出错
-    objid2 = acad.EntSel("请点击第2条对象:")
-    pt1, pd1 = acad.GetStartFinalPoint(objid1)
-    lengthlist1 = acad.GetLWPolyLineLengthList(objid1)
-    pt2, pd2 = acad.GetStartFinalPoint(objid2)
-    lengthlist2 = acad.GetLWPolyLineLengthList(objid2)
+def llpl_connet_pl_and_pl_for():
+    while True:
+        objid1 = acad.EntSel("请点击第1条对象:") 
+        if acad.IsNone(objid1): break # No method matches given arguments for ObjectId.op_Equality: (<class 'NoneType'>) == 比较出错
+        objid2 = acad.EntSel("请点击第2条对象:")
+        if acad.IsNone(objid2): break 
+        pt1, pd1 = acad.GetStartFinalPoint(objid1)
+        lengthlist1 = acad.GetLWPolyLineLengthList(objid1)
+        pt2, pd2 = acad.GetStartFinalPoint(objid2)
+        lengthlist2 = acad.GetLWPolyLineLengthList(objid2)
 
-    dy1 = acad.Direct(pt1, pd1)
-    dy1 = acad.Vec3ResetLength(dy1, 2000)
-    pt1 = acad.Vec3Add(pt1, dy1)
-    pt2 = acad.Vec3Add(pt2, dy1)
-    pd1 = acad.Vec3Add(pd1, dy1)
-    pd2 = acad.Vec3Add(pd2, dy1)
-    db1 = acad.Direct(pt1, pd1)
-    db2 = acad.Direct(pt2, pd2)
-    pe1 = acad.Vec3Add(pd1, db1)
-    pe2 = acad.Vec3Add(pd2, db2)
-    linelist = [[pt1, pe1, "0"], [pt2, pe2, "0"]]
+        dy1 = acad.Direct(pt1, pd1)
+        dy1 = acad.Vec3ResetLength(dy1, 2000)
+        pt1 = acad.Vec3Add(pt1, dy1)
+        pt2 = acad.Vec3Add(pt2, dy1)
+        pd1 = acad.Vec3Add(pd1, dy1)
+        pd2 = acad.Vec3Add(pd2, dy1)
+        db1 = acad.Direct(pt1, pd1)
+        db2 = acad.Direct(pt2, pd2)
+        pe1 = acad.Vec3Add(pd1, db1)
+        pe2 = acad.Vec3Add(pd2, db2)
+        linelist = [[pt1, pe1, "0"], [pt2, pe2, "0"]]
 
-    pt1, pt2 = acad.GetAttachWDirectPt1Pt2(pt1, pt2, 100)
-    linelist.append([pt1, pt2, "0"])
+        pt1, pt2 = acad.GetAttachWDirectPt1Pt2(pt1, pt2, 150)
+        linelist.append([pt1, pt2, "0"])
 
-    for i, [length1, length2] in enumerate(zip(lengthlist1, lengthlist2)):
-        if abs(length1-length2) < 0.0001:
-            dr1 = acad.GetPerDirectResetLengthXY(pt1, pt2, pe1, length1)
-            po1 = acad.Vec3Add(pt1, dr1)
-            po2 = acad.Vec3Add(pt2, dr1)
-        else:
-            dr1 = acad.GetPerDirectXY(pt1, pt2, pe1)
-            dd1 = acad.Vec3ResetLength(dr1, length1)
-            dd2 = acad.Vec3ResetLength(dr1, length2)
-            po1 = acad.Vec3Add(pt1, dd1)
-            po2 = acad.Vec3Add(pt2, dd2)
+        for i, [length1, length2] in enumerate(zip(lengthlist1, lengthlist2)):
+            if abs(length1-length2) < 0.0001:
+                dr1 = acad.GetPerDirectResetLengthXY(pt1, pt2, pe1, length1)
+                po1 = acad.Vec3Add(pt1, dr1)
+                po2 = acad.Vec3Add(pt2, dr1)
+            else:
+                dr1 = acad.GetPerDirectXY(pt1, pt2, pe1)
+                dd1 = acad.Vec3ResetLength(dr1, length1)
+                dd2 = acad.Vec3ResetLength(dr1, length2)
+                po1 = acad.Vec3Add(pt1, dd1)
+                po2 = acad.Vec3Add(pt2, dd2)
 
-        linelist.append([pt1, po1, "0"])
-        linelist.append([pt2, po2, "0"])
-        linelist.append([po1, po2, "图层1"])
+            linelist.append([pt1, po1, "0"])
+            linelist.append([pt2, po2, "0"])
+            linelist.append([po1, po2, "图层1"])
 
-        if i == 14:
-            dr1 = acad.Vec3ResetLength(db1, 200)
-            pt1 = acad.Vec3Add(po1, dr1)
-            pt2 = acad.Vec3Add(po2, dr1)
-            linelist.append([pt1, pt2, "图层1"])
-        else:
-            pt1, pt2 = po1, po2
+            if i == 14:
+                dr1 = acad.Vec3ResetLength(db1, 200)
+                pt1 = acad.Vec3Add(po1, dr1)
+                pt2 = acad.Vec3Add(po2, dr1)
+                linelist.append([pt1, pt2, "图层1"])
+            else:
+                pt1, pt2 = po1, po2
 
-    with acad.transaction() as trans:
-        for pt1, pt2, lname in linelist[:-1]:
-            acad.AddLine(pt1, pt2, lname)
-        pt1, pt2, lname = linelist[-1]
-        acad.AddLine(pt1, pt2)
+        with acad.transaction() as trans:
+            for pt1, pt2, lname in linelist[:-1]:
+                acad.AddLine(pt1, pt2, lname)
+            pt1, pt2, lname = linelist[-1]
+            acad.AddLine(pt1, pt2)
 
 @acad.decorator_command
 def llpl_to_midpl():
@@ -267,8 +270,8 @@ def llpl_findstart():
     objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
     with acad.transaction() as trans:
         for objid in objidlist:
-            pt0 = acad.GetStartPoint(objid)
-            mid = acad.GetLWPolyLineStartMid(objid)
+            pt0 = acad.TransStartPoint(objid)
+            mid = acad.TransLWPolyLineStartMid(objid)
             acad.AddText(pt0, "起点")
             acad.AddText(mid, "中点")
 
@@ -278,8 +281,8 @@ def llpl_findpoint():
     objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
     with acad.transaction() as trans:
         for objid in objidlist:
-            pt0 = acad.GetStartPoint(objid)
-            mid = acad.GetLWPolyLineStartMid(objid)
+            pt0 = acad.TransStartPoint(objid)
+            mid = acad.TransLWPolyLineStartMid(objid)
             ptlist = acad.GetLWPolyLinePointList(objid)
             for i, pt1 in enumerate(ptlist):
                 acad.AddText(pt0, str(i))
