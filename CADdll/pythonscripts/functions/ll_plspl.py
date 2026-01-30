@@ -247,8 +247,8 @@ def llpl_print():
     objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
     with acad.transaction() as trans:
         for objid in objidlist:
-            pline_normal = acad.GetLWPolyLineNormal(objid)
-            pline_point_list = acad.GetLWPolyLinePointList(objid)
+            pline_normal = acad.TransLWPolyLineNormal(objid)
+            pline_point_list = acad.TransLWPolyLinePointList(objid)
             print(objid, pline_normal, pline_point_list)
 
 
@@ -283,7 +283,7 @@ def llpl_findpoint():
         for objid in objidlist:
             pt0 = acad.TransStartPoint(objid)
             mid = acad.TransLWPolyLineStartMid(objid)
-            ptlist = acad.GetLWPolyLinePointList(objid)
+            ptlist = acad.TransLWPolyLinePointList(objid)
             for i, pt1 in enumerate(ptlist):
                 acad.AddText(pt0, str(i))
 
@@ -335,7 +335,7 @@ def llpl_change_xy_to_xz_plfor():
 def llpl_change_xy_to_xz_4pl():
     objid = acad.EntSel("请点击复制对象: ") # for 循环出错，暂时找不到原因
     with acad.transaction() as trans:
-        mid = acad.GetLWPolyLineStartMid(objid)
+        mid = acad.TransLWPolyLineStartMid(objid)
         acad.AddText(mid, "起点")
         pt0 = acad.GetStartPoint(objid)
         drlist = acad.GetLWPolyLineDirectList(objid)
@@ -366,12 +366,12 @@ def llpl_sweep():
     xydrlist = acad.GetLWPolyLineDirectList(plineid)
     rectptlist = acad.GetLWPolyLinePointList(rectid)
     with acad.transaction() as trans:
-        pt0 = acad.GetStartPoint(plineid)
-        mid = acad.GetLWPolyLineStartMid(plineid)
+        pt0 = acad.TransStartPoint(plineid)
+        mid = acad.TransLWPolyLineStartMid(plineid)
         acad.AddText(pt0, "起点")
         acad.AddText(mid, "中点")
-        pt0 = acad.GetStartPoint(rectid)
-        mid = acad.GetLWPolyLineStartMid(rectid)
+        pt0 = acad.TransStartPoint(rectid)
+        mid = acad.TransLWPolyLineStartMid(rectid)
         acad.AddText(pt0, "起点")
         acad.AddText(mid, "中点") 
 

@@ -1,31 +1,27 @@
   
 import acad
 import academit
+import System
 
 def 命令(): 
-    # academit.添加命令("llbo-for", llbo_for)
-    # academit.添加命令("ll-entsel", ll_entsel)
-    pass
+    academit.添加命令("llblock", llblock)
+    academit.添加命令("llexplode", llexplode)
 
 
-count = 1
 @acad.decorator_command
-def llbo_for():
-    global count
-    if count > 255: count = 1
-
-    # zoom
-    # ss1 = acad.SSGet()
-    # pt1, pt2 = acad.GetBound(ss1)
-    # with acad.command_undo(), acad.command_osmode():
-    #      acad.CommandZoom(pt1, pt2)
-         
-    pt1 = acad.GetPoint("Select internal point: ")
-    objreflist = acad.ed.TraceBoundary(acad.ToPoint3d(pt1), True)
+def llblock():
+    objidlist =  acad.SSGetIdList()   
+    pt1, pt2 = acad.GetIdListBoundXY0(objidlist)
+    # print(objidlist, pt1)
     with acad.transaction() as trans:
-        for i, objref in enumerate(objreflist):
-              objref.ColorIndex = count 
-              acad.AddDBObject(objref)
-    count +=1 
+        acad.AddBlockFromIdList(objidlist, pt1)
 
- 
+
+@acad.decorator_command
+def llexplode():
+    objidlist =  acad.SSGetIdList()   
+    with acad.transaction() as trans:
+        for objid in objidlist:
+            result_objidlist = acad.TransExplode(objid)
+            # print(result_objidlist)
+

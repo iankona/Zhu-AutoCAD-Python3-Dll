@@ -1,37 +1,32 @@
-import clr
 
 import acad
 import academit
 
-import System
+import open3d as o3d
+import numpy as np
 
 def 命令(): 
-    # academit.添加命令("ll-calc", ll_calc)
-    # academit.添加命令("ll-entsel", ll_entsel)
+    academit.添加命令("ll-point-cloud-load", ll_point_cloud_load)
     pass
 
-text_size = 50
 
-@acad.decorator_command_undo
-def ll_calc():
-    global text_size
-    string = ""
-    while True:
-        char = acad.GetString("请输入表达式: ")
-        if char == None: break
-        string += char
-    size = acad.GetInt(text_size, "请输入字体大小: ")
-    if size > 0: text_size = size
-    pt1  = acad.GetPoint("请点击放置位置: ")
-    string = string.replace("=", "")
-    string = string.replace("\n", "")
-    if string != "": 
-        result = eval(string)
-        string = f"= {string} = {result}"
-        acad.CommandAddText(pt1, string, text_size)
-    # print(string)
+@acad.decorator_command
+def ll_point_cloud_load():
+    pcd = o3d.io.read_point_cloud(r"f:\NetPythonProject\PyKinect2-PyQtGraph-PointClouds\models\zhu_cloud_701_002.pcd")
+    points = np.asarray(pcd.points)
+    colors = np.asarray(pcd.colors)*255
 
 
-# def ll_entsel():
-#     acad.GetActiveDocument()
-#     acad.EntSel()
+
+    with acad.transaction() as trans:
+        # count = 0
+        # countsum = len(points)
+        for pt1, [r,g,b] in zip(points, colors):
+            acad.AddPointCloud(pt1, [int(r), int(g), int(b)])
+            # count += 1
+            # if count % 10000 == 0: 
+            #     acad.Prompt(f"{count/countsum}\n")
+
+    # o3d.visualization.draw_geometries([pcd])
+
+

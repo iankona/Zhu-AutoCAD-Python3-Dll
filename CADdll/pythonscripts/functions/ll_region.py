@@ -20,7 +20,7 @@ def 命令():
     academit.添加命令("llregion-objidlist", llregion_objidlist) 
     academit.添加命令("llregion-rotate", llregion_rotate) 
     academit.添加命令("llregion-rotate-to-z-up", llregion_rotate_to_z_up)
-    pass
+    academit.添加命令("llregion-rotate-point-cloud-to-z-up", llregion_rotate_point_cloud_to_z_up)
 
 
 # 可以通过检查ed.CurrentUserCoordinateSystem是否为单位矩阵(Matrix3d.Identity) 来判断
@@ -98,7 +98,7 @@ def llregion_rotate_to_z_up():
     pt2 = acad.GetPoint()
     normal = acad.GetEntityNormal(objid1)
     normal = [normal.X, normal.Y, normal.Z]
-    angle = acad.AngleFromDr1Dr2(normal, [0,0,1])
+    angle = acad.AngleFromDotDr1Dr2(normal, [0,0,1])
     axis = acad.CrossNormal(normal, [0,0,1])
     # with acad.command_undo():
     #     direct = acad.Direct(pt1, pt2)
@@ -108,6 +108,30 @@ def llregion_rotate_to_z_up():
     with acad.transaction() as trans:
         acad.TransRoation(objid1, angle, axis, pt1)
     acad.Prompt(angle)
+
+
+@acad.decorator_command
+def llregion_rotate_point_cloud_to_z_up():
+    objid1 = acad.EntSel([[0, "REGION"]], string="请选择参考面:")
+    pt1 = acad.GetPoint()
+    pt2 = acad.GetPoint()
+    normal = acad.GetEntityNormal(objid1)
+    normal = [normal.X, normal.Y, normal.Z]
+    angle = acad.AngleFromDotDr1Dr2(normal, [0,0,1])
+    acad.Prompt(angle)
+    axis = acad.CrossNormal(normal, [0,0,1])
+    # with acad.command_undo():
+    #     direct = acad.Direct(pt1, pt2)
+    #     po1, po2 = pt1, pt2
+    #     if acad.Dot(axis, direct) < 0: po1, po2 = pt2, pt1
+    #     acad.CommandRotate3d(objid1, po1, po2, angle)
+    objidlist = acad.SSGetIdList(string="请选择需要旋转的对象:")
+    with acad.transaction() as trans:
+        for objid in objidlist:
+            acad.TransRoation(objid, angle, axis, pt1)
+    # acad.Prompt(angle)
+
+
 
 
    
@@ -152,7 +176,7 @@ def llregion_cut():
         dbobj_list = []
         for objref in regions:
         # for objid in objidlist:
-        #     objref = acad.GetObjectForWrite(objid)
+        #     objref = acad.TransObjectForWrite(objid)
             dbobj_list.append(objref)
             if objref.Area > max_area:
                 max_area = objref.Area
@@ -170,8 +194,8 @@ def llregion_check_inside():
     objid1 = acad.EntSel(string="请选择第1个对象:")
     objid2 = acad.EntSel(string="请选择第2个对象:")
     with acad.transaction() as trans:
-        region1 = acad.GetObjectForWrite(objid1)
-        region2 = acad.GetObjectForWrite(objid2)
+        region1 = acad.TransObjectForWrite(objid1)
+        region2 = acad.TransObjectForWrite(objid2)
         extend = region2.GeometricExtents
         point1 = extend.MinPoint
         point2 = extend.MaxPoint # [point1.X, point1.Y, point1.Z], [point2.X, point2.Y, point2.Z]         
@@ -192,7 +216,7 @@ def llregion_subtract():
         max_area, max_objref = 0, None
         dbobj_list = []
         for objid in objidlist:
-            objref = acad.GetObjectForWrite(objid)
+            objref = acad.TransObjectForWrite(objid)
             dbobj_list.append(objref)
             if objref.Area > max_area:
                 max_area = objref.Area
@@ -211,7 +235,7 @@ def llregion_print():
     objidlist = acad.SSGetIdList()
     with acad.transaction() as trans:
         for objid in objidlist:
-            objref = acad.GetObjectForWrite(objid)
+            objref = acad.TransObjectForWrite(objid)
             normal = objref.Normal # (0.554700196225229,0,0.832050294337844) 
             x,y,z = objref.Normal
             matrix4x41 = objref.Ecs # ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
@@ -242,7 +266,7 @@ def llregion_mesh_sphm():
         im = IdMapping()
         acad.db.DeepCloneObjects(ids, acad.db.CurrentSpaceId, im, False)
         newId = im.Lookup(solidId).Value
-        sol = acad.GetObjectForWrite(newId)
+        sol = acad.TransObjectForWrite(newId)
         ext = sol.Bounds
         vec = ext.MaxPoint - ext.MinPoint
         # # sol.OffsetBody(vec.Length * frac)
@@ -326,21 +350,3 @@ def llregion_mesh_sphm():
 # Console.WriteLine($"叉乘结果: {crossProduct}");
 
 
-import math
-import numpy as np
-origin_vector = np.array([1, 0 ,0])
-location_vector = np.array([0, 0 ,1])
-#注意，如果向量没有归一化，可以先考虑归一化下。
-c = np.dot(origin_vector, location_vector)
-n_vector = np.cross(origin_vector, location_vector)
-s = np.linalg.norm(n_vector)
-print(c,s)
-n_vector_invert = np.array((
-[0,-n_vector[2],n_vector[1]],
-[n_vector[2],0,-n_vector[0]],
-[-n_vector[1],n_vector[0],0]
-))
-I = np.eye(3)
-# 核心公式:见上图
-R_w2c = I + n_vector_invert + np.dot(n_vector_invert, n_vector_invert)/(1+c)
-print(R_w2c)

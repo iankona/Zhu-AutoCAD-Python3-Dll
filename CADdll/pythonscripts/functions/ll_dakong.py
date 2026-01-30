@@ -74,7 +74,7 @@ def lldk_rec_dis_circle_for():
     objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
     cirlce_center_list = []
     for objid in objidlist:
-        center = acad.GetEntityBoundCenterXY(objid)
+        center = acad.GetEntityBoundCenterXY0(objid)
         pline_point_list = acad.GetLWPolyLinePointList(objid)
         for i in range(len(pline_point_list)-1):
             pt1 = pline_point_list[i]

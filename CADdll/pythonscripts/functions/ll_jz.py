@@ -23,7 +23,7 @@ def lljz_gaiban_njfor(): # 盖板
     with acad.transaction() as trans:
         acad.ChangeObjectIdLayer(objidlist, "图层1")
         for objid in objidlist:
-            center = acad.GetEntityBoundCenterXY(objid)
+            center = acad.GetEntityBoundCenterXY0(objid)
             pline_point_list = acad.GetLWPolyLinePointList(objid)
             for i in range(len(pline_point_list)-1):
                 pt1 = pline_point_list[i]
@@ -72,7 +72,7 @@ def lljz_geban_njfor(): # 隔板
     with acad.transaction() as trans:
         acad.ChangeObjectIdLayer(objidlist, "图层1")
         for objid in objidlist:
-            center = acad.GetEntityBoundCenterXY(objid)
+            center = acad.GetEntityBoundCenterXY0(objid)
             pline_point_list = acad.GetLWPolyLinePointList(objid)
             for i in range(len(pline_point_list)-1):
                 pt1 = pline_point_list[i]

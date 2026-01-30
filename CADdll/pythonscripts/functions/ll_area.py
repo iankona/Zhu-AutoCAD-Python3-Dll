@@ -31,7 +31,7 @@ def llarea_rec_for():
     with acad.transaction() as trans:
         sumarea = 0.0 
         for i, objid in enumerate(objidlist):
-            pt1 = acad.GetEntityBoundCenterXY(objid)
+            pt1 = acad.GetEntityBoundCenterXY0(objid)
             area = acad.GetEntityArea(objid) / 1000000
             sumarea += area
             char = f"{i+1}面积{area:.2f}平米"
@@ -44,8 +44,8 @@ def llarea_rec_for():
 
 
 def cmd(command):
-    subp = subprocess.Popen(command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,encoding="utf-8")
-    subp.wait(2)
+    subp = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
+    subp.wait(30) #  等待30秒再查询结果
     if subp.poll() == 0:
         print(subp.communicate()[1])
     else:
@@ -70,7 +70,7 @@ def llarea_rec_for_save_excel():
     with acad.transaction() as trans:
         textlist, plinelist = [], []
         for objid in objidlist:
-            objref = acad.GetObjectForRead(objid)
+            objref = acad.TransObjectForRead(objid)
             objtype = str(objref.GetType())
             if objtype == "Autodesk.AutoCAD.DatabaseServices.DBText":
                 string = objref.TextString

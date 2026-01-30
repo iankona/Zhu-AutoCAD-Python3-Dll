@@ -6,12 +6,16 @@ import clr
 import System
 
 from Autodesk.AutoCAD.ApplicationServices import Application
-from Autodesk.AutoCAD.EditorInput import PromptStringOptions, SubtractedKeywords, AddedKeywords, PromptStatus, SelectionFilter, PromptSelectionOptions, SelectionSet, PromptIntegerOptions, PromptPointOptions, PromptDoubleOptions
-# from Autodesk.AutoCAD.Runtime
-from Autodesk.AutoCAD.DatabaseServices import Line, ObjectId, Transaction, OpenMode, BlockTable, BlockTableRecord, LayerTableRecord, ObjectIdCollection, TypedValue, DxfCode, DwgVersion
-from Autodesk.AutoCAD.DatabaseServices import Extents3d, Polyline, Polyline3d, Line, Circle, Poly3dType, DBText, Region, DBObjectCollection
+from Autodesk.AutoCAD.EditorInput import SelectionMethod, PromptStringOptions, SubtractedKeywords, AddedKeywords, PromptStatus, SelectionFilter, PromptSelectionOptions, SelectionSet, PromptIntegerOptions, PromptPointOptions, PromptDoubleOptions
+from Autodesk.AutoCAD.EditorInput import SelectedObject, SelectionMethod, PromptNestedEntityOptions
 
-from Autodesk.AutoCAD.Geometry import Point2d, Point3d, Point3dCollection, Matrix3d, Vector3d
+# from Autodesk.AutoCAD.Runtime
+from Autodesk.AutoCAD.DatabaseServices import Line, ObjectId, Transaction, OpenMode, BlockTable, BlockTableRecord, BlockReference, LayerTableRecord, ObjectIdCollection, TypedValue, DxfCode, DwgVersion
+from Autodesk.AutoCAD.DatabaseServices import DBPoint, Extents3d, Polyline, Polyline3d, Line, Circle, Poly3dType, DBText, Region, DBObjectCollection, Intersect
+from Autodesk.AutoCAD.DatabaseServices import RotatedDimension, AlignedDimension, FullSubentityPath, AssocPersSubentityIdPE
+
+
+from Autodesk.AutoCAD.Geometry import Point2d, Point3d, Point3dCollection, Matrix3d, Vector2d, Vector3d, DoubleCollection
 from Autodesk.AutoCAD.Colors import Color, ColorMethod
 
 
@@ -20,6 +24,11 @@ from Autodesk.AutoCAD.Geometry import Point2d, Point3d, Point3dCollection, Matri
 import System
 from Autodesk.AutoCAD.BoundaryRepresentation import PointContainment, Brep, Face, BrepEntity
 
+from System.Reflection import Assembly
+
+assemly = Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\Acdbmgd.dll")
+AssocPersSubentityIdPEType = assemly.GetType("Autodesk.AutoCAD.DatabaseServices.AssocPersSubentityIdPE")
+TypeObjectId = assemly.GetType("Autodesk.AutoCAD.DatabaseServices.ObjectId")
 
 # doc = Application.DocumentManager.MdiActiveDocument
 # doc.Editor.WriteMessage("Hello, python, 鹅鹅鹅")
@@ -214,6 +223,9 @@ def GetPoint(string="", base_point=[]):
     return None
 
 def GetPoint3(string1="", string2="", string3=""):
+    if string1 == "": string1 = "请选择第1个点:"
+    if string2 == "": string2 = "请选择第2个点:"
+    if string3 == "": string3 = "请选择第3个点:"
     pt1 = GetPoint(string1)
     if pt1 == None: return None, None, None
     pt2 = GetPoint(string2)
@@ -331,8 +343,73 @@ def EntSelEntity(string: str=""):
     return result.ObjectId
 
 
+
+
+def EntSelSub(dxfcode_filter_list=[], string: str=""):
+    # Erroer 001 
+    # if string == "": string = "请选择对象: "
+    # result = ed.GetEntity(string)  # == AutoLisp entsel
+    # objid = result.ObjectId
+    # pickpoint = result.PickedPoint
+    # selectobject = SelectedObject(objid, SelectionMethod.SubEntity, System.IntPtr.Zero)
+    # print(selectobject.GetSubentities())
+
+    # # Erroer 002
+    # option = PromptNestedEntityOptions("\nPick a nested entity:")
+    # result = ed.GetNestedEntity(option)
+    # ids = [objid for objid in result.GetContainers()][::-1] # 可以选择block里的圆弧等对象
+    # target_id = result.ObjectId
+    # result_ids = ids + [target_id]
+    # subent = SubentityId(SubentityType.Null, System.IntPtr.Zero)
+    # path = FullSubentityPath(result_ids, subent)
+    # with transaction() as trans:
+    #     subobjref = trans.GetObject(result_ids[0], OpenMode.ForRead);                      
+    # subobjref.Highlight(path, False)
+    # print(option, "\n", result, "\n", ids, "\n", target_id, "\n", result_ids, "\n", subent, "\n", path, "\n", subobjref)
+
+    a = System.Array.CreateInstance(TypeObjectId, System.Int32(10)) # Autodesk.AutoCAD.DatabaseServices.ObjectId[]
+
+    result = ed.GetEntity(string) 
+    with transaction() as trans:
+        entity = trans.GetObject(result.ObjectId, OpenMode.ForWrite)
+    # path = entity.GetSubentityPathsAtGraphicsMarker(SubentityType.Edge, System.IntPtr.Zero, result.PickedPoint, Matrix3d.Identity, System.Array.CreateInstance(TypeObjectId, System.Int32(10))) # 
+    path = entity.GetSubentityPathsAtGraphicsMarker(SubentityType.Edge, System.Int64(0), result.PickedPoint, Matrix3d.Identity, System.Int32(0), System.Array.CreateInstance(TypeObjectId, System.Int32(10))) # 
+    
+    entity.Highlight(path[0], highlightAll=False)
+
+
+
+
+    # # Erroer 003
+    # per = ed.GetEntity(string) 
+    # with transaction() as trans:
+    #     entity = trans.GetObject(per.ObjectId, OpenMode.ForRead)
+    # entId = [entity.ObjectId]
+    # pSubentityIdPE = entity.QueryX(AssocPersSubentityIdPE.GetClass(AssocPersSubentityIdPEType)) # 索引超出了数组界限。在 Autodesk.AutoCAD.Runtime.RXObject.GetClass(Type type)
+    # # No method matches given arguments for RXObject.GetClass: (<class 'clr._internal.GCOffsetBase'>)
+    # if pSubentityIdPE == System.IntPtr.Zero: return 
+    # subentityIdPE = AssocPersSubentityIdPE.Creat(pSubentityIdPE, False)
+    # vertexIds = subentityIdPE.GetAllSubentities(entity, SubentityType.Vertex)
+    # for subentId in vertexIds:
+    #     path = FullSubentityPath(entId, subentId)
+    #     point = entity.GetSubentity(path) # DBPoint
+    #     print(point)
+
+    # edgeIds = subentityIdPE.GetAllSubentities(entity, SubentityType.Edge)
+    # for subentId in edgeIds:
+    #     path = FullSubentityPath(entId, subentId)
+    #     edge = entity.GetSubentity(path) # Entity
+
+    # faceIds = subentityIdPE.GetAllSubentities(entity, SubentityType.Face)
+    # for subentId in faceIds:
+    #     path = FullSubentityPath(entId, subentId)
+    #     face = entity.GetSubentity(path) # Entity
+
+
+
+
+
 def EntSel(dxfcode_filter_list=[], string: str=""):
-    # ed.GetEntity 与 While Ture 循环 不兼容
     # if string == "": string = "请选择对象: "
     # result = ed.GetEntity(string)  # == AutoLisp entsel
     # Prompt(f"(图元: {result.ObjectId})\n")
@@ -412,7 +489,7 @@ def SSGet(dxfcode_filter_list=[], sel_method="", string="", sssetfirst=False): #
 def SSGetIdList(dxfcode_filter_list=[], sel_method="", string="", sssetfirst=False):
     ss1 = SSGet(dxfcode_filter_list, sel_method, string, sssetfirst)
     if ss1 == None: return []
-    return ss1.GetObjectIds()
+    return [objid for objid in ss1.GetObjectIds()]
 
 def SSGetDbObjectCollection(dxfcode_filter_list=[]):
     ss1 = SSGet(dxfcode_filter_list)
@@ -440,6 +517,27 @@ def SSSetFirst(ss1):
     ed.SetImpliedSelection(ss1) # (sssetfirst nil ss1)
 
 
+def GetExplode(objid):
+    with transaction() as trans:
+        entity = trans.GetObject(objid, OpenMode.ForWrite)
+        result = DBObjectCollection()
+        entity.Explode(result)
+        for objref in result:
+            AddDBObject(objref)
+        entity.Erase()
+    return [objref.ObjectId for objref in result]
+
+
+def TransExplode(objid):
+    entity = trans.GetObject(objid, OpenMode.ForWrite)
+    result = DBObjectCollection()
+    entity.Explode(result)
+    for objref in result:
+        AddDBObject(objref)
+    entity.Erase()
+    return [objref.ObjectId for objref in result]
+
+
 # Point3d center = Point3d(1000, 0, 0)
 # Vector3d normal = Vector3d(0, 0, 1)
 # Circle circle1 = Circle(center, normal, 1000)
@@ -447,7 +545,7 @@ def SSSetFirst(ss1):
 # circle1.Thickness = 5
 def TransCopy(objid, sourcept=[0,0,0], targetpt=[0,0,0], layer_name="", color_index=0):
     pt1, pt2 = Vec2toVec3(sourcept), Vec2toVec3(targetpt)
-    dr1 = Direct(sourcept, targetpt)
+    dr1 = Direct(pt1, pt2)
     vecdr = Vector3d(*dr1)
     matrix4x4 = Matrix3d.Displacement(vecdr)
     entity = trans.GetObject(objid, OpenMode.ForRead)
@@ -465,6 +563,16 @@ def TransRoationCopy(objid, angle, axis=[], center=[], layer_name="", color_inde
     copyentity = entity.GetTransformedCopy(matrix4x4)
     AddDBObject(copyentity, layer_name, color_index)
     return copyentity
+
+
+def TransMove(objid, sourcept=[0,0,0], targetpt=[0,0,0], layer_name="", color_index=0):
+    pt1, pt2 = Vec2toVec3(sourcept), Vec2toVec3(targetpt)
+    dr1 = Direct(pt1, pt2)
+    vecdr = Vector3d(*dr1)
+    matrix4x4 = Matrix3d.Displacement(vecdr)
+    entity = trans.GetObject(objid, OpenMode.ForWrite)
+    entity.TransformBy(matrix4x4)
+    return entity
 
 
 def TransRoation(objid, angle, axis=[], center=[]):
@@ -528,7 +636,19 @@ def AddLWPolyLine(ptlist, layer_name="", color_index=0):
     return pline
 
 
-def AddPoint():pass
+def AddPoint(pt1, layer_name="", color_index=0):
+    point = DBPoint(ToPoint3d(pt1))
+    AddDBObject(point, layer_name, color_index)
+    return point
+
+def AddPointCloud(pt1, color_rgb=[255,255,255]):
+    r, g, b = color_rgb
+    point = DBPoint(ToPoint3d(pt1))
+    point.Color = Color.FromRgb(System.Byte(r), System.Byte(g), System.Byte(b))
+    AddDBObject(point)
+    return point
+
+
 
 def AddText(pt1, string="单行文字", size=50, layer_name="", color_index=0):
     text = DBText()
@@ -541,6 +661,37 @@ def AddText(pt1, string="单行文字", size=50, layer_name="", color_index=0):
     # text.AlignmentPoint = text.Position # 设置对齐点
     AddDBObject(text, layer_name, color_index)
     return text
+
+
+# Autodesk.AutoCAD.DatabaseServices.AlignedDimension
+# DIMALIGNED
+def AddDal(pt1, pt2, pt3, dimstylenum=0, layer_name="", color_index=0):
+    return AddAlignedDimension(pt1, pt2, pt3, dimstylenum, layer_name, color_index)
+def AddAlignedDimension(pt1, pt2, pt3, dimstylenum=0, layer_name="", color_index=0):
+    dal = AlignedDimension()
+    dal.XLine1Point = ToPoint3d(pt1)
+    dal.XLine2Point = ToPoint3d(pt2)
+    dal.DimLinePoint = ToPoint3d(pt3)
+    AddDBObject(dal, layer_name, color_index)
+    return dal
+
+
+
+# Autodesk.AutoCAD.DatabaseServices.RotatedDimension
+# DIMLINEAR
+def AddDim(pt1, pt2, pt3, dimstylenum=0, layer_name="", color_index=0):
+    return AddRotatedDimension(pt1, pt2, pt3, dimstylenum, layer_name, color_index)
+def AddRotatedDimension(pt1, pt2, pt3, dimstylenum=0, layer_name="", color_index=0):
+    angle = AngleFromCrossDr1Dr2(Direct(pt1, pt2), [1,0,0])
+    if angle <  45: angle = 0
+    if angle >= 45: angle = 90
+    dim = RotatedDimension()
+    dim.XLine1Point = ToPoint3d(pt1)
+    dim.XLine2Point = ToPoint3d(pt2)
+    dim.Rotation = Angle2Rad(angle)
+    dim.DimLinePoint = ToPoint3d(pt3)
+    AddDBObject(dim, layer_name, color_index)
+    return dim
 
 
 def AddPolyline3d(ptlist, layer_name="", color_index=0):
@@ -573,6 +724,52 @@ def AddDBObject(dbobjref, layer_name="", color_index=0):
     objid = currentblock.AppendEntity(dbobjref)
     trans.AddNewlyCreatedDBObject(dbobjref, True)
     return objid
+
+
+zhu_block_name_count = 1
+def CalcBlockName():
+    global zhu_block_name_count
+    timestr = time.strftime("%Y%m%d%H%M%S")
+    namestr = f"ZBlock"+timestr+f"{zhu_block_name_count:03d}"
+    Prompt(namestr)
+    zhu_block_name_count += 1
+    if zhu_block_name_count > 999: zhu_block_name_count = 1
+    return namestr
+
+def AddBlockFromIdList(objidlist, base_point=[0,0,0]):
+    # 创建块
+    block = BlockTableRecord()
+    block.Name = CalcBlockName()
+    block.Origin = ToPoint3d(base_point)
+    for objid in objidlist:
+        objref = trans.GetObject(objid, OpenMode.ForWrite)
+        block.AppendEntity(objref.Clone()), objref.Erase()
+        # block.AppendEntity(objref) # eAlreadyInDb 在 Autodesk.AutoCAD.DatabaseServices.BlockTableRecord.AppendEntity(Entity entity)
+    # 需要先往block里添加对象，才能往blocktable和db里添加对象，这样才能正确显示块
+    blocktable = trans.GetObject(db.BlockTableId, OpenMode.ForWrite)
+    blockobjid = blocktable.Add(block)
+    trans.AddNewlyCreatedDBObject(block, True)
+    # 插入块
+    blockref = BlockReference(block.Origin, blockobjid)
+    AddDBObject(blockref)
+    return blockref
+
+def AddBlockFromRefList(objreflist, base_point=[0,0,0]):
+    # 创建块
+    block = BlockTableRecord()
+    block.Name = CalcBlockName()
+    block.Origin = ToPoint3d(base_point)
+    for objref in objreflist:
+        block.AppendEntity(objref)
+        # block.AppendEntity(objref) # eAlreadyInDb 在 Autodesk.AutoCAD.DatabaseServices.BlockTableRecord.AppendEntity(Entity entity)
+    # 需要先往block里添加对象，才能往blocktable和db里添加对象，这样才能正确显示块
+    blocktable = trans.GetObject(db.BlockTableId, OpenMode.ForWrite)
+    blockobjid = blocktable.Add(block)
+    trans.AddNewlyCreatedDBObject(block, True)
+    # 插入块
+    blockref = BlockReference(block.Origin, blockobjid)
+    AddDBObject(blockref)
+    return blockref
 
 
 def TransObjectForRead(objid):
@@ -619,7 +816,7 @@ def TransLWPolyLineStartMid(objid:ObjectId):
     return mid
 
 
-def TransWPolyLineNormal(objid:ObjectId):
+def TransLWPolyLineNormal(objid:ObjectId):
     pline = trans.GetObject(objid, OpenMode.ForRead)
     return pline.Normal
 
@@ -807,6 +1004,17 @@ def ToPoint3d(pt0):
     return Point3d(x, y, z)
 
 
+# def ToVector2d(pt0):
+#     x, y = pt0[0:2]
+#     return Vector2d(x, y)
+
+
+def ToVector3d(pt0):
+    try: x, y, z = pt0
+    except: [x, y], z = pt0, 0
+    return Vector3d(x, y, z)
+
+
 def Normalized(x, y, z = 0):
     a = x**2 + y**2 + z**2
     distance = math.sqrt(a)
@@ -924,11 +1132,22 @@ def DirectListToPointList(pt, drlist):
 
 
 
-def AngleFromDr1Dr2(dr1=[1,0,0], dr2=[0,0,1]):
+def AngleFromDotDr1Dr2(dr1=[1,0,0], dr2=[0,0,1]):
     cos = DotNormal(dr1, dr2)
     rad = math.acos(cos)
     angle = rad * 57.2957795
     return angle
+
+
+
+def AngleFromCrossDr1Dr2(dr1=[1,0,0], dr2=[0,0,1]):
+    normal = CrossNormal(dr1, dr2)
+    length = Distance([0,0,0], normal)
+    sin = length
+    rad = math.asin(sin)
+    angle = rad * 57.2957795
+    return angle
+
 
 
 def GetAttachGapAGapBPt1Pt2(pt1, pt2, gapa, gapb):
@@ -1194,6 +1413,89 @@ def GetEntityNormal(objid:ObjectId):
     return normal
 
 
+def GetIdListBoundXYZ(objidlist):
+    with transaction() as trans:
+        extend = Extents3d()
+        for objid in objidlist:
+            objref = trans.GetObject(objid, OpenMode.ForRead)
+            extend.AddExtents(objref.GeometricExtents) 
+        point1 = extend.MinPoint
+        point2 = extend.MaxPoint
+    return [point1.X, point1.Y, point1.Z], [point2.X, point2.Y, point2.Z]
+
+def GetIdListBoundCenterXYZ(objidlist):
+    with transaction() as trans:
+        extend = Extents3d()
+        for objid in objidlist:
+            objref = trans.GetObject(objid, OpenMode.ForRead)
+            extend.AddExtents(objref.GeometricExtents) 
+        point1 = extend.MinPoint
+        point2 = extend.MaxPoint
+    return [(point1.X+point2.X)/2, (point1.Y+point2.Y)/2, (point1.Z+point2.Z)/2]
+
+def GetIdListBoundXY0(objidlist):
+    with transaction() as trans:
+        extend = Extents3d()
+        for objid in objidlist:
+            objref = trans.GetObject(objid, OpenMode.ForRead)
+            extend.AddExtents(objref.GeometricExtents) 
+        point1 = extend.MinPoint
+        point2 = extend.MaxPoint
+    return [point1.X, point1.Y, 0], [point2.X, point2.Y, 0]
+
+def GetIdListBoundCenterXY0(objidlist):
+    with transaction() as trans:
+        extend = Extents3d()
+        for objid in objidlist:
+            objref = trans.GetObject(objid, OpenMode.ForRead)
+            extend.AddExtents(objref.GeometricExtents) 
+        point1 = extend.MinPoint
+        point2 = extend.MaxPoint
+    return [(point1.X+point2.X)/2, (point1.Y+point2.Y)/2, 0]
+
+
+
+def GetRefListBoundXYZ(objreflist):
+    with transaction() as trans:
+        extend = Extents3d()
+        for objref in objreflist:
+            extend.AddExtents(objref.GeometricExtents) 
+        point1 = extend.MinPoint
+        point2 = extend.MaxPoint
+    return [point1.X, point1.Y, point1.Z], [point2.X, point2.Y, point2.Z]
+
+
+def GetRefListBoundCenterXYZ(objreflist):
+    with transaction() as trans:
+        extend = Extents3d()
+        for objref in objreflist:
+            extend.AddExtents(objref.GeometricExtents) 
+        point1 = extend.MinPoint
+        point2 = extend.MaxPoint
+    return [(point1.X+point2.X)/2, (point1.Y+point2.Y)/2, (point1.Z+point2.Z)/2]
+
+def GetRefListBoundXY0(objreflist):
+    with transaction() as trans:
+        extend = Extents3d()
+        for objref in objreflist:
+            extend.AddExtents(objref.GeometricExtents) 
+        point1 = extend.MinPoint
+        point2 = extend.MaxPoint
+    return [point1.X, point1.Y, 0], [point2.X, point2.Y, 0]
+
+
+def GetRefListBoundCenterXY0(objreflist):
+    with transaction() as trans:
+        extend = Extents3d()
+        for objref in objreflist:
+            extend.AddExtents(objref.GeometricExtents) 
+        point1 = extend.MinPoint
+        point2 = extend.MaxPoint
+    return [(point1.X+point2.X)/2, (point1.Y+point2.Y)/2, 0]
+
+
+
+
 def GetSSBoundXYZ(ss1:SelectionSet):
     with transaction() as trans:
         extend = Extents3d()
@@ -1323,6 +1625,11 @@ def GetOSMODE():
 
 def SetOSMODE():
     Application.SetSystemVariable("OSMODE", System.Int32(ll_old_osmode))
+
+
+
+
+
 
 
 
@@ -1573,3 +1880,44 @@ def CommandChangeStandardFontStyle(new_font_name:str):
 # 方法2
 # 通过两个向量的法向量的叉乘的模长的反正弦获取弧度，然后通过弧度获取角度
 # Mathf.Asin(Vector3.Distance(Vector3.zero,Vector3.Cross(a.normal,b.normal)))* Mathf.Rad2Deg
+
+
+# def CloseOSNap(mode="节点"):
+#     osmode = Application.GetSystemVariable("OSMODE")
+#     match mode:
+#         case "": Application.SetSystemVariable("OSMODE", System.Int32(ll_old_osmode))
+
+# 0  NON（无）
+# 1  END（端点）
+# 2  MID（中点）
+# 4  CEN（圆心）
+# 8  NOD（节点）
+# 16  QUA（象限点）
+# 32  INT（交点）
+# 64  INS（插入点）
+# 128  PER（垂足）
+# 256  TAN（切点）
+# 512  NEA（最近点）
+# 1024  QUI（快速）
+# 2048  APP（外观交点）
+# 4096  EXT（尺寸线）
+# 8192  PAR（平行）
+
+
+
+
+# 0  NON（无）
+# 1  END（端点）
+# 2  MID（中点）
+# 4  CEN（圆心）
+# 8  NOD（节点）
+# 16  QUA（象限点）
+# 32  INT（交点）
+# 64  INS（插入点）
+# 128  PER（垂足）
+# 256  TAN（切点）
+# 512  NEA（最近点）
+# 1024  QUI（快速）
+# 2048  APP（外观交点）
+# 4096  EXT（尺寸线）
+# 8192  PAR（平行）

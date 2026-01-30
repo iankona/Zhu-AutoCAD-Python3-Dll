@@ -6,13 +6,13 @@ import academit
 import System
 
 def 命令(): 
-    academit.添加命令("ll-calc", ll_calc)
+    academit.添加命令("llcalc", llcalc)
     # academit.添加命令("ll-entsel", ll_entsel)
 
 text_size = 50
 
 @acad.decorator_command_undo
-def ll_calc():
+def llcalc():
     global text_size
     string = ""
     while True:
@@ -25,6 +25,7 @@ def ll_calc():
     string = string.replace("=", "")
     string = string.replace("\n", "")
     if string != "": 
+        acad.Prompt(string)
         result = eval(string)
         string = f"= {string} = {result}"
         acad.CommandAddText(pt1, string, text_size)
