@@ -84,16 +84,16 @@ def llsl_layer_and_color():
 
 @acad.decorator_command
 def llsl(): 
-    acad.SSGet()
+    acad.SSGet(sssetfirst=True)
 
 
 @acad.decorator_command
 def llsl_point(): 
-    acad.SSGet([[0, "POINT"]])
+    acad.SSGet([[0, "POINT"]], sssetfirst=True)
 
 @acad.decorator_command
 def llsl_line(): 
-    acad.SSGet([[0, "LINE"]])
+    acad.SSGet([[0, "LINE"]], sssetfirst=True)
 
 
 @acad.decorator_command
@@ -101,75 +101,75 @@ def llsl_pl():
     flist = [
         [-4, "<OR"],[0, "LWPOLYLINE"],[0, "POLYLINE"], [-4, "OR>"]
         ]
-    acad.SSGet(flist)
+    acad.SSGet(flist, sssetfirst=True)
 
 @acad.decorator_command
 def llsl_lwpl(): 
-    acad.SSGet([[0, "LWPOLYLINE"]])
+    acad.SSGet([[0, "LWPOLYLINE"]], sssetfirst=True)
 
 @acad.decorator_command
 def llsl_3dpl(): 
-    acad.SSGet([[0, "POLYLINE"]])
+    acad.SSGet([[0, "POLYLINE"]], sssetfirst=True)
 
 @acad.decorator_command
 def llsl_spline(): 
-    acad.SSGet([[0, "SPLINE"]])
+    acad.SSGet([[0, "SPLINE"]], sssetfirst=True)
 
 
 @acad.decorator_command
 def llsl_arc(): 
-    acad.SSGet([[0, "ARC"]])
+    acad.SSGet([[0, "ARC"]], sssetfirst=True)
 
 
 @acad.decorator_command
 def llsl_circle(): 
-    acad.SSGet([[0, "CIRCLE"]])
+    acad.SSGet([[0, "CIRCLE"]], sssetfirst=True)
 
 @acad.decorator_command
 def llsl_ellipse(): # 椭圆
-    acad.SSGet([[0, "ELLIPSE"]])
+    acad.SSGet([[0, "ELLIPSE"]], sssetfirst=True)
 
 @acad.decorator_command
 def llsl_region(): 
-    acad.SSGet([[0, "REGION"]])
+    acad.SSGet([[0, "REGION"]], sssetfirst=True)
 
 @acad.decorator_command
 def llsl_text(): 
     flist = [
         [-4, "<OR"],[0, "TEXT"],[0, "MTEXT"], [-4, "OR>"]
         ]
-    acad.SSGet(flist)
+    acad.SSGet(flist, sssetfirst=True)
 
 @acad.decorator_command
 def llsl_dtext(): 
-    acad.SSGet([[0, "TEXT"]])
+    acad.SSGet([[0, "TEXT"]], sssetfirst=True)
 
 @acad.decorator_command
 def llsl_mtext(): 
-    acad.SSGet([[0, "MTEXT"]])
+    acad.SSGet([[0, "MTEXT"]], sssetfirst=True)
 
 @acad.decorator_command
 def llsl_dim(): 
     flist = [
         [-4, "<OR"], [0, "DIMENSION"], [0, "*LEADER"], [-4, "OR>"]
         ]
-    acad.SSGet(flist)
+    acad.SSGet(flist, sssetfirst=True)
 
 @acad.decorator_command
 def llsl_dimension(): 
-    acad.SSGet([[0, "DIMENSION"]])
+    acad.SSGet([[0, "DIMENSION"]], sssetfirst=True)
 
 @acad.decorator_command
 def llsl_leader(): 
-    acad.SSGet([[0, "LEADER"]]) # == qleader
+    acad.SSGet([[0, "LEADER"]], sssetfirst=True) # == qleader
 
 @acad.decorator_command
 def llsl_mleader(): 
-    acad.SSGet([[0, "MULTILEADER"]])
+    acad.SSGet([[0, "MULTILEADER"]], sssetfirst=True)
 
 @acad.decorator_command
 def llsl_block(): 
     flist = [
         [-4, "<OR"],[0, "*INSERT"], [2, "BLOCKDEFAULT*"], [-4, "OR>"]
         ]
-    acad.SSGet(flist)
+    acad.SSGet(flist, sssetfirst=True)

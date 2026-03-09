@@ -17,17 +17,17 @@ def 命令():
     academit.添加命令("llyx-rec-sidex-w-for", llyx_rec_sidex_w_for)
     academit.添加命令("llyx-rec-sidex-set-for", llyx_rec_sidex_set_for)
     pass
-
-offset_length = 50
+zhu_ness_length = 0
+zhu_offset_length = 50
 @acad.decorator_command
 def llyx_for():
-    global offset_length
-    length = acad.GetDouble(offset_length, "请输入偏移大小: ")
+    global zhu_offset_length
+    length = acad.GetDouble(zhu_offset_length, "请输入偏移大小: ")
     while True:
-        if length != None: offset_length = length
+        if length != None: zhu_offset_length = length
         pt1, pt2, pt3 = acad.GetPoint3("请选择第1个顶点: ", "请选择第2个顶点: ", "请点击方向顶点: ")
         if pt1 == None: break
-        dr1 = acad.GetPerDirectResetLengthXY(pt1, pt2, pt3, offset_length) # 点在线上，WhichSideOfLineXY 会出现cannot access local variable 'result' where it is not associated with a value
+        dr1 = acad.GetPerDirectResetLengthXY(pt1, pt2, pt3, zhu_offset_length) # 点在线上，WhichSideOfLineXY 会出现cannot access local variable 'result' where it is not associated with a value
         po1 = acad.Vec3Add(pt1, dr1)
         po2 = acad.Vec3Add(pt2, dr1)
         with acad.transaction() as trans:
@@ -36,13 +36,13 @@ def llyx_for():
 
 @acad.decorator_command_undo
 def llyx_side3_for():
-    global offset_length
-    length = acad.GetDouble(offset_length, "请输入偏移大小: ")
-    if length != None: offset_length = length
+    global zhu_offset_length
+    length = acad.GetDouble(zhu_offset_length, "请输入偏移大小: ")
+    if length != None: zhu_offset_length = length
     while True:
         pt1, pt2, pt3 = acad.GetPoint3("请选择第1个顶点: ", "请选择第2个顶点: ", "请点击方向顶点: ")
         if pt1 == None: break
-        dr1 = acad.GetPerDirectResetLengthXY(pt1, pt2, pt3, offset_length) # 点在线上，WhichSideOfLineXY 会出现cannot access local variable 'result' where it is not associated with a value
+        dr1 = acad.GetPerDirectResetLengthXY(pt1, pt2, pt3, zhu_offset_length) # 点在线上，WhichSideOfLineXY 会出现cannot access local variable 'result' where it is not associated with a value
         po1 = acad.Vec3Add(pt1, dr1)
         po2 = acad.Vec3Add(pt2, dr1)
         with acad.transaction() as trans:
@@ -75,8 +75,11 @@ def llyx_sidex_for():
 
 @acad.decorator_command
 def llyx_sidex_n_for():
+    # global zhu_ness_length
     列表 = acad.GetDoubleListLimitCount()
     if 列表 == None: return
+    # ness = acad.GetDouble(zhu_ness_length, "请输入板厚: ")
+    # if ness != None: zhu_ness_length = ness
     while True:
         pt1, pt2, pt3 = acad.GetPoint3("请选择第1个顶点: ", "请选择第2个顶点: ", "请点击方向顶点: ")
         if pt1 == None: break
@@ -95,30 +98,48 @@ def llyx_sidex_n_for():
 
 @acad.decorator_command
 def llyx_sidex_w_for():
+    global zhu_ness_length
     列表 = acad.GetDoubleListLimitCount()
     if 列表 == None: return
+    ness = acad.GetDouble(zhu_ness_length, "请输入板厚: ")
+    if ness != None: zhu_ness_length = ness
+
     while True:
         pt1, pt2, pt3 = acad.GetPoint3("请选择第1个顶点: ", "请选择第2个顶点: ", "请点击方向顶点: ")
         if pt1 == None: break
         with acad.transaction() as trans:
             dr1 = acad.GetPerDirectXY(pt1, pt2, pt3)
             for m, length in enumerate(列表):
-                dr1 = acad.Vec3ResetLength(dr1, length)
-                po1 = acad.Vec3Add(pt1, dr1)
-                po2 = acad.Vec3Add(pt2, dr1)
-                if m%2 == 1: po1, po2 = acad.GetAttachWDirectPointList(po1, po2, length)
-                line1 = acad.AddLine(pt1, po1)
-                line2 = acad.AddLine(pt2, po2)
-                line3 = acad.AddLine(po1, po2, "图层1")
-                pt1, pt2 = po1, po2
+                if m%2 == 1: 
+                    if zhu_ness_length != 0:
+                        po1, po2 = acad.GetAttachWDirectPointList(pt1, pt2, zhu_ness_length)
+                        line1 = acad.AddLine(pt1, po1)
+                        line2 = acad.AddLine(pt2, po2)
+                        pt1, pt2 = po1, po2
+                    dr1 = acad.Vec3ResetLength(dr1, length)
+                    po1 = acad.Vec3Add(pt1, dr1)
+                    po2 = acad.Vec3Add(pt2, dr1)
+                    po1, po2 = acad.GetAttachWDirectPointList(po1, po2, length)
+                    line1 = acad.AddLine(pt1, po1)
+                    line2 = acad.AddLine(pt2, po2)
+                    line3 = acad.AddLine(po1, po2, "图层1")
+                    pt1, pt2 = po1, po2
+                else:
+                    dr1 = acad.Vec3ResetLength(dr1, length)
+                    po1 = acad.Vec3Add(pt1, dr1)
+                    po2 = acad.Vec3Add(pt2, dr1)
+                    line1 = acad.AddLine(pt1, po1)
+                    line2 = acad.AddLine(pt2, po2)
+                    line3 = acad.AddLine(po1, po2, "图层1")
+                    pt1, pt2 = po1, po2
             line3.Layer = "0"
 
 
 @acad.decorator_command
 def llyx_rec_side3_for():
-    global offset_length
-    length = acad.GetDouble(offset_length, "请输入偏移大小: ")
-    if length != None: offset_length = length
+    global zhu_offset_length
+    length = acad.GetDouble(zhu_offset_length, "请输入偏移大小: ")
+    if length != None: zhu_offset_length = length
     objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
     with acad.transaction() as trans:
         acad.ChangeObjectIdLayer(objidlist, "图层1")
@@ -131,7 +152,7 @@ def llyx_rec_side3_for():
                 pt3 = center
                 perflag = acad.GetPerflagXY(pt1, pt2, pt3)
                 perflag = -perflag
-                dr1 = acad.GetPerDirectWithPerflagResetLengthXY(pt1, pt2, perflag, offset_length) 
+                dr1 = acad.GetPerDirectWithPerflagResetLengthXY(pt1, pt2, perflag, zhu_offset_length) 
                 po1 = acad.Vec3Add(pt1, dr1)
                 po2 = acad.Vec3Add(pt2, dr1)
                 acad.AddLine(pt1, po1)
@@ -168,13 +189,17 @@ def llyx_rec_sidex_for():
 
 @acad.decorator_command
 def llyx_rec_sidex_n_for():
+    # global zhu_ness_length
     列表 = acad.GetDoubleListLimitCount()
     if 列表 == []: return
+    # ness = acad.GetDouble(zhu_ness_length, "请输入板厚: ")
+    # if ness != None: zhu_ness_length = ness
+    
     objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
     with acad.transaction() as trans:
         acad.ChangeObjectIdLayer(objidlist, "图层1")
         for objid in objidlist:
-            center = acad.GetEntityBoundCenterXY(objid)
+            center = acad.GetEntityBoundCenterXY0(objid)
             pline_point_list = acad.GetLWPolyLinePointList(objid)
             for i in range(len(pline_point_list)-1):
                 pt1 = pline_point_list[i]
@@ -197,8 +222,12 @@ def llyx_rec_sidex_n_for():
 
 @acad.decorator_command
 def llyx_rec_sidex_w_for():
+    global zhu_ness_length
     列表 = acad.GetDoubleListLimitCount()
     if 列表 == None: return
+    ness = acad.GetDouble(zhu_ness_length, "请输入板厚: ")
+    if ness != None: zhu_ness_length = ness
+
     objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
     with acad.transaction() as trans:
         acad.ChangeObjectIdLayer(objidlist, "图层1")
@@ -213,14 +242,28 @@ def llyx_rec_sidex_w_for():
                 perflag = -perflag
                 dr1 = acad.GetPerDirectWithPerflagXY(pt1, pt2, perflag) 
                 for m, length in enumerate(列表):
-                    dr1 = acad.Vec3ResetLength(dr1, length)
-                    po1 = acad.Vec3Add(pt1, dr1)
-                    po2 = acad.Vec3Add(pt2, dr1)
-                    if m%2 == 1: po1, po2 = acad.GetAttachWDirectPointList(po1, po2, length)
-                    line1 = acad.AddLine(pt1, po1)
-                    line2 = acad.AddLine(pt2, po2)
-                    line3 = acad.AddLine(po1, po2, "图层1")
-                    pt1, pt2 = po1, po2
+                    if m%2 == 1: 
+                        if zhu_ness_length != 0:
+                            po1, po2 = acad.GetAttachWDirectPointList(pt1, pt2, zhu_ness_length)
+                            line1 = acad.AddLine(pt1, po1)
+                            line2 = acad.AddLine(pt2, po2)
+                            pt1, pt2 = po1, po2
+                        dr1 = acad.Vec3ResetLength(dr1, length)
+                        po1 = acad.Vec3Add(pt1, dr1)
+                        po2 = acad.Vec3Add(pt2, dr1)
+                        po1, po2 = acad.GetAttachWDirectPointList(po1, po2, length)
+                        line1 = acad.AddLine(pt1, po1)
+                        line2 = acad.AddLine(pt2, po2)
+                        line3 = acad.AddLine(po1, po2, "图层1")
+                        pt1, pt2 = po1, po2
+                    else:
+                        dr1 = acad.Vec3ResetLength(dr1, length)
+                        po1 = acad.Vec3Add(pt1, dr1)
+                        po2 = acad.Vec3Add(pt2, dr1)
+                        line1 = acad.AddLine(pt1, po1)
+                        line2 = acad.AddLine(pt2, po2)
+                        line3 = acad.AddLine(po1, po2, "图层1")
+                        pt1, pt2 = po1, po2
                 line3.Layer = "0"
 
 

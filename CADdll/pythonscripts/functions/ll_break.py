@@ -5,7 +5,8 @@ import System
 
 def 命令(): 
     academit.添加命令("ll-break-point", ll_break_point)
-    academit.添加命令("ll-break-entity", ll_break_entity)
+    academit.添加命令("ll-break-line-use-select", ll_break_line_use_select)
+    academit.添加命令("ll-break-select-use-line", ll_break_select_use_line)
     academit.添加命令("ll-break-all", ll_break_all)
 
 
@@ -40,7 +41,7 @@ def ll_break_point():
 
 
 @acad.decorator_command
-def ll_break_entity():# IntersectWith
+def ll_break_line_use_select():# IntersectWith # break line or curve
     objid = acad.EntSel(string="请选择要打断的对象:")
     objidlist = acad.SSGetIdList(string="请选择参考线:")   
     with acad.transaction() as trans:
@@ -68,6 +69,38 @@ def ll_break_entity():# IntersectWith
                 objrefsub.ColorIndex = i
                 acad.AddDBObject(objrefsub)
             objref1.Erase()
+
+
+
+@acad.decorator_command
+def ll_break_select_use_line():# IntersectWith
+    objidlist = acad.SSGetIdList(string="请选择要打断的对象: ")   
+    objid2 = acad.EntSel(string="请选择参考线: ")
+    with acad.transaction() as trans:
+        objref2 = acad.TransObjectForWrite(objid2)
+        for objid1 in objidlist:
+            objref1 = acad.TransObjectForWrite(objid1)
+            collect = acad.Point3dCollection() 
+            objref1.IntersectWith(objref2, acad.Intersect.OnBothOperands, collect, System.IntPtr.Zero, System.IntPtr.Zero)
+            point_list = []
+            for point in collect: 
+                point_list.append(point)
+
+            if point_list != []:
+                para_list = []
+                for point in point_list:
+                    para = objref1.GetParameterAtPoint(point)
+                    para_list.append(para)
+                para_list.sort()
+                collect = acad.DoubleCollection()
+                for para in para_list:
+                    collect.Add(para)
+                result = objref1.GetSplitCurves(collect)
+                for i, objrefsub in enumerate(result):
+                    objrefsub.ColorIndex = i
+                    acad.AddDBObject(objrefsub)
+                objref1.Erase()
+
 
 @acad.decorator_command
 def ll_break_all():# IntersectWith

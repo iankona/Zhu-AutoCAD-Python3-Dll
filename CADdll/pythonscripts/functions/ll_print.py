@@ -7,7 +7,7 @@ import System
 
 def 命令(): 
     academit.添加命令("ll-print", ll_print)
-    academit.添加命令("ll-print-bound", ll_print_bound)    
+    # academit.添加命令("ll-print-bound", ll_print_bound)    
     academit.添加命令("ll-print-corner", ll_print_corner)
     academit.添加命令("ll-print-corner-cross", ll_print_corner_cross)
     academit.添加命令("ll-print-frence", ll_print_frence)
@@ -16,6 +16,7 @@ def 命令():
     academit.添加命令("ll-print-point-in-bound", ll_print_point_in_bound)
     academit.添加命令("ll-print-include", ll_print_include)
     academit.添加命令("ll-print-dr1dr2-angle", ll_print_dr1dr2_angle)
+    academit.添加命令("ll-print-bound-xyz-for", ll_print_bound_xyz_for)
 
 
 @acad.decorator_command
@@ -67,12 +68,12 @@ def ll_print():
         # acad.Prompt(objref.GetType()) # Autodesk.AutoCAD.DatabaseServices.DBPoint
 
 
-@acad.decorator_command
-def ll_print_bound():
-    objid = acad.EntSel()
-    pt1, pt2 = acad.GetEntityBound(objid)
-    acad.CommandAddPoint(pt1)
-    acad.CommandAddPoint(pt2)
+# @acad.decorator_command
+# def ll_print_bound():
+#     objid = acad.EntSel()
+#     pt1, pt2 = acad.GetEntityBound(objid)
+#     acad.CommandAddPoint(pt1)
+#     acad.CommandAddPoint(pt2)
 
 
 
@@ -130,6 +131,19 @@ def ll_print_current_layer():
         layer_record = acad.GetObjectForRead(objid)
         acad.Prompt(layer_record.Name), acad.Prompt("\n")        
         acad.Prompt(layer_record.Color.ColorIndex)
+
+
+
+@acad.decorator_command
+def ll_print_bound_xyz_for():
+    objlist = acad.SSGetIdList()
+    with acad.transaction() as trans:
+        for objid in objlist:
+            ptmin, ptmax = acad.TransEntityBoundXYZ(objid) #extand
+            print([ptmin, ptmax])
+            acad.Prompt([ptmin, ptmax]), acad.Prompt("\n")  
+
+
 
 
 

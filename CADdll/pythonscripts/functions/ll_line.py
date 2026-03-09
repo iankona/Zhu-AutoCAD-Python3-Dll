@@ -21,7 +21,7 @@ from Autodesk.AutoCAD.Geometry import Point3d
 
 
 def 命令(): 
-    academit.添加命令("ll-line", ll_line)
+    academit.添加命令("ll-line-for", ll_line_for)
     academit.添加命令("ll-pline-point", ll_pline_point)
     academit.添加命令("ll-offset", ll_offset)
     academit.添加命令("ll-get-osmode", 函数2)
@@ -29,14 +29,21 @@ def 命令():
 
 
 @acad.decorator_command
-def ll_line():
+def ll_line_for():
+    while True:
+        pt1, pt2 = acad.GetPoint2("请选择1个点: ","请选择2个点: ")
+        if pt1 == None: break
+        with acad.transaction() as trans:
+            acad.AddLine(pt1, pt2)
+        
+
+def ll_line_test():
     with acad.transaction() as trans:
         acad.AddLine([50.5,50], [500,500])
         acad.AddPolyline([[100,100], [100,300], [300,500], [400,600], [100,100]], "图层2", 2)
         # acad.AddRect([1000,1000], [1500,1800])
         # acad.AddCircle([1000,1000], 500)
         # acad.AddCircle([1500,1000], 300)
-
 
 
 

@@ -222,6 +222,17 @@ def GetPoint(string="", base_point=[]):
     if result.Status == PromptStatus.OK: return [result.Value.X, result.Value.Y, result.Value.Z]
     return None
 
+
+def GetPoint2(string1="", string2=""):
+    if string1 == "": string1 = "请选择第1个点:"
+    if string2 == "": string2 = "请选择第2个点:"
+    pt1 = GetPoint(string1)
+    if pt1 == None: return None, None
+    pt2 = GetPoint(string2, pt1)
+    if pt2 == None: return None, None
+    return pt1, pt2
+
+
 def GetPoint3(string1="", string2="", string3=""):
     if string1 == "": string1 = "请选择第1个点:"
     if string2 == "": string2 = "请选择第2个点:"
@@ -339,11 +350,10 @@ def Prompt(string):
 def EntSelEntity(string: str=""):
     if string == "": string = "请选择对象: "
     result = ed.GetEntity(string)  # == AutoLisp entsel
-    Prompt(f"(图元: {result.ObjectId})\n")
-    return result.ObjectId
-
-
-
+    Prompt(f"[{result.PickedPoint}, (图元: {result.ObjectId})]\n")
+    pickpoint = [result.PickedPoint.X, result.PickedPoint.Y, result.PickedPoint.Z]
+    objid = result.ObjectId
+    return [pickpoint, objid]
 
 def EntSelSub(dxfcode_filter_list=[], string: str=""):
     # Erroer 001 
@@ -404,9 +414,6 @@ def EntSelSub(dxfcode_filter_list=[], string: str=""):
     # for subentId in faceIds:
     #     path = FullSubentityPath(entId, subentId)
     #     face = entity.GetSubentity(path) # Entity
-
-
-
 
 
 def EntSel(dxfcode_filter_list=[], string: str=""):
@@ -710,10 +717,10 @@ def AddRegion(dbobj_collect:DBObjectCollection, layer_name="", color_index=0):
     return regions
 
 
-def AddCircle(center, radius, layer_name="", color_index=0):
+def AddCircle(center, radius, normal=[0,0,1], layer_name="", color_index=0):
     circle = Circle()
     circle.Center = ToPoint3d(center)
-    circle.Normal = Vector3d(0, 0, 1)
+    circle.Normal = ToVector3d(normal)
     circle.Radius = radius
     AddDBObject(circle, layer_name, color_index)
     return circle
@@ -1026,12 +1033,12 @@ def Vec3ResetLength(dr1, length):
     x, y, z = x*length, y*length, z*length
     return [x, y, z]
 
-def VecXcomponent(pt1):
-    pass
-def VecYcomponent(pt1):
-    pass
-def VecZcomponent(pt1):
-    pass
+# def VecXcomponent(pt1):
+#     pass
+# def VecYcomponent(pt1):
+#     pass
+# def VecZcomponent(pt1):
+#     pass
 
 def Vec2toVec3(pt0):
     try: x, y, z = pt0
@@ -1147,6 +1154,29 @@ def AngleFromCrossDr1Dr2(dr1=[1,0,0], dr2=[0,0,1]):
     rad = math.asin(sin)
     angle = rad * 57.2957795
     return angle
+
+
+
+def MatrixRotationPointList(center, axis, angle, ptlist=[]):
+    center = ToPoint3d(center)
+    axis = Vector3d(*axis) # direct
+    rad = angle * 0.01745329
+    matrix4x4 = Matrix3d.Rotation(rad, axis, center)
+
+    resultlist = []
+    for pt1 in ptlist:
+        point = ToPoint3d(pt1)
+        pt2 = point.TransformBy(matrix4x4)
+        point = ToPoint3d(pt1)
+        point.RotateBy(90, Vector3d(*axis), ToPoint3d(center))
+        # point.ScaleBy(double scaleFactor, Point3d centerPoint)
+        pt1 = [point.X, point.Y, point.Z]
+        resultlist.append(pt1)
+    return resultlist
+        
+        
+
+
 
 
 
@@ -1278,6 +1308,20 @@ def DirectToPerDirectXY(dr0, perflag):
         case  1: return [-y,  x,  z]
         case -1: return [ y, -x,  z]
         case  _: raise ValueError("...点在线上...")
+
+def GetPerDirect2XY(pt1, pt2):
+    direct  = Direct(pt1, pt2)
+    perdr1 = DirectToPerDirectXY(direct,  1)
+    perdr2 = DirectToPerDirectXY(direct, -1)
+    return perdr1, perdr2
+
+def GetPerDirect2ResetLengthXY(pt1, pt2, length):
+    direct  = Direct(pt1, pt2)
+    perdr1 = DirectToPerDirectXY(direct,  1)
+    perdr2 = DirectToPerDirectXY(direct, -1)
+    x1, y1, z1 = Normalized(*perdr1)
+    x2, y2, z2 = Normalized(*perdr2)
+    return [x1*length, y1*length, z1*length], [x2*length, y2*length, z2*length]
 
 
 

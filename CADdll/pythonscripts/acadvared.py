@@ -1,0 +1,3 @@
+class ZhuVar:
+    pass
+

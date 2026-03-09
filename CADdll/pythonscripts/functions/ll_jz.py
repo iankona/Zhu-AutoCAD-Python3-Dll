@@ -7,18 +7,21 @@ import System
 
 def 命令(): 
     # academit.添加命令("llyx", llyx)
-    academit.添加命令("lljz_gaiban_njfor", lljz_gaiban_njfor) # 盖板
-    academit.添加命令("lljz_geban_njfor", lljz_geban_njfor) # 隔板
+    academit.添加命令("lljz-gaiban-nj-for", lljz_gaiban_nj_for) # 盖板
+    academit.添加命令("lljz-geban-nj-for", lljz_geban_nj_for) # 隔板
     pass
 
-tube_length = 40
+zhu_tube_length = 40
+zhu_ende_length = 15
 
 @acad.decorator_command
-def lljz_gaiban_njfor(): # 盖板
-    global tube_length
-    length = acad.GetDouble(tube_length, f"请输入方管宽度: ") 
-    if length != None: tube_length = length
-    length_list = [tube_length, tube_length, 15]
+def lljz_gaiban_nj_for(): # 盖板
+    global zhu_tube_length, zhu_ende_length
+    length = acad.GetDouble(zhu_tube_length, f"请输入方管宽度: ") 
+    endgth = acad.GetDouble(zhu_ende_length, f"请输入勾边宽度: ")
+    if length != None: zhu_tube_length = length
+    if endgth != None: zhu_ende_length = endgth
+    length_list = [zhu_tube_length, zhu_tube_length, zhu_ende_length]
     objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
     with acad.transaction() as trans:
         acad.ChangeObjectIdLayer(objidlist, "图层1")
@@ -63,11 +66,13 @@ def lljz_gaiban_njfor(): # 盖板
 
 
 @acad.decorator_command
-def lljz_geban_njfor(): # 隔板
-    global tube_length
-    length = acad.GetDouble(tube_length, f"请输入方管宽度: ") 
-    if length != None: tube_length = length
-    length_list = [tube_length, tube_length, 15]
+def lljz_geban_nj_for(): # 隔板
+    global zhu_tube_length, zhu_ende_length
+    length = acad.GetDouble(zhu_tube_length, f"请输入方管宽度: ") 
+    endgth = acad.GetDouble(zhu_ende_length, f"请输入勾边宽度: ")
+    if length != None: zhu_tube_length = length
+    if endgth != None: zhu_ende_length = endgth
+    length_list = [zhu_tube_length, zhu_tube_length, zhu_ende_length]
     objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
     with acad.transaction() as trans:
         acad.ChangeObjectIdLayer(objidlist, "图层1")

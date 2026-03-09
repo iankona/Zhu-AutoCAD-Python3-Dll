@@ -20,6 +20,7 @@ def 命令():
     academit.添加命令("llregion-objidlist", llregion_objidlist) 
     academit.添加命令("llregion-rotate", llregion_rotate) 
     academit.添加命令("llregion-rotate-to-z-up", llregion_rotate_to_z_up)
+    academit.添加命令("llregion-rotate-to-z-up-negative", llregion_rotate_to_z_up_negative)
     academit.添加命令("llregion-rotate-point-cloud-to-z-up", llregion_rotate_point_cloud_to_z_up)
 
 
@@ -108,6 +109,26 @@ def llregion_rotate_to_z_up():
     with acad.transaction() as trans:
         acad.TransRoation(objid1, angle, axis, pt1)
     acad.Prompt(angle)
+
+
+@acad.decorator_command
+def llregion_rotate_to_z_up_negative():
+    objid1 = acad.EntSel([[0, "REGION"]])
+    pt1 = acad.GetPoint()
+    pt2 = acad.GetPoint()
+    normal = acad.GetEntityNormal(objid1)
+    normal = [normal.X, normal.Y, normal.Z]
+    angle = acad.AngleFromDotDr1Dr2(normal, [0,0,-1])
+    axis = acad.CrossNormal(normal, [0,0,-1])
+    # with acad.command_undo():
+    #     direct = acad.Direct(pt1, pt2)
+    #     po1, po2 = pt1, pt2
+    #     if acad.Dot(axis, direct) < 0: po1, po2 = pt2, pt1
+    #     acad.CommandRotate3d(objid1, po1, po2, angle)
+    with acad.transaction() as trans:
+        acad.TransRoation(objid1, angle, axis, pt1)
+    acad.Prompt(angle)
+
 
 
 @acad.decorator_command

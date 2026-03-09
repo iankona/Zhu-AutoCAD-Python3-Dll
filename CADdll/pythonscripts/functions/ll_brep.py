@@ -1,9 +1,13 @@
-  
+from Autodesk.AutoCAD.DatabaseServices import SubentityId, SubentityType, FullSubentityPath, MeshFaceterData, IdMapping, ObjectIdCollection, SubDMesh, Curve, Extents3d, Polyline, Polyline3d, Line, Circle, Poly3dType, DBText, Region, BooleanOperationType
+from Autodesk.AutoCAD.BoundaryRepresentation import PointContainment, Brep, Face, BrepEntity
+import System
+
 import acad
 import academit
 
 def 命令(): 
     academit.添加命令("ll-brep", ll_brep)
+    academit.添加命令("ll-brep-test", ll_brep_test)
     academit.添加命令("ll-select-solid-edge", ll_select_solid_edge)
 
 
@@ -29,6 +33,23 @@ def ll_select_solid_edge():
     with acad.transaction() as trans:
         objref = acad.TransObjectForWrite(objid)
     acad.Prompt(objref.GetType())
+
+
+@acad.decorator_command
+def ll_brep_test():
+    [pickpoint, objid] = acad.EntSelEntity()
+    fullpath = FullSubentityPath([objid], SubentityId(SubentityType.Null, System.IntPtr.Zero))
+    # objidlist = acad.SSGetIdList()
+    # print(objidlist)
+    # fullpath = FullSubentityPath(objidlist, SubentityId(SubentityType.Null, System.IntPtr.Zero)) # 只有第1个objid起作用
+    brep = Brep(fullpath)
+    for complex in brep.Complexes:
+        print("complex")
+        for shell in complex.Shells:
+            print("shell")
+            for face in shell.Faces:
+                print("face")
+
 
 
 # opts = new PromptSelectionOptions();
