@@ -248,7 +248,17 @@ def GetPoint3(string1="", string2="", string3=""):
 def GetCorner(string, base_point):
     if string == "": string = "请选择顶点: "
     result = ed.GetCorner(string, ToPoint3d(base_point))
-    return [result.Value.X, result.Value.Y, result.Value.Z]
+    if result.Status == PromptStatus.OK: return [result.Value.X, result.Value.Y, result.Value.Z]
+    return None
+
+def GetCorner2(string1="", string2=""):
+    pt1 = GetPoint(string1)
+    if pt1 == None: return None, None
+    pt2 = GetCorner(string2, pt1)
+    if pt2 == None: return None, None
+    return [pt1, pt2]
+
+
 
 # GetDouble: ((OK,),45) # 回车 or 右键
 # GetDouble: ((Cancel,),0) # ESC
@@ -286,22 +296,31 @@ def GetSelectFence(pt1, pt2, dxfcode_filter_list=[]):
     return ss1
 
 def GetSelectFenceIdList(pt1, pt2, dxfcode_filter_list=[]):
-    collect = Point3dCollection()
-    collect.Add(ToPoint3d(pt1))
-    collect.Add(ToPoint3d(pt2))
+    ss1 = GetSelectFence(pt1, pt2, dxfcode_filter_list)
+    if ss1 == None: return []
+    return [objid for objid in ss1.GetObjectIds()]
+
+
+def GetSelectCorner(pt1, pt2, dxfcode_filter_list=[]):  # 边界相交不会被选择
     if dxfcode_filter_list != []:
         typevalue_list = []
         for [dxfcode, checkchar] in dxfcode_filter_list:
             typevalue_list.append(TypedValue(System.Int32(dxfcode), checkchar))
         filter = SelectionFilter(typevalue_list)
-        result = ed.SelectFence(collect, filter)
+        result = ed.SelectWindow(ToPoint3d(pt1), ToPoint3d(pt2), filter)
     else:
-        result = ed.SelectFence(collect)
+        result = ed.SelectWindow(ToPoint3d(pt1), ToPoint3d(pt2))
     ss1 = result.Value
-    return ss1.GetObjectIds()
+    return ss1
+
+def GetSelectCornerIdList(pt1, pt2, dxfcode_filter_list=[]):
+    ss1 = GetSelectCorner(pt1, pt2, dxfcode_filter_list)
+    if ss1 == None: return []
+    return [objid for objid in ss1.GetObjectIds()]
 
 
-def GetSelectCornerCross(pt1, pt2, dxfcode_filter_list=[]):
+
+def GetSelectCornerCross(pt1, pt2, dxfcode_filter_list=[]): # 边界相交会被选择
     if dxfcode_filter_list != []:
         typevalue_list = []
         for [dxfcode, checkchar] in dxfcode_filter_list:
@@ -313,17 +332,22 @@ def GetSelectCornerCross(pt1, pt2, dxfcode_filter_list=[]):
     ss1 = result.Value
     return ss1
 
-def GetSelectCorner(pt1, pt2, dxfcode_filter_list=[]):
-    if dxfcode_filter_list != []:
-        typevalue_list = []
-        for [dxfcode, checkchar] in dxfcode_filter_list:
-            typevalue_list.append(TypedValue(System.Int32(dxfcode), checkchar))
-        filter = SelectionFilter(typevalue_list)
-        result = ed.SelectWindow(ToPoint3d(pt1), ToPoint3d(pt2), filter)
-    else:
-        result = ed.SelectWindow(ToPoint3d(pt1), ToPoint3d(pt2))
-    ss1 = result.Value
+def GetSelectCornerCrossIdList(pt1, pt2, dxfcode_filter_list=[]):
+    ss1 = GetSelectCornerCross(pt1, pt2, dxfcode_filter_list)
+    if ss1 == None: return []
+    return [objid for objid in ss1.GetObjectIds()]
+
+
+
+def GetSelectPick(pt1, dxfcode_filter_list=[]):
+    ss1 = GetSelectCornerCross(pt1, pt1, dxfcode_filter_list)
     return ss1
+
+
+def GetObjectIdPick(pt1, dxfcode_filter_list=[]):
+    ss1 = GetSelectCornerCross(pt1, pt1, dxfcode_filter_list)
+    objidlist = ss1.GetObjectIds()
+    return objidlist[0]
 
 def EntLast():
     # CommandAddLine后，获取entlast偶尔会出现ss1为None的错误，但大部分对象大部分时间获取还是能用的。
@@ -629,10 +653,29 @@ def CheckLayerAndColor(objref, layer_name, color_index):
         objref.Color = Color.FromColorIndex(ColorMethod.ByAci, color_index)
 
 
+
+def AddPoint(pt1, layer_name="", color_index=0):
+    point = DBPoint(ToPoint3d(pt1))
+    AddDBObject(point, layer_name, color_index)
+    return point
+
 def AddLine(start_point, final_point, layer_name="", color_index=0):
     line = Line(ToPoint3d(start_point), ToPoint3d(final_point))
     AddDBObject(line, layer_name, color_index)
     return line
+
+def AddRect(ptmin, ptmax, layer_name="", color_index=0):
+    x1, y1 = ptmin[0:2]
+    x2, y2 = ptmax[0:2]
+    pt1 = [x1, y1]
+    pt2 = [x2, y1]
+    pt3 = [x2, y2]
+    pt4 = [x1, y2]
+    pline = Polyline()
+    for i, pt0 in enumerate([pt1, pt2, pt3, pt4, pt1]):
+        pline.AddVertexAt(i, ToPoint2d(pt0), 0, 0, 0)
+    AddDBObject(pline, layer_name, color_index)
+    return pline
 
 
 def AddLWPolyLine(ptlist, layer_name="", color_index=0):
@@ -642,11 +685,6 @@ def AddLWPolyLine(ptlist, layer_name="", color_index=0):
     AddDBObject(pline, layer_name, color_index)
     return pline
 
-
-def AddPoint(pt1, layer_name="", color_index=0):
-    point = DBPoint(ToPoint3d(pt1))
-    AddDBObject(point, layer_name, color_index)
-    return point
 
 def AddPointCloud(pt1, color_rgb=[255,255,255]):
     r, g, b = color_rgb
@@ -733,6 +771,38 @@ def AddDBObject(dbobjref, layer_name="", color_index=0):
     return objid
 
 
+def DBObjectLine(start_point, final_point):
+    line = Line(ToPoint3d(start_point), ToPoint3d(final_point))
+    return line
+
+
+def DBObjectRect(ptmin, ptmax):
+    x1, y1 = ptmin[0:2]
+    x2, y2 = ptmax[0:2]
+    pt1 = [x1, y1]
+    pt2 = [x2, y1]
+    pt3 = [x2, y2]
+    pt4 = [x1, y2]
+    pline = Polyline()
+    for i, pt0 in enumerate([pt1, pt2, pt3, pt4, pt1]):
+        pline.AddVertexAt(i, ToPoint2d(pt0), 0, 0, 0)
+    return pline
+
+
+def DBObjectLWPolyLine(ptlist):
+    pline = Polyline()
+    for i, pt1 in enumerate(ptlist):
+        pline.AddVertexAt(i, ToPoint2d(pt1), 0, 0, 0)
+    return pline
+
+def DBObjectCopy(objref):
+    matrix4x4 = Matrix3d.Identity # 单位矩阵
+    copyobjref = objref.GetTransformedCopy(matrix4x4)
+    return copyobjref
+
+
+
+
 zhu_block_name_count = 1
 def CalcBlockName():
     global zhu_block_name_count
@@ -797,6 +867,20 @@ def TransLWPolyLinePointList(objid:ObjectId):
         result.append([point.X, point.Y, point.Z])
     if pline.Closed: return result + result[0:1]
     return result
+
+
+# def TransLWPolyLineArea(objid:ObjectId):
+#     dbobj_collect = DBObjectCollection()
+#     matrix4x4 = Matrix3d.Identity # 单位矩阵
+#     objref = trans.GetObject(objid, OpenMode.ForRead)
+#     copyobjref = objref.GetTransformedCopy(matrix4x4)
+#     dbobj_collect.Add(copyobjref)
+#     regions = Region.CreateFromCurves(dbobj_collect)
+#     region = regions[0]
+#     return region.Area
+
+
+
 
 
 def TransStartPoint(objid):
@@ -882,6 +966,10 @@ def TransEntityArea(objid:ObjectId):
     return area
 
 
+
+
+
+
 def TransEntityLength(objid:ObjectId):
     objref = trans.GetObject(objid, OpenMode.ForRead)
     length = objref.Length
@@ -948,6 +1036,7 @@ def TransSSBoundLengthWidthHeight(ss1:SelectionSet):
     return point2.X-point1.X, point2.Y-point1.Y, point2.Z-point1.Z
 
 
+
 def IsPointInRange(pt1, objid:ObjectId|SelectionSet|Region):
     regions = []
     objtype = str(objid.GetType())
@@ -998,6 +1087,92 @@ NoneType = type(None)
 def IsNone(obj):
     if type(obj) == NoneType: return True
     return False
+
+def IsNoneObjectId(obj):
+    if type(obj) == NoneType: return True
+    return False
+
+
+def IsPointInRect(pt0, ptlist=[]):
+    pt1, pt2, pt3, pt4 = ptlist
+    flag1 = GetPerflagXY(pt1, pt2, pt0)
+    flag2 = GetPerflagXY(pt2, pt3, pt0)
+    flag3 = GetPerflagXY(pt3, pt4, pt0)
+    flag4 = GetPerflagXY(pt4, pt1, pt0)
+    if flag1 >= 0 and flag2 >= 0 and flag3 >= 0 and flag4 >= 0 : return True
+    if flag1 <= 0 and flag2 <= 0 and flag3 <= 0 and flag4 <= 0 : return True
+    return False
+
+
+
+def IsRectInRect(ptnlist=[], ptwlist=[]):
+    pn1, pn2, pn3, pn4 = ptnlist
+    # pw1, pw2, pw3, pw4 = pt2list
+    flag1 = IsPointInRect(pn1, ptwlist)
+    flag2 = IsPointInRect(pn2, ptwlist)
+    flag3 = IsPointInRect(pn3, ptwlist)
+    flag4 = IsPointInRect(pn4, ptwlist)
+    if flag1 and flag2 and flag3 and flag4: return True
+    return False
+
+
+def IsCCW(ptlist=[]): # CounterClockWise 逆时针
+    # 而对于一般的简单多边形，则需对于多边形的每一个点计算Cross值，如果正值比较多，是逆时针；负值较多则为顺时针。
+    count = len(ptlist)
+    if count <= 2: raise ValueError("点的数量少于3个")
+    flagsum = 0
+    for i in range(1, count-1):
+        pt1 = ptlist[i-1]
+        pt2 = ptlist[i]
+        pt3 = ptlist[i+1]
+        flagper = GetPerflagXY(pt1, pt2, pt3)
+        flagsum += flagper
+    if flagsum > 0: return True
+    if flagsum < 0: return False
+    raise ValueError("当前算法无法判断点集方向是顺时针还是逆时针")
+
+
+def IsPointIsSolidVertex(pt0, objid):
+    try: x0, y0, z0 = pt0
+    except: [x0, y0], z0 = pt0, 0
+    with transaction() as trans:
+        objref = trans.GetObject(objid, OpenMode.ForWrite)
+    brep = Brep(objref)
+    flag0 = False
+    for vertex in brep.Vertices:
+        x1, y1, z1 = vertex.Point.X, vertex.Point.Y, vertex.Point.Z 
+        flag1, flag2, flag3 = False, False, False
+        if abs(x0-x1) < 0.00001: flag1 = True
+        if abs(y0-y1) < 0.00001: flag2 = True
+        if abs(z0-z1) < 0.00001: flag3 = True
+        if flag1 and flag2 and flag3: 
+            flag0 = True
+            break
+    return flag0
+
+
+def IsPointIsPointListPoint(pt0, ptlist):
+    flag0 = False
+    for pt1 in ptlist:
+        if IsPointSame(pt0, pt1):
+            flag0 = True
+            break
+    return flag0
+
+
+
+def IsPointSame(pt1, pt2, precision=0.00001):
+    try: x1, y1, z1 = pt1
+    except: [x1, y1], z1 = pt1, 0
+    try: x2, y2, z2 = pt2
+    except: [x2, y2], z2 = pt2, 0
+    flag1, flag2, flag3 = False, False, False
+    if abs(x2-x1) < precision: flag1 = True
+    if abs(y2-y1) < precision: flag2 = True
+    if abs(z2-z1) < precision: flag3 = True
+    if flag1 and flag2 and flag3: return True
+    return False
+
 
 
 def ToPoint2d(pt0):
@@ -1109,7 +1284,7 @@ def Cross(dr1, dr2):
     z3 =   x1*y2 - x2*y1
     return [x3, y3, z3]
 
-def CrossNormal(dr1, dr2):
+def CrossNormalized(dr1, dr2):
     # ∣a×b∣=∣a∣∗∣b∣∗sinθ
     a = Vec2toVec3(dr1)
     b = Vec2toVec3(dr2)
@@ -1157,20 +1332,21 @@ def AngleFromCrossDr1Dr2(dr1=[1,0,0], dr2=[0,0,1]):
 
 
 
-def MatrixRotationPointList(center, axis, angle, ptlist=[]):
-    center = ToPoint3d(center)
-    axis = Vector3d(*axis) # direct
-    rad = angle * 0.01745329
-    matrix4x4 = Matrix3d.Rotation(rad, axis, center)
-
+def MatrixRotationPointList(angle, axis, center, ptlist=[]):
+    # center = ToPoint3d(center)
+    # axis = Vector3d(*axis) # direct
+    # rad = angle * 0.01745329
+    # matrix4x4 = Matrix3d.Rotation(rad, axis, center)
+    # point = ToPoint3d(pt1)
+    # print(point)
+    # point1 = point.TransformBy(matrix4x4)
+    # print(point)
+    # point3 = point.ScaleBy(double scaleFactor, Point3d centerPoint)
     resultlist = []
     for pt1 in ptlist:
-        point = ToPoint3d(pt1)
-        pt2 = point.TransformBy(matrix4x4)
-        point = ToPoint3d(pt1)
-        point.RotateBy(90, Vector3d(*axis), ToPoint3d(center))
-        # point.ScaleBy(double scaleFactor, Point3d centerPoint)
-        pt1 = [point.X, point.Y, point.Z]
+        point1 = ToPoint3d(pt1)
+        point2 = point1.RotateBy(angle*0.01745329, Vector3d(*axis), ToPoint3d(center))
+        pt1 = [point2.X, point2.Y, point2.Z]
         resultlist.append(pt1)
     return resultlist
         
@@ -1720,8 +1896,14 @@ def CommandAddCircle2P(pt1, pt2):
 def CommandAddCircle3P(pt1, pt2, pt3):
     Command(["CIRCLE", "3P", ToPoint3d(pt1), ToPoint3d(pt2), ToPoint3d(pt3), ""]), Prompt("\n")
     
+
+# def CommandAddSweep()
+
+
+
 def CommandZoom(pt1, pt2):
     Command(["zoom", ToPoint3d(pt1), ToPoint3d(pt2), ""]), Prompt("\n")
+
 
 # (setq ll_current_dimstyle nil)
 # (defun ll-get-dimstyle()
@@ -1762,7 +1944,7 @@ def CommandRotate(objid:ObjectId|SelectionSet, centert_point, angle):
 
 
 def CommandRotate3d(objid:ObjectId|SelectionSet, pt1, pt2, angle):
-    Command(["rotate3d", objid, "", ToPoint3d(pt1), ToPoint3d(pt2), System.Double(angle)])
+    Command(["rotate3d", objid, "", ToPoint3d(pt1), ToPoint3d(pt2), System.Double(angle)]), Prompt("\n")
 
 
 def CommandRotateCopy(objid:ObjectId|SelectionSet, centert_point, angle):
@@ -1786,6 +1968,75 @@ def CommandChangeFontStyle(style_name:str, new_font_name:str):
 # 这两个都能正确运行，但很明显，第一行最后是三个N，第二行才两个，但不知道为什么这样，可能是“语境”吧
 def CommandChangeStandardFontStyle(new_font_name:str):
     Command(["-style", "Standard", new_font_name, System.Int32(0), System.Int32(1), System.Int32(0), "N", "N"])
+
+zhu_count = 0
+def CountColorIndex(): # [1:254] # 0 layer # 255 bloclk
+    global zhu_count
+    zhu_count +=1 
+    if zhu_count >= 255: zhu_count = 1
+    return zhu_count
+
+def CountColorIndexReset():
+    global zhu_count
+    zhu_count = 0
+
+def CountColorIndexSet(count=1):
+    global zhu_count
+    count = count - 1
+    if count < 0: count = 0
+    if count > 255: count = 255
+    zhu_count = count
+
+
+
+
+def TransAutoFindRegionRectList(objidlist):
+    objreflist = []
+    for objid in objidlist:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        matrix4x4 = Matrix3d.Identity # 单位矩阵
+        objrefcopy = objref.GetTransformedCopy(matrix4x4)
+        objreflist.append(objrefcopy)
+        
+    collect = DBObjectCollection()
+    for objref in objreflist:
+        collect.Add(objref)
+
+    regions = Region.CreateFromCurves(collect)
+    buflist = []
+    for region in regions:
+        area = region.Area
+        extend = region.GeometricExtents
+        pt1, pt2 = [extend.MinPoint.X, extend.MinPoint.Y, extend.MinPoint.Z], [extend.MaxPoint.X, extend.MaxPoint.Y, extend.MaxPoint.Z]
+        center = [(extend.MinPoint.X+extend.MaxPoint.X)/2, (extend.MinPoint.Y+extend.MaxPoint.Y)/2, (extend.MinPoint.Z+extend.MaxPoint.Z)/2]
+        buflist.append([pt1, pt2, center, area])
+    buflist.sort(key = lambda item: item[3], reverse=True) # 排序规则，reverse = True 降序， reverse = False 升序（默认）
+
+    # 面积移除
+    count = len(buflist)
+    subindexlist = []
+    for i in range(count-1):
+        if i in subindexlist: continue
+        pt1, pt2, center1, area1  = buflist[i]
+        x1, y1 = pt1[0:2]
+        x2, y2 = pt2[0:2]
+        pt1 = [x1, y1]
+        pt2 = [x2, y1]
+        pt3 = [x2, y2]
+        pt4 = [x1, y2]
+        ptlist = [pt1, pt2, pt3, pt4]
+        for m in range(i+1, count):
+            po1, po2, center2, area2  = buflist[m]
+            if IsPointInRect(center2, ptlist): subindexlist.append(m)
+
+    result = []
+    for i, [pt1, pt2, center, area] in enumerate(buflist):
+        if i in subindexlist: continue
+        result.append([pt1, pt2]) 
+    return result
+
+
+
 
 
 # GetSelection() 用户在图形中选择实体

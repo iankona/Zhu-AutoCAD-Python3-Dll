@@ -31,6 +31,8 @@ def 命令():
     academit.添加命令("llsl-leader", llsl_leader)
     academit.添加命令("llsl-mleader", llsl_mleader)
     academit.添加命令("llsl-block", llsl_block)
+    academit.添加命令("llsl-pick-select", llsl_pick_select)
+    academit.添加命令("llsl-entsel-textedit", llsl_entsel_textedit)
     pass
 
 
@@ -173,3 +175,18 @@ def llsl_block():
         [-4, "<OR"],[0, "*INSERT"], [2, "BLOCKDEFAULT*"], [-4, "OR>"]
         ]
     acad.SSGet(flist, sssetfirst=True)
+
+@acad.decorator_command
+def llsl_pick_select(): 
+    pt1 = acad.GetPoint("请点击选择对象:")
+    if pt1 == None: return 
+    ss1 = acad.GetSelectCornerCross(pt1, pt1)
+    acad.SSSetFirst(ss1)
+
+@acad.decorator_command
+def llsl_entsel_textedit(): 
+    objid = acad.EntSel(string="请点击选择对象: ")  # EntSelEntity
+    if acad.IsNoneObjectId(objid): return 
+    ss1 = acad.SSSetFromIdList([objid])
+    acad.SSSetFirst(ss1)
+    acad.Command(["TEXTEDIT"])

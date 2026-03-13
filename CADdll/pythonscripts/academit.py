@@ -5,9 +5,12 @@ from System.Reflection import Assembly, AssemblyName, TypeAttributes, FieldAttri
 from System.Reflection.Emit import AssemblyBuilderAccess, AssemblyBuilder, ModuleBuilder, TypeBuilder, FieldBuilder, MethodBuilder, PropertyBuilder, ConstructorBuilder, ILGenerator, OpCodes, ParameterBuilder, LocalBuilder, CustomAttributeBuilder
 
 # from Autodesk.AutoCAD.Runtime import CommandClassAttribute, CommandMethodAttribute # accoremgd.dll
+# Use Brep
 Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\acdbmgdbrep.dll")
 Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\AcMPolygonMGD.dll")
 
+# Use Autodesk.AutoCAD.Internal.Utils
+Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\Acmgd.dll")
 # # Com的方式
 # Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\Autodesk.AutoCAD.Interop.dll")
 # Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\Autodesk.AutoCAD.Interop.Common.dll")

@@ -11,6 +11,8 @@ def 命令():
     academit.添加命令("ll-select-solid-edge", ll_select_solid_edge)
 
 
+
+
 @acad.decorator_command
 def ll_brep():
     objid = acad.EntSel([[0, "REGION"]])

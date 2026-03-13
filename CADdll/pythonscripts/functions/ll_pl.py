@@ -11,18 +11,18 @@ def 命令():
     academit.添加命令("llpl-zj-to-zj-y-forward-for", llpl_zj_to_zj_y_forward_for)
     academit.添加命令("llpl-zj-to-zj-y-backward-for", llpl_zj_to_zj_y_backward_for)
 
-    academit.添加命令("llpl-connet-pl-and-pl-for", llpl_connet_pl_and_pl_for)
+
 
     academit.添加命令("llpl-to-midpl", llpl_to_midpl)
     academit.添加命令("llpl-print", llpl_print)
     academit.添加命令("llpl-add", llpl_add)
     academit.添加命令("llpl-findstart", llpl_findstart)
     # academit.添加命令("llpl-change-copy-pl", llpl_change_copy_pl)
-    academit.添加命令("llpl-sweep", llpl_sweep)
-    academit.添加命令("llpl-sweep-set", llpl_sweep_set)
-    academit.添加命令("llpl-change-xy-to-xz-plfor", llpl_change_xy_to_xz_plfor)
-    academit.添加命令("llpl-change-xy-to-xz-4pl", llpl_change_xy_to_xz_4pl)
-    academit.添加命令("llpl-loft", llpl_loft)
+    # academit.添加命令("llpl-sweep", llpl_sweep)
+    # academit.添加命令("llpl-sweep-set", llpl_sweep_set)
+    # academit.添加命令("llpl-change-xy-to-xz-plfor", llpl_change_xy_to_xz_plfor)
+    # academit.添加命令("llpl-change-xy-to-xz-4pl", llpl_change_xy_to_xz_4pl)
+    # academit.添加命令("llpl-loft", llpl_loft)
     pass
 
 
@@ -221,63 +221,6 @@ def llpl_zj_to_zj_y_backward_for():
 
 
 @acad.decorator_command
-def llpl_connet_pl_and_pl_for():
-    while True:
-        objid1 = acad.EntSel("请点击第1条对象:") 
-        if acad.IsNone(objid1): break # No method matches given arguments for ObjectId.op_Equality: (<class 'NoneType'>) == 比较出错
-        objid2 = acad.EntSel("请点击第2条对象:")
-        if acad.IsNone(objid2): break 
-        pt1, pd1 = acad.GetStartFinalPoint(objid1)
-        lengthlist1 = acad.GetLWPolyLineLengthList(objid1)
-        pt2, pd2 = acad.GetStartFinalPoint(objid2)
-        lengthlist2 = acad.GetLWPolyLineLengthList(objid2)
-
-        dy1 = acad.Direct(pt1, pd1)
-        dy1 = acad.Vec3ResetLength(dy1, 2000)
-        pt1 = acad.Vec3Add(pt1, dy1)
-        pt2 = acad.Vec3Add(pt2, dy1)
-        pd1 = acad.Vec3Add(pd1, dy1)
-        pd2 = acad.Vec3Add(pd2, dy1)
-        db1 = acad.Direct(pt1, pd1)
-        db2 = acad.Direct(pt2, pd2)
-        pe1 = acad.Vec3Add(pd1, db1)
-        pe2 = acad.Vec3Add(pd2, db2)
-        linelist = [[pt1, pe1, "0"], [pt2, pe2, "0"]]
-
-        pt1, pt2 = acad.GetAttachWDirectPt1Pt2(pt1, pt2, 150)
-        linelist.append([pt1, pt2, "0"])
-
-        for i, [length1, length2] in enumerate(zip(lengthlist1, lengthlist2)):
-            if abs(length1-length2) < 0.0001:
-                dr1 = acad.GetPerDirectResetLengthXY(pt1, pt2, pe1, length1)
-                po1 = acad.Vec3Add(pt1, dr1)
-                po2 = acad.Vec3Add(pt2, dr1)
-            else:
-                dr1 = acad.GetPerDirectXY(pt1, pt2, pe1)
-                dd1 = acad.Vec3ResetLength(dr1, length1)
-                dd2 = acad.Vec3ResetLength(dr1, length2)
-                po1 = acad.Vec3Add(pt1, dd1)
-                po2 = acad.Vec3Add(pt2, dd2)
-
-            linelist.append([pt1, po1, "0"])
-            linelist.append([pt2, po2, "0"])
-            linelist.append([po1, po2, "图层1"])
-
-            if i == 14:
-                dr1 = acad.Vec3ResetLength(db1, 200)
-                pt1 = acad.Vec3Add(po1, dr1)
-                pt2 = acad.Vec3Add(po2, dr1)
-                linelist.append([pt1, pt2, "图层1"])
-            else:
-                pt1, pt2 = po1, po2
-
-        with acad.transaction() as trans:
-            for pt1, pt2, lname in linelist[:-1]:
-                acad.AddLine(pt1, pt2, lname)
-            pt1, pt2, lname = linelist[-1]
-            acad.AddLine(pt1, pt2)
-
-@acad.decorator_command
 def llpl_to_midpl():
     objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
     with acad.transaction() as trans:
@@ -342,7 +285,7 @@ def llpl_findpoint():
 
 @acad.decorator_command
 def llpl_change_copy_pl():
-    objid = acad.EntSel("请点击复制对象: ")
+    objid = acad.EntSel(string="请点击复制对象: ")
     with acad.transaction() as trans:
         mid = acad.GetLWPolyLineStartMid(objid)
         acad.AddText(mid, "起点")
@@ -368,8 +311,8 @@ def llpl_change_copy_pl():
 
 
 @acad.decorator_command
-def llpl_change_xy_to_xz_plfor():
-    # objid = acad.EntSel("请点击复制对象: ")
+def llpl_change_xy_to_xz_pl_for():
+    # objid = acad.EntSel(string="请点击复制对象: ")
     objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
     with acad.transaction() as trans:
         for objid in objidlist:
@@ -384,7 +327,7 @@ def llpl_change_xy_to_xz_plfor():
 
 @acad.decorator_command
 def llpl_change_xy_to_xz_4pl():
-    objid = acad.EntSel("请点击复制对象: ") # for 循环出错，暂时找不到原因
+    objid = acad.EntSel(string="请点击复制对象: ") # for 循环出错，暂时找不到原因
     with acad.transaction() as trans:
         mid = acad.TransLWPolyLineStartMid(objid)
         acad.AddText(mid, "起点")
@@ -407,185 +350,4 @@ def llpl_change_xy_to_xz_4pl():
         acad.AddPolyline3d(pt1list)
         acad.AddPolyline3d(pt2list)
         acad.AddPolyline3d(pt3list)
-
-
-
-@acad.decorator_command
-def llpl_sweep():
-    plineid = acad.EntSel("请点击扫掠对象: ")
-    rectid = acad.EntSel("请点击路径对象: ")
-    xydrlist = acad.GetLWPolyLineDirectList(plineid)
-    rectptlist = acad.GetLWPolyLinePointList(rectid)
-    with acad.transaction() as trans:
-        pt0 = acad.TransStartPoint(plineid)
-        mid = acad.TransLWPolyLineStartMid(plineid)
-        acad.AddText(pt0, "起点")
-        acad.AddText(mid, "中点")
-        pt0 = acad.TransStartPoint(rectid)
-        mid = acad.TransLWPolyLineStartMid(rectid)
-        acad.AddText(pt0, "起点")
-        acad.AddText(mid, "中点") 
-
-    # 偏移 + 垂直移动
-    with acad.command_undo(), acad.command_osmode():
-        dx, dz = 0, 0
-        rectidlist = [rectid]
-        for [x, y, z] in xydrlist:
-            dx += x
-            dz += y
-            acad.CommandOffSet(rectid, acad.Absolute(dx), acad.Vec3Add(pt0, [dx,0,0]))
-            lastid = acad.EntLast()
-            rectidlist.append(lastid)
-            acad.CommandMove(lastid, [0,0,0], [0,0,dz])
-
-    result_list = []
-
-    # 添加角点多段线       
-    ptlist_list = []
-    for rectid in rectidlist:
-        pline_point_list = acad.GetLWPolyLinePointList(rectid)
-        ptlist_list.append(pline_point_list)
-
-    if ptlist_list == []: return
-    count = len(ptlist_list[0]) 
-    for i in range(count):
-        ptlist = []
-        for valuelist in ptlist_list:
-            ptlist.append(valuelist[i])
-        result_list.append(ptlist)
-
-
-    # 添加直线端点多段线
-    xzdrlist = []
-    for [x, y, z] in xydrlist:
-        xzdrlist.append([x, z, y])    
-
-    for i in range(len(rectptlist)-1):
-        pt1 = rectptlist[i]
-        pt2 = rectptlist[i+1]
-        match i:
-            case 0: drlist = xzdrlist
-            case 1: drlist = acad.ChangeCoordinateXY(xzdrlist, "-Y",  "X")
-            case 2: drlist = acad.ChangeCoordinateXY(xzdrlist, "-X", "-Y")
-            case 3: drlist = acad.ChangeCoordinateXY(xzdrlist,  "Y", "-X")
-        pt1list = acad.DirectListToPointList(pt1, drlist)
-        pt2list = acad.DirectListToPointList(pt2, drlist)
-        result_list.append(pt1list)
-        result_list.append(pt2list)
-
-
-    # # 添加中点多段线    
-    # ptlist_list = []
-    # for rectid in rectidlist:
-    #     pline_point_list = acad.GetLWPolyLineMidPointList(rectid)
-    #     ptlist_list.append(pline_point_list)
-
-    # if ptlist_list == []: return
-    # count = len(ptlist_list[0]) 
-    # for i in range(count):
-    #     ptlist = []
-    #     for valuelist in ptlist_list:
-    #         ptlist.append(valuelist[i])
-    #     result_list.append(ptlist)
-
-    if result_list == []: return
-    with acad.transaction() as trans:
-        for ptlist in result_list:
-            acad.AddPolyline3d(ptlist)
-
-
-
-@acad.decorator_command
-def llpl_sweep_set():
-    plineid = acad.EntSel("请点击扫掠对象: ")
-    rectid = acad.EntSel("请点击路径对象: ")
-    xydrlist = acad.GetLWPolyLineDirectList(plineid)
-    rectptlist = acad.GetLWPolyLinePointList(rectid)
-    with acad.transaction() as trans:
-        pt0 = acad.GetStartPoint(plineid)
-        mid = acad.GetLWPolyLineStartMid(plineid)
-        acad.AddText(pt0, "起点")
-        acad.AddText(mid, "中点")
-        pt0 = acad.GetStartPoint(rectid)
-        mid = acad.GetLWPolyLineStartMid(rectid)
-        acad.AddText(pt0, "起点")
-        acad.AddText(mid, "中点") 
-
-    # 偏移 + 垂直移动
-    with acad.command_undo(), acad.command_osmode():
-        dx, dz = 0, 0
-        rectidlist = [rectid]
-        for [x, y, z] in xydrlist:
-            dx += x
-            dz += y
-            acad.CommandOffSet(rectid, acad.Absolute(dx), acad.Vec3Add(pt0, [dx,0,0]))
-            lastid = acad.EntLast()
-            rectidlist.append(lastid)
-            acad.CommandMove(lastid, [0,0,0], [0,0,dz])
-
-    result_list = []
-
-    # 添加角点多段线       
-    ptlist_list = []
-    for rectid in rectidlist:
-        pline_point_list = acad.GetLWPolyLinePointList(rectid)
-        ptlist_list.append(pline_point_list)
-
-    if ptlist_list == []: return
-    count = len(ptlist_list[0]) 
-    for i in range(count):
-        ptlist = []
-        for valuelist in ptlist_list:
-            ptlist.append(valuelist[i])
-        result_list.append(ptlist)
-
-
-    # 添加直线端点多段线
-    xzdrlist = []
-    for [x, y, z] in xydrlist:
-        xzdrlist.append([x, z, y])    
-
-    for i in range(len(rectptlist)-1):
-        pt1 = rectptlist[i]
-        pt2 = rectptlist[i+1]
-        match i:
-            case 0: drlist = xzdrlist
-            case 1: drlist = acad.ChangeCoordinateXY(xzdrlist, "-Y",  "X")
-            case 2: drlist = acad.ChangeCoordinateXY(xzdrlist, "-X", "-Y")
-            # case 3: drlist = acad.ChangeCoordinateXY(xzdrlist,  "Y", "-X")
-            case _: break
-        pt1list = acad.DirectListToPointList(pt1, drlist)
-        pt2list = acad.DirectListToPointList(pt2, drlist)
-        result_list.append(pt1list)
-        result_list.append(pt2list)
-
-
-    # # 添加中点多段线    
-    # ptlist_list = []
-    # for rectid in rectidlist:
-    #     pline_point_list = acad.GetLWPolyLineMidPointList(rectid)
-    #     ptlist_list.append(pline_point_list)
-
-    # if ptlist_list == []: return
-    # count = len(ptlist_list[0]) 
-    # for i in range(count):
-    #     ptlist = []
-    #     for valuelist in ptlist_list:
-    #         ptlist.append(valuelist[i])
-    #     result_list.append(ptlist)
-
-    if result_list == []: return
-    with acad.transaction() as trans:
-        for ptlist in result_list:
-            acad.AddPolyline3d(ptlist)
-
-
-@acad.decorator_command
-def llpl_loft():
-    pass
-    # objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
-    # with acad.transaction() as trans:
-    #     for objid in objidlist:
-    #         acad.Copy(objid, [0,0], [1000,1000])
-
 

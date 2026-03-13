@@ -16,6 +16,7 @@ def 命令():
     academit.添加命令("llyx-rec-sidex-n-for", llyx_rec_sidex_n_for)
     academit.添加命令("llyx-rec-sidex-w-for", llyx_rec_sidex_w_for)
     academit.添加命令("llyx-rec-sidex-set-for", llyx_rec_sidex_set_for)
+    academit.添加命令("llyx-rec-sidex-panjiayuan-for", llyx_rec_sidex_panjiayuan_for)
     pass
 zhu_ness_length = 0
 zhu_offset_length = 50
@@ -49,8 +50,6 @@ def llyx_side3_for():
             acad.AddLine(pt1, po1)
             acad.AddLine(pt2, po2)
             acad.AddLine(po1, po2)
-
-
 
 
 @acad.decorator_command
@@ -220,6 +219,7 @@ def llyx_rec_sidex_n_for():
                 line3.Layer = "0"
 
 
+
 @acad.decorator_command
 def llyx_rec_sidex_w_for():
     global zhu_ness_length
@@ -298,6 +298,47 @@ def llyx_rec_sidex_set_for():
                     line3 = acad.AddLine(po1, po2, "图层1")
                     pt1, pt2 = po1, po2
                 line3.Layer = "0"
+
+
+
+
+@acad.decorator_command
+def llyx_rec_sidex_panjiayuan_for():
+    objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
+    with acad.transaction() as trans:
+        acad.ChangeObjectIdLayer(objidlist, "图层1")
+        for objid in objidlist:
+            center = acad.GetEntityBoundCenterXY0(objid)
+            pline_point_list = acad.GetLWPolyLinePointList(objid)
+            for i in range(len(pline_point_list)-1):
+                pt1 = pline_point_list[i]
+                pt2 = pline_point_list[i+1]
+                pt3 = center
+                perflag = acad.GetPerflagXY(pt1, pt2, pt3)
+                perflag = -perflag
+                dr1 = acad.GetPerDirectWithPerflagXY(pt1, pt2, perflag) 
+                po1, po2 = acad.GetAttachNDirectPointList(pt1, pt2, 3.5)
+                line1 = acad.AddLine(pt1, po1)
+                line2 = acad.AddLine(pt2, po2)
+
+                pt1, pt2 = po1, po2
+                dr1 = acad.Vec3ResetLength(dr1, 6)
+                po1 = acad.Vec3Add(pt1, dr1)
+                po2 = acad.Vec3Add(pt2, dr1)
+                line1 = acad.AddLine(pt1, po1)
+                line2 = acad.AddLine(pt2, po2)
+                line3 = acad.AddLine(po1, po2, "图层1")
+
+                pt1, pt2 = po1, po2
+                dr1 = acad.Vec3ResetLength(dr1, 8.5)
+                po1 = acad.Vec3Add(pt1, dr1)
+                po2 = acad.Vec3Add(pt2, dr1)
+                line1 = acad.AddLine(pt1, po1)
+                line2 = acad.AddLine(pt2, po2)
+                line3 = acad.AddLine(po1, po2)
+
+
+
 
 
 # [acad.AddPoint(pt1) for pt1 in pline_point_list]

@@ -26,7 +26,7 @@ def llcr_circle3d():
     else:
         center, normal = endpoint, acad.Direct(endpoint, startpoint)
     with acad.transaction() as trans:
-        acad.AddCircle(center, r, normal)
+        acad.AddCircle(center, zhu_circle_r, normal)
 
     
 
@@ -44,4 +44,4 @@ def llcd_circle3d():
     else:
         center, normal = endpoint, acad.Direct(endpoint, startpoint)
     with acad.transaction() as trans:
-        acad.AddCircle(center, r, normal)
+        acad.AddCircle(center, zhu_circle_r, normal)
