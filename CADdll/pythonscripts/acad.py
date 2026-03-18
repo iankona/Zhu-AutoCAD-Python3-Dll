@@ -1036,6 +1036,66 @@ def TransSSBoundLengthWidthHeight(ss1:SelectionSet):
     return point2.X-point1.X, point2.Y-point1.Y, point2.Z-point1.Z
 
 
+def TransObjectIdListBoundXYZ(objidlist):
+    extend = Extents3d()
+    for objid in objidlist:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        extend.AddExtents(objref.GeometricExtents) 
+    point1 = extend.MinPoint
+    point2 = extend.MaxPoint
+    return [point1.X, point1.Y, point1.Z], [point2.X, point2.Y, point2.Z]
+
+
+def TransObjectIdListBoundCenterXYZ(objidlist):
+    extend = Extents3d()
+    for objid in objidlist:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        extend.AddExtents(objref.GeometricExtents) 
+    point1 = extend.MinPoint
+    point2 = extend.MaxPoint
+    return [(point1.X+point2.X)/2, (point1.Y+point2.Y)/2, (point1.Z+point2.Z)/2]
+
+
+def TransObjectIdListBoundXY0(objidlist):
+    extend = Extents3d()
+    for objid in objidlist:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        extend.AddExtents(objref.GeometricExtents) 
+    point1 = extend.MinPoint
+    point2 = extend.MaxPoint
+    return [point1.X, point1.Y, 0], [point2.X, point2.Y, 0]
+
+
+def TransObjectIdListBoundCenterXY0(objidlist):
+    extend = Extents3d()
+    for objid in objidlist:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        extend.AddExtents(objref.GeometricExtents) 
+    point1 = extend.MinPoint
+    point2 = extend.MaxPoint
+    return [(point1.X+point2.X)/2, (point1.Y+point2.Y)/2, 0]
+
+
+def TransObjectIdListBoundLengthWidth(objidlist):
+    extend = Extents3d()
+    for objid in objidlist:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        extend.AddExtents(objref.GeometricExtents) 
+    point1 = extend.MinPoint
+    point2 = extend.MaxPoint
+    return point2.X-point1.X, point2.Y-point1.Y
+
+
+def TransObjectIdListBoundLengthWidthHeight(objidlist):
+    extend = Extents3d()
+    for objid in objidlist:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        extend.AddExtents(objref.GeometricExtents) 
+    point1 = extend.MinPoint
+    point2 = extend.MaxPoint
+    return point2.X-point1.X, point2.Y-point1.Y, point2.Z-point1.Z
+
+
 
 def IsPointInRange(pt1, objid:ObjectId|SelectionSet|Region):
     regions = []
@@ -1988,6 +2048,25 @@ def CountColorIndexSet(count=1):
     zhu_count = count
 
 
+def TransAutoExplodeObjectIdList(objidlist):
+    buflist = []
+    for objid in objidlist:
+        objref = trans.GetObject(objid, OpenMode.ForWrite)   
+        match str(objref): 
+            case "Autodesk.AutoCAD.DatabaseServices.Polyline": # Polyline Rotation3D 后 还是 Polyline
+                result = DBObjectCollection()
+                objref.Explode(result) # Line Explode 会出错，要求PL or block # Autodesk.AutoCAD.DatabaseServices.Line
+                objref.Erase()
+                for objref in result: 
+                    currentblock.AppendEntity(objref) # objid = currentblock.AppendEntity(objref)
+                    trans.AddNewlyCreatedDBObject(objref, True)
+                    buflist.append(objref.ObjectId)
+            case "Autodesk.AutoCAD.DatabaseServices.BlockReference":
+                pass  
+            case "Autodesk.AutoCAD.DatabaseServices.Line":
+                if objref.Layer != "打标1": buflist.append(objref.ObjectId)
+    return buflist
+
 
 
 def TransAutoFindRegionRectList(objidlist):
@@ -2035,9 +2114,47 @@ def TransAutoFindRegionRectList(objidlist):
         result.append([pt1, pt2]) 
     return result
 
+def TransAutoFindRectFencePointList(pb1, pb2, objidlist):
+    result = []
+    for objid in objidlist:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        extend = objref.GeometricExtents
+        center = [(extend.MinPoint.X+extend.MaxPoint.X)/2, (extend.MinPoint.Y+extend.MaxPoint.Y)/2, 0]
+        ptlist = TransLWPolyLinePointList(objid)
+        for i in range(len(ptlist)-1):
+            pt1 = ptlist[i]
+            pt2 = ptlist[i+1]
+            perflag1 = GetPerflagXY(pb1, pb2, pt1)
+            perflag2 = GetPerflagXY(pb1, pb2, pt2)
+            if perflag1 >= 0 and perflag2 >= 0: continue
+            if perflag1 <= 0 and perflag2 <= 0: continue
+            perflag3 = GetPerflagXY(pt1, pt2, pb1)
+            perflag4 = GetPerflagXY(pt1, pt2, pb2)
+            if perflag3 >= 0 and perflag4 >= 0: continue
+            if perflag3 <= 0 and perflag4 <= 0: continue
 
+            perflag0 = GetPerflagXY(pt1, pt2, center)
+            perflag0 = -perflag0
+            direct = GetPerDirectWithPerflagXY(pt1, pt2, perflag0)
+            result.append([pt1, pt2, direct]) 
+    return result
 
-
+def TransAutoFindRectPointList(objidlist):
+    result = []
+    for objid in objidlist:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        extend = objref.GeometricExtents
+        center = [(extend.MinPoint.X+extend.MaxPoint.X)/2, (extend.MinPoint.Y+extend.MaxPoint.Y)/2, 0]
+        ptlist = TransLWPolyLinePointList(objid)
+        for i in range(len(ptlist)-1):
+            pt1 = ptlist[i]
+            pt2 = ptlist[i+1]
+            pt3 = center
+            perflag = GetPerflagXY(pt1, pt2, pt3)
+            perflag = -perflag
+            direct = GetPerDirectWithPerflagXY(pt1, pt2, perflag) 
+            result.append([pt1, pt2, direct]) 
+    return result
 
 # GetSelection() 用户在图形中选择实体
 # SelectAll()   选择所有实体

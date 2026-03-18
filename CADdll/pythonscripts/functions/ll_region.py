@@ -8,30 +8,86 @@ import System
 from Autodesk.AutoCAD.BoundaryRepresentation import PointContainment, Brep, Face, BrepEntity
 import Autodesk
 from Autodesk.AutoCAD.Colors import Color, ColorMethod
+from Autodesk.AutoCAD.DatabaseServices import DBPoint, Extents3d, Polyline, Polyline3d, Line, Circle, Poly3dType, DBText, Region, DBObjectCollection, Intersect
 
 def 命令(): 
-    # academit.添加命令("llregion", llregion)
+    academit.添加命令("llregion", llregion)
     academit.添加命令("llregion-cut", llregion_cut)
     academit.添加命令("llregion-sheet", llregion_sheet)
-    academit.添加命令("llregion-subtract", llregion_subtract)
-    academit.添加命令("llregion-print", llregion_print)
-    academit.添加命令("llregion-check-inside", llregion_check_inside)
-    academit.添加命令("llregion-mesh-sphm", llregion_mesh_sphm)
-    academit.添加命令("llregion-objidlist", llregion_objidlist) 
-    academit.添加命令("llregion-rotate", llregion_rotate) 
-    academit.添加命令("llregion-rotate-to-z-up", llregion_rotate_to_z_up)
-    academit.添加命令("llregion-rotate-to-z-up-negative", llregion_rotate_to_z_up_negative)
-    academit.添加命令("llregion-rotate-point-cloud-to-z-up", llregion_rotate_point_cloud_to_z_up)
+    # academit.添加命令("llregion-subtract", llregion_subtract)
+    # academit.添加命令("llregion-print", llregion_print)
+    # academit.添加命令("llregion-check-inside", llregion_check_inside)
+    # academit.添加命令("llregion-mesh-sphm", llregion_mesh_sphm)
+    # academit.添加命令("llregion-objidlist", llregion_objidlist) 
+    # academit.添加命令("llregion-rotate", llregion_rotate) 
+    # academit.添加命令("llregion-rotate-to-z-up", llregion_rotate_to_z_up)
+    # academit.添加命令("llregion-rotate-to-z-up-negative", llregion_rotate_to_z_up_negative)
+    # academit.添加命令("llregion-rotate-point-cloud-to-z-up", llregion_rotate_point_cloud_to_z_up)
 
 
 # 可以通过检查ed.CurrentUserCoordinateSystem是否为单位矩阵(Matrix3d.Identity) 来判断
 # 如果ed.CurrentUserCoordinateSystem == Matrix3d.Identity, 则UCS与WCS一致, 无需转换
 # Matrix.Inverse()
 
+llzhu_sheet_ness = 1.0
+def llzhu_ui_region_sheet_ness():
+    global llzhu_sheet_ness
+    length = acad.GetDouble(llzhu_sheet_ness, "请输入板厚:")
+    if length != None: llzhu_sheet_ness = length
+
+
+
+def llzhu_region_sheet_auto_cut(objidlist):
+    collect = DBObjectCollection()
+    for objid in objidlist:
+        objref = acad.TransObjectForWrite(objid)
+        collect.Add(objref)
+    regions = Region.CreateFromCurves(collect)
+    for objref in regions: acad.AddDBObject(objref, "面域1", 35)
+
+    area_dbobj_list = []
+    for objref in regions: area_dbobj_list.append([objref.Area, objref])
+    area_dbobj_list.sort(key = lambda item: item[0], reverse=True) # 数值差距大，导致python调用了C#的排序出错，使用lambda使运行正常，原理不明
+    check_index_list = [0]
+    for i, [area, objref] in enumerate(area_dbobj_list):
+        if i in check_index_list: continue
+        check_index_list.append(i)
+        large_objref = objref
+        child_objref_list = []
+        for j, [area, objref] in enumerate(area_dbobj_list[i+1:]):
+            extend = objref.GeometricExtents
+            center = Point3d( (extend.MinPoint.X+extend.MaxPoint.X)/2, (extend.MinPoint.Y+extend.MaxPoint.Y)/2, (extend.MinPoint.Z+extend.MaxPoint.Z)/2 )
+            brep = Brep(large_objref)
+            result = brep.GetPointContainment(center, PointContainment.Outside) # out ref 被自动处理成结果返回
+            brep_entity = result[0]
+            if brep_entity == None: continue
+            if str(brep_entity.GetType()) == "Autodesk.AutoCAD.BoundaryRepresentation.Face": # 点在面内
+                check_index_list.append(i+1+j)
+                child_objref_list.append(objref)
+        for objref in child_objref_list: large_objref.BooleanOperation(BooleanOperationType.BoolSubtract, objref)
+    area_dbobj_list[0][1].Erase(True)
+
 
 @acad.decorator_command
 def llregion():
-    pass
+    llzhu_ui_region_sheet_ness()
+    objidlist = acad.SSGetIdList()   
+    pt1, pt2 = acad.GetPoint2("请选择基点: ", "请选择目标位置")
+    with acad.transaction() as trans:
+        po1, po2 = acad.TransObjectIdListBoundXY0(objidlist)
+        objidlist = acad.TransAutoExplodeObjectIdList(objidlist)
+        result = acad.TransAutoFindRegionRectList(objidlist)
+    with acad.transaction() as trans: # 涉及前置对象需要先提交cad
+        for pd1, pd2 in result: 
+            objidlist = acad.GetSelectCornerCrossIdList(pd1, pd2)
+            llzhu_region_sheet_auto_cut(objidlist)
+
+
+    objidlist = acad.GetSelectCornerCrossIdList(po1, po2, [[0, "REGION"]])
+    ss1 = acad.SSSetFromIdList(objidlist)
+    acad.Command(["move", ss1, "", acad.ToPoint3d(pt1), acad.ToPoint3d(pt2)]), acad.Prompt("\n")
+    acad.Command(["EXTRUDE", ss1, "", System.Double(llzhu_sheet_ness)])
+       
  
 
 
@@ -87,7 +143,7 @@ def llregion_normal():
             direct = acad.Vec3ResetLength([normal.X, normal.Y, normal.Z], length/2)
             acad.AddLine(center, acad.Vec3Add(center, direct))
             acad.AddLine(center, acad.Vec3Add(center, [0,0,length/2]))
-            angle = acad.AngleFromDr1Dr2([normal.X, normal.Y, normal.Z], [0, 0, 1])
+            angle = acad.AngleFromDotDr1Dr2([normal.X, normal.Y, normal.Z], [0, 0, 1])
             acad.Prompt(angle)
 
 
@@ -100,7 +156,7 @@ def llregion_rotate_to_z_up():
     normal = acad.GetEntityNormal(objid1)
     normal = [normal.X, normal.Y, normal.Z]
     angle = acad.AngleFromDotDr1Dr2(normal, [0,0,1])
-    axis = acad.CrossNormal(normal, [0,0,1])
+    axis = acad.CrossNormalized(normal, [0,0,1])
     # with acad.command_undo():
     #     direct = acad.Direct(pt1, pt2)
     #     po1, po2 = pt1, pt2
@@ -119,7 +175,7 @@ def llregion_rotate_to_z_up_negative():
     normal = acad.GetEntityNormal(objid1)
     normal = [normal.X, normal.Y, normal.Z]
     angle = acad.AngleFromDotDr1Dr2(normal, [0,0,-1])
-    axis = acad.CrossNormal(normal, [0,0,-1])
+    axis = acad.CrossNormalized(normal, [0,0,-1])
     # with acad.command_undo():
     #     direct = acad.Direct(pt1, pt2)
     #     po1, po2 = pt1, pt2
@@ -140,7 +196,7 @@ def llregion_rotate_point_cloud_to_z_up():
     normal = [normal.X, normal.Y, normal.Z]
     angle = acad.AngleFromDotDr1Dr2(normal, [0,0,1])
     acad.Prompt(angle)
-    axis = acad.CrossNormal(normal, [0,0,1])
+    axis = acad.CrossNormalized(normal, [0,0,1])
     # with acad.command_undo():
     #     direct = acad.Direct(pt1, pt2)
     #     po1, po2 = pt1, pt2

@@ -4,14 +4,50 @@ import academit
 import System
 
 def 命令(): 
-    academit.添加命令("ll-break-point", ll_break_point)
-    academit.添加命令("ll-break-line-use-select", ll_break_line_use_select)
-    academit.添加命令("ll-break-select-use-line", ll_break_select_use_line)
-    academit.添加命令("ll-break-all", ll_break_all)
+    academit.添加命令("llbreak-all", llbreak_all)
+    academit.添加命令("llbreak-point", llbreak_point)
+    academit.添加命令("llbreak-line-use-select", llbreak_line_use_select)
+    academit.添加命令("llbreak-select-use-line", llbreak_select_use_line)
+    academit.添加命令("llbreak-select-use-select", llbreak_select_use_select)
 
 
+
+def llzhu_trans_break_find_select_and_select_acadpointlist(break_objidlist1, refer_objidlist2):
+    buflist = []
+    for objid1 in break_objidlist1:
+        acad_point_list = []
+        objref1 = acad.TransObjectForWrite(objid1)
+        for objid2 in refer_objidlist2:
+            if str(objid1) == str(objid2): continue
+            objref2 = acad.TransObjectForWrite(objid2)
+            collect = acad.Point3dCollection() 
+            objref1.IntersectWith(objref2, acad.Intersect.OnBothOperands, collect, System.IntPtr.Zero, System.IntPtr.Zero)
+            for point in collect: 
+                acad_point_list.append(point)
+        buflist.append([objid1, acad_point_list])
+    return buflist
+
+def llzhu_trans_break_objid_with_acadpointlist(objid, acadpointlist):
+    objref = acad.TransObjectForWrite(objid)
+    pt1, pt2 = [objref.StartPoint.X, objref.StartPoint.Y, objref.StartPoint.Z], [objref.EndPoint.X, objref.EndPoint.Y, objref.EndPoint.Z]
+    para_list = []
+    for point in acadpointlist:
+        # point = objref.GetClosestPointTo(point, extend=False)
+        po1 = [point.X, point.Y, point.Z]
+        if acad.IsPointSame(pt1, po1): continue
+        if acad.IsPointSame(pt2, po1): continue
+        para = objref.GetParameterAtPoint(point)
+        para_list.append(para)
+    para_list.sort() # 默认从小到大
+    collect = acad.DoubleCollection()
+    for para in para_list:
+        collect.Add(para)
+    result = objref.GetSplitCurves(collect)
+    objref.Erase()
+    return result
+    
 @acad.decorator_command
-def ll_break_point():
+def llbreak_point():
     objid = acad.EntSel(string="请选择要打断的对象:")
     ptlist = []
     while True:
@@ -41,104 +77,56 @@ def ll_break_point():
 
 
 @acad.decorator_command
-def ll_break_line_use_select():# IntersectWith # break line or curve
-    objid = acad.EntSel(string="请选择要打断的对象:")
-    objidlist = acad.SSGetIdList(string="请选择参考线:")   
+def llbreak_select_use_select():# IntersectWith
+    break_objidlist = acad.SSGetIdList(string="请选择要打断的对象: ")   
+    refer_objidlist = acad.SSGetIdList(string="请选择要参考的对象: ")  
     with acad.transaction() as trans:
-        point_list = []
-        objref1 = acad.TransObjectForWrite(objid)
-        for objid2 in objidlist:
-            if str(objid) == str(objid2): continue
-            collect = acad.Point3dCollection() 
-            objref2 = acad.TransObjectForWrite(objid2)
-            objref1.IntersectWith(objref2, acad.Intersect.OnBothOperands, collect, System.IntPtr.Zero, System.IntPtr.Zero)
-            for point in collect: 
-                point_list.append(point)
-
-        if point_list != []:
-            para_list = []
-            for point in point_list:
-                para = objref1.GetParameterAtPoint(point)
-                para_list.append(para)
-            para_list.sort()
-            collect = acad.DoubleCollection()
-            for para in para_list:
-                collect.Add(para)
-            result = objref1.GetSplitCurves(collect)
+        buflist = llzhu_trans_break_find_select_and_select_acadpointlist(break_objidlist, refer_objidlist) 
+        for objid1, acad_point_list in buflist:
+            result = llzhu_trans_break_objid_with_acadpointlist(objid1, acad_point_list)
             for i, objrefsub in enumerate(result):
                 objrefsub.ColorIndex = i
                 acad.AddDBObject(objrefsub)
-            objref1.Erase()
-
-
-
-@acad.decorator_command
-def ll_break_select_use_line():# IntersectWith
-    objidlist = acad.SSGetIdList(string="请选择要打断的对象: ")   
-    objid2 = acad.EntSel(string="请选择参考线: ")
-    with acad.transaction() as trans:
-        objref2 = acad.TransObjectForWrite(objid2)
-        for objid1 in objidlist:
-            objref1 = acad.TransObjectForWrite(objid1)
-            collect = acad.Point3dCollection() 
-            objref1.IntersectWith(objref2, acad.Intersect.OnBothOperands, collect, System.IntPtr.Zero, System.IntPtr.Zero)
-            point_list = []
-            for point in collect: 
-                point_list.append(point)
-
-            if point_list != []:
-                para_list = []
-                for point in point_list:
-                    para = objref1.GetParameterAtPoint(point)
-                    para_list.append(para)
-                para_list.sort()
-                collect = acad.DoubleCollection()
-                for para in para_list:
-                    collect.Add(para)
-                result = objref1.GetSplitCurves(collect)
-                for i, objrefsub in enumerate(result):
-                    objrefsub.ColorIndex = i
-                    acad.AddDBObject(objrefsub)
-                objref1.Erase()
 
 
 @acad.decorator_command
-def ll_break_all():# IntersectWith
-    objidlist =  acad.SSGetIdList()   
-    count = len(objidlist)
-    objid_point_list = []
+def llbreak_line_use_select():# IntersectWith # break line or curve
+    objid = acad.EntSel(string="请点选要打断的对象:")
+    objidlist = acad.SSGetIdList(string="请选择参考的对象:")   
     with acad.transaction() as trans:
-        for i in range(count):
-            objid1 = objidlist[i]
-            objref1 = acad.TransObjectForWrite(objid1)
-            for objid2 in objidlist[i+1:]:
-                collect = acad.Point3dCollection() 
-                objref2 = acad.TransObjectForWrite(objid2)
-                objref1.IntersectWith(objref2, acad.Intersect.OnBothOperands, collect, System.IntPtr.Zero, System.IntPtr.Zero)
-                for point in collect:
-                    objid_point_list.append([str(objid1), point])
-                    objid_point_list.append([str(objid2), point])
-        count = 1
-        for objid in objidlist:
-            point_list = []
-            for objidstring, point in objid_point_list:
-                if str(objid) == objidstring: point_list.append(point)
-            if point_list == []: continue
-            objref = acad.TransObjectForWrite(objid)
-            para_list = []
-            for point in point_list:
-                para = objref.GetParameterAtPoint(point)
-                para_list.append(para)
-            para_list.sort()
-            collect = acad.DoubleCollection()
-            for para in para_list:
-                collect.Add(para)
-            result = objref.GetSplitCurves(collect)
-            for objrefsub in result:
-                objrefsub.ColorIndex = count
+        buflist = llzhu_trans_break_find_select_and_select_acadpointlist([objid], objidlist) 
+        for objid1, acad_point_list in buflist:
+            result = llzhu_trans_break_objid_with_acadpointlist(objid1, acad_point_list)
+            for i, objrefsub in enumerate(result):
+                objrefsub.ColorIndex = i
                 acad.AddDBObject(objrefsub)
-                count += 1
-            objref.Erase()
+
+
+@acad.decorator_command
+def llbreak_select_use_line():# IntersectWith
+    objidlist = acad.SSGetIdList(string="请选择要打断的对象: ")   
+    objid = acad.EntSel(string="请点选要参考的对象: ")
+    with acad.transaction() as trans:
+        buflist = llzhu_trans_break_find_select_and_select_acadpointlist(objidlist, [objid]) 
+        for objid1, acad_point_list in buflist:
+            result = llzhu_trans_break_objid_with_acadpointlist(objid1, acad_point_list)
+            for i, objrefsub in enumerate(result):
+                objrefsub.ColorIndex = i
+                acad.AddDBObject(objrefsub)
+
+
+@acad.decorator_command
+def llbreak_all():# IntersectWith
+    objidlist =  acad.SSGetIdList()   
+    with acad.transaction() as trans:
+        buflist = llzhu_trans_break_find_select_and_select_acadpointlist(objidlist, objidlist) 
+        for objid1, acad_point_list in buflist:
+            result = llzhu_trans_break_objid_with_acadpointlist(objid1, acad_point_list)
+            for i, objrefsub in enumerate(result):
+                objrefsub.ColorIndex = i
+                acad.AddDBObject(objrefsub)
+
+
 
 
 # GetDistAtParam

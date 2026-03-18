@@ -32,6 +32,9 @@ def 命令():
     academit.添加命令("llsl-mleader", llsl_mleader)
     academit.添加命令("llsl-block", llsl_block)
     academit.添加命令("llsl-pick-select", llsl_pick_select)
+    academit.添加命令("llsl-fence", llsl_fence)
+    academit.添加命令("llsl-fence-circle", llsl_fence_circle)
+    academit.添加命令("llsl-entitysel", llsl_entitysel)
     academit.添加命令("llsl-entsel-textedit", llsl_entsel_textedit)
     pass
 
@@ -184,9 +187,39 @@ def llsl_pick_select():
     acad.SSSetFirst(ss1)
 
 @acad.decorator_command
+def llsl_fence(): 
+    pt1, pt2 = acad.GetPoint2()
+    if pt1 == None: return 
+    ss1 = acad.GetSelectFence(pt1, pt2)
+    acad.SSSetFirst(ss1)
+
+@acad.decorator_command
+def llsl_fence_circle(): 
+    pt1, pt2 = acad.GetPoint2()
+    if pt1 == None: return 
+    ss1 = acad.GetSelectFence(pt1, pt2, [[0, "CIRCLE"]])
+    acad.SSSetFirst(ss1)
+
+@acad.decorator_command
+def llsl_entitysel(): 
+    objid = acad.EntSel(string="请点击选择对象: ")  # EntSelEntity
+    if acad.IsNoneObjectId(objid): return 
+    ss1 = acad.SSSetFromIdList([objid])
+    acad.SSSetFirst(ss1)
+
+
+@acad.decorator_command
 def llsl_entsel_textedit(): 
     objid = acad.EntSel(string="请点击选择对象: ")  # EntSelEntity
     if acad.IsNoneObjectId(objid): return 
     ss1 = acad.SSSetFromIdList([objid])
     acad.SSSetFirst(ss1)
     acad.Command(["TEXTEDIT"])
+
+
+
+
+
+
+
+    
