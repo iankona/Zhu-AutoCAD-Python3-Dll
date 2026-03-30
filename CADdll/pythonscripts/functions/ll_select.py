@@ -30,6 +30,7 @@ def 命令():
     academit.添加命令("llsl-dimension", llsl_dimension)
     academit.添加命令("llsl-leader", llsl_leader)
     academit.添加命令("llsl-mleader", llsl_mleader)
+    academit.添加命令("llsl-3dsolid", llsl_3dsolid)
     academit.添加命令("llsl-block", llsl_block)
     academit.添加命令("llsl-pick-select", llsl_pick_select)
     academit.添加命令("llsl-fence", llsl_fence)
@@ -171,6 +172,10 @@ def llsl_leader():
 @acad.decorator_command
 def llsl_mleader(): 
     acad.SSGet([[0, "MULTILEADER"]], sssetfirst=True)
+
+@acad.decorator_command
+def llsl_3dsolid(): 
+    acad.SSGet([[0, "3DSOLID"]], sssetfirst=True)
 
 @acad.decorator_command
 def llsl_block(): 

@@ -4,8 +4,11 @@ import academit
 import System
 
 def 命令(): 
+    academit.添加命令("llccb", llccb)
     academit.添加命令("llbreak-all", llbreak_all)
     academit.添加命令("llbreak-point", llbreak_point)
+    academit.添加命令("llbreak-subcount-whi", llbreak_subcount_whi)
+    academit.添加命令("llbreak-sublength-whi", llbreak_sublength_whi)
     academit.添加命令("llbreak-line-use-select", llbreak_line_use_select)
     academit.添加命令("llbreak-select-use-line", llbreak_select_use_line)
     academit.添加命令("llbreak-select-use-select", llbreak_select_use_select)
@@ -46,6 +49,75 @@ def llzhu_trans_break_objid_with_acadpointlist(objid, acadpointlist):
     objref.Erase()
     return result
     
+
+@acad.decorator_command
+def llccb():
+    height = acad.GetDouble(12, "请输入长城板折高度:")
+    width = acad.GetDouble(20, "请输入长城板折宽度:")
+    length = acad.GetDouble(1219, "请输入板材长度:")
+    pt1 = acad.GetPoint()
+    if pt1 == None: return
+    ptlist = [pt1]
+    sumlength = 0
+    while True:
+        # 第1条边
+        bufheight  = length - sumlength
+        sumlength += height
+        if abs(sumlength - length) < 0.0001: 
+            pt1 = acad.Vec3Add(pt1, [0, -height, 0])
+            ptlist.append(pt1)
+            break
+        if sumlength > length:
+            pt1 = acad.Vec3Add(pt1, [0, -bufheight, 0])
+            ptlist.append(pt1)
+            break
+        pt1 = acad.Vec3Add(pt1, [0, -height, 0])
+        ptlist.append(pt1)
+        # 第2条边
+        bufwidth  = length - sumlength
+        sumlength += width
+        if abs(sumlength - length) < 0.0001: 
+            pt1 = acad.Vec3Add(pt1, [width, 0, 0])
+            ptlist.append(pt1)
+            break
+        if sumlength > length:
+            pt1 = acad.Vec3Add(pt1, [bufwidth, 0, 0])
+            ptlist.append(pt1)
+            break
+        pt1 = acad.Vec3Add(pt1, [width, 0, 0])
+        ptlist.append(pt1)
+        # 第3条边
+        bufwidth  = length - sumlength
+        sumlength += height
+        if abs(sumlength - length) < 0.0001: 
+            pt1 = acad.Vec3Add(pt1, [0, height, 0])
+            ptlist.append(pt1)
+            break
+        if sumlength > length:
+            pt1 = acad.Vec3Add(pt1, [0, bufheight, 0])
+            ptlist.append(pt1)
+            break
+        pt1 = acad.Vec3Add(pt1, [0, height, 0])
+        ptlist.append(pt1)
+        # 第4条边
+        bufwidth  = length - sumlength
+        sumlength += width
+        if abs(sumlength - length) < 0.0001: 
+            pt1 = acad.Vec3Add(pt1, [width, 0, 0])
+            ptlist.append(pt1)
+            break
+        if sumlength > length:
+            pt1 = acad.Vec3Add(pt1, [bufwidth, 0, 0])
+            ptlist.append(pt1)
+            break
+        pt1 = acad.Vec3Add(pt1, [width, 0, 0])
+        ptlist.append(pt1)
+
+
+    with acad.transaction() as trans:
+        acad.AddLWPolyLine(ptlist)
+
+
 @acad.decorator_command
 def llbreak_point():
     objid = acad.EntSel(string="请选择要打断的对象:")
@@ -73,6 +145,83 @@ def llbreak_point():
                 objrefsub.ColorIndex = i+1
                 acad.AddDBObject(objrefsub)
             objref.Erase()
+
+
+@acad.decorator_command
+def llbreak_sublength_whi():
+    sublength = acad.GetDouble(0, "请输入间隔长度:")
+    while True:
+        pt0, objid = acad.EntSelEntity(string="请选择要打断的对象:")
+        if acad.IsNone(objid): return
+        with acad.transaction() as trans:
+            objref = acad.TransObjectForWrite(objid)
+            count = int(objref.Length/sublength)
+            pt1, pt2 = acad.TransEntityStartEndPoint(objid)
+            distance1, distance2 = acad.Distance(pt0, pt1), acad.Distance(pt0, pt2)
+            if  distance1 <= distance2:
+                sumlengthlist = []
+                sumlength = 0
+                for i in range(count):
+                    sumlength += sublength
+                    sumlengthlist.append(sumlength)
+            else:
+                sumlengthlist = []
+                sumlength = objref.Length
+                for i in range(count):
+                    sumlength -= sublength
+                    sumlengthlist.append(sumlength)
+
+            paralist = []
+            for sumlength in sumlengthlist:
+                pa1 = objref.GetParameterAtDistance(sumlength)
+                paralist.append(pa1)
+            if paralist != []:
+                paralist.sort()
+                collection = acad.DoubleCollection()
+                for para in paralist: 
+                    collection.Add(para) 
+                result = objref.GetSplitCurves(collection)
+                for i, objrefsub in enumerate(result):
+                    objrefsub.ColorIndex = i+1
+                    acad.AddDBObject(objrefsub)
+                objref.Erase()
+
+
+
+@acad.decorator_command
+def llbreak_subcount_whi():
+    subcount = acad.GetInt(0, "请输入间隔数量:")
+    while True:
+        pt0, objid = acad.EntSelEntity(string="请选择要打断的对象:")
+        if acad.IsNone(objid): return
+        with acad.transaction() as trans:
+            objref = acad.TransObjectForWrite(objid)
+            sublength = objref.Length/subcount
+            sumlengthlist = []
+            sumlength = 0
+            for i in range(subcount-1):
+                sumlength += sublength
+                sumlengthlist.append(sumlength)
+
+            paralist = []
+            for sumlength in sumlengthlist:
+                pa1 = objref.GetParameterAtDistance(sumlength)
+                paralist.append(pa1)
+            if paralist != []:
+                paralist.sort()
+                collection = acad.DoubleCollection()
+                for para in paralist: 
+                    collection.Add(para) 
+                result = objref.GetSplitCurves(collection)
+                for i, objrefsub in enumerate(result):
+                    objrefsub.ColorIndex = i+1
+                    acad.AddDBObject(objrefsub)
+                objref.Erase()
+
+
+
+
+
 
 
 

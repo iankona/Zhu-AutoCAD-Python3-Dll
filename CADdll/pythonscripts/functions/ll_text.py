@@ -81,7 +81,7 @@ def lltext_count_rec_for():
     objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
     with acad.transaction() as trans:
         for objid in objidlist:
-            pt1 = acad.GetEntityBoundCenterXY(objid)
+            pt1 = acad.GetEntityBoundCenterXY0(objid)
             zhu_count += 1
             char = f"{zhu_text_pre}{zhu_count}{zhu_text_post}"
             acad.AddText(pt1, char, zhu_text_size)
@@ -97,6 +97,6 @@ def lltext_count_frence_for():
     objidlist = ss1.GetObjectIds()
     with acad.transaction() as trans:
         for i, objid in enumerate(objidlist):
-            pt1 = acad.GetEntityBoundCenterXY(objid)
+            pt1 = acad.GetEntityBoundCenterXY0(objid)
             char = f"{zhu_text_pre}{i+1}{zhu_text_post}"
             acad.AddText(pt1, char, zhu_text_size)

@@ -20,11 +20,103 @@ def 命令():
     academit.添加命令("llsweep-subtract-ness-cube-for", llsweep_subtract_ness_cube_for)
     academit.添加命令("llsweep-rotation-to-flatten", llsweep_rotation_to_flatten)
     academit.添加命令("llsweep-flatten-to-rotation", llsweep_flatten_to_rotation)
-    pass
+    academit.添加命令("llsweep-subtract-sheet-cube-for", llsweep_subtract_sheet_cube_for)
 
 
+def llzhu_trans_find_ness_length_pointlist(objid, ness_length):
+    limit1 = ness_length + 0.05
+    limit2 = ness_length*2 + 0.05 # 限制到锐角30度
+    objref = acad.TransObjectForWrite(objid)
+    brep = Brep(objref)
+    vertexlist = []
+    for vertex in brep.Vertices:
+        vertexlist.append([vertex.Point.X, vertex.Point.Y, vertex.Point.Z])
 
+    count = len(vertexlist)
+    indexlist = []
+    resultlist = []
+    for i in range(count):
+        if i in indexlist: continue
+        for j in range(i+1, count):
+            pt1 = vertexlist[i]
+            pt2 = vertexlist[j]
+            distance = acad.Distance(pt1, pt2)
+            if distance > limit1 and distance < limit2:
+                resultlist.append([pt1, pt2])
+                indexlist.append(i)
+                indexlist.append(j)
+                break
+    bufedgelist = []
+    for face in brep.Faces:
+        for loop in face.Loops:
+            edgelist = []
+            for edge in loop.Edges: edgelist.append(edge)
+            bufedgelist.append([len(edgelist), edgelist])
+    bufedgelist.sort(key = lambda item: item[0], reverse=True) # 降序
+    edgeindexlist = []
+    for numb, edgelist in bufedgelist[0:2]:
+        for edge in edgelist:
+            edgeindexlist.append(edge.SubentityPath.SubentId) # SubentityPath 只有在三维轴视图双击过实体或面域才会生效，俯视+二线线框点击出错，需要先切换到三维视图双击
 
+    count = len(resultlist)
+    indexlist = []
+    buflist = []
+    for k in range(count):
+        if k in indexlist: continue
+        pt1, pt2 = resultlist[k]
+        for n in range(k+1, count):
+            po1, po2 = resultlist[n]
+            flag1 = False
+            for edge in brep.Edges:
+                if edge.SubentityPath.SubentId in edgeindexlist: continue
+                pe1 = [edge.Vertex1.Point.X, edge.Vertex1.Point.Y, edge.Vertex1.Point.Z]
+                pe2 = [edge.Vertex2.Point.X, edge.Vertex2.Point.Y, edge.Vertex2.Point.Z]
+                if (acad.IsPointSame(pt1, pe1) or acad.IsPointSame(pt2, pe1)) and (acad.IsPointSame(po1, pe2) or acad.IsPointSame(po2, pe2)): flag1 = True
+                if (acad.IsPointSame(pt1, pe2) or acad.IsPointSame(pt2, pe2)) and (acad.IsPointSame(po1, pe1) or acad.IsPointSame(po2, pe1)): flag1 = True
+                if flag1: break
+            if flag1:
+                buflist.append([[pt1, pt2], [po1, po2]])
+                indexlist.append(k)
+                indexlist.append(n)  
+                break                  
+    reflist = []
+    for [pt1, pt3], [po1, po3] in buflist:
+        mid1 = acad.MidPt1Pt2(pt1, pt3) 
+        mid2 = acad.MidPt1Pt2(po1, po3) 
+        
+        buflist = []
+        for face in brep.Faces:
+            # 判断两点在面内
+            vertexlist = []
+            for loop in face.Loops:
+                for vertex in loop.Vertices: vertexlist.append([vertex.Point.X, vertex.Point.Y, vertex.Point.Z])
+            if acad.IsPointIsPointListPoint(pt1, vertexlist) and acad.IsPointIsPointListPoint(pt3, vertexlist):
+                # 找出点和对向边
+                for loop in face.Loops:
+                    for edge in loop.Edges:
+                        pe1 = [edge.Vertex1.Point.X, edge.Vertex1.Point.Y, edge.Vertex1.Point.Z]
+                        pe2 = [edge.Vertex2.Point.X, edge.Vertex2.Point.Y, edge.Vertex2.Point.Z]
+                        if acad.IsPointSame(pt1, pe1) and acad.IsPointSame(pt3, pe2): continue
+                        if acad.IsPointSame(pt3, pe1) and acad.IsPointSame(pt1, pe2): continue
+                        if acad.IsPointSame(pt1, pe1) or acad.IsPointSame(pt1, pe2): buflist.append([pt3, pe1, pe2])
+                        if acad.IsPointSame(pt3, pe1) or acad.IsPointSame(pt3, pe2): buflist.append([pt1, pe1, pe2])
+        
+        findlist = []
+        for pt0, pe1, pe2 in buflist:
+            line1 = acad.DBObjectLine(pe1, pe2)
+            point = line1.GetClosestPointTo(acad.ToPoint3d(pt0), extend=False) # 会返回直线端点 # System.Boolean.Parse("False") 
+            pi1 = [point.X, point.Y, point.Z]
+            if acad.IsPointSame(pi1, pe1) or acad.IsPointSame(pi1, pe2): continue
+            findlist.append(pi1)
+        [pt2, pt4] = findlist
+        # dr1 = acad.Direct(mid1, mid2)
+        # [pt2, pt4] = acad.MatrixRotationPointList(90, dr1, mid1, [pt1, pt3])
+        mid1, mid2 = acad.GetAttachWDirectPointList(mid1, mid2, 2.0)
+        lineref1 = acad.AddLine(mid1, mid2)
+        triref1 = acad.AddPolyline3d([pt1, pt3, pt2, pt1])
+        triref2 = acad.AddPolyline3d([pt1, pt3, pt4, pt1])
+        reflist.append([lineref1, triref1, triref2])
+    return reflist
 
 
 
@@ -82,6 +174,37 @@ def llsweep_pl_nj_to_pl_zj_rect_for():
             acad.AddLWPolyLine(ptlist) 
 
 
+@acad.decorator_command
+def llsweep_subtract_sheet_cube_for(): 
+    import ll_pl
+    ll_pl.zhu_uipl_ness()
+    objidlist = acad.SSGetIdList([[0, "3DSOLID"]])
+    with acad.transaction() as trans:
+        result = []
+        for objid in objidlist:
+            buflist = llzhu_trans_find_ness_length_pointlist(objid, ll_pl.zhu_llpl_ness)
+            result.append([objid, buflist])
+
+    # large_objref.BooleanOperation(BooleanOperationType.BoolSubtract, objref)
+    for objid0, buflist in result:
+        objidlist1 = []
+        for lineref1, triref1, triref2 in buflist:
+            objid1 = Utils.EntLast()
+            ss1 = acad.SSSetFromIdList([triref1.ObjectId, triref2.ObjectId])   
+            acad.Command(["SWEEP", ss1, "", lineref1.ObjectId]), acad.Prompt("\n") # 分开单独扫掠会出错
+            objid2 = Utils.EntNext(objid1, skipSubEnt=True)
+            objid3 = Utils.EntNext(objid2, skipSubEnt=True)
+            objidlist1.append(objid2)
+            objidlist1.append(objid3)
+        ss2 = acad.SSSetFromIdList(objidlist1)     
+        # acad.SSSetFirst(ss2)
+        acad.Command(["SUBTRACT", objid0, "", ss2, ""]), acad.Prompt("\n")
+
+
+
+
+
+
 
 @acad.decorator_command
 def llsweep_subtract_ness_cube_for(): 
@@ -112,6 +235,7 @@ def llsweep_subtract_ness_cube_for():
                         resultlist.append([pt1, pt2])
                         indexlist.append(i)
                         indexlist.append(j)
+                        break
 
             if indexlist == []: continue
             [pt1, pt3], [po1, po3] = resultlist[0:2]
@@ -171,7 +295,7 @@ def llsweep_subtract_ness_cube_for():
 
 @acad.decorator_command
 def llsweep_rotation_to_flatten(): 
-    objidlist = acad.SSGetIdList([[0, "3DSOLID"]])
+    objidlist = acad.SSGetIdList()   # ([[0, "3DSOLID"]])
     while True:
         pt1, pt2, pt3 = acad.GetPoint3()
         if pt1 == None: break

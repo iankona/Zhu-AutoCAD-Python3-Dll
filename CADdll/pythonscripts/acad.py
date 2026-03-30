@@ -7,17 +7,17 @@ import System
 
 from Autodesk.AutoCAD.ApplicationServices import Application
 from Autodesk.AutoCAD.EditorInput import SelectionMethod, PromptStringOptions, SubtractedKeywords, AddedKeywords, PromptStatus, SelectionFilter, PromptSelectionOptions, SelectionSet, PromptIntegerOptions, PromptPointOptions, PromptDoubleOptions
-from Autodesk.AutoCAD.EditorInput import SelectedObject, SelectionMethod, PromptNestedEntityOptions
+from Autodesk.AutoCAD.EditorInput import SelectedObject, SelectionMethod, PromptNestedEntityOptions, PromptDistanceOptions
 
 # from Autodesk.AutoCAD.Runtime
-from Autodesk.AutoCAD.DatabaseServices import Line, ObjectId, Transaction, OpenMode, BlockTable, BlockTableRecord, BlockReference, LayerTableRecord, ObjectIdCollection, TypedValue, DxfCode, DwgVersion
-from Autodesk.AutoCAD.DatabaseServices import DBPoint, Extents3d, Polyline, Polyline3d, Line, Circle, Poly3dType, DBText, Region, DBObjectCollection, Intersect
+from Autodesk.AutoCAD.DatabaseServices import Line, Arc, ObjectId, Transaction, OpenMode, BlockTable, BlockTableRecord, BlockReference, LayerTableRecord, ObjectIdCollection, TypedValue, DxfCode, DwgVersion
+from Autodesk.AutoCAD.DatabaseServices import Entity, DBPoint, Extents3d, Polyline, Polyline3d, Line, Circle, Poly3dType, DBText, MText, Region, DBObjectCollection, Intersect
 from Autodesk.AutoCAD.DatabaseServices import RotatedDimension, AlignedDimension, FullSubentityPath, AssocPersSubentityIdPE
 
 
 from Autodesk.AutoCAD.Geometry import Point2d, Point3d, Point3dCollection, Matrix3d, Vector2d, Vector3d, DoubleCollection
 from Autodesk.AutoCAD.Colors import Color, ColorMethod
-
+from Autodesk.AutoCAD.Internal import Utils
 
 from Autodesk.AutoCAD.DatabaseServices import SubentityId, SubentityType, FullSubentityPath, MeshFaceterData, IdMapping, ObjectIdCollection, SubDMesh, Curve, Extents3d, Polyline, Polyline3d, Line, Circle, Poly3dType, DBText, Region, BooleanOperationType
 from Autodesk.AutoCAD.Geometry import Point2d, Point3d, Point3dCollection, Matrix3d, Vector3d, NurbCurve3d
@@ -189,11 +189,21 @@ def GetActiveDocument():
     return doc, ed, db, Command, CommandAsync
 
 
+
+def GetDistance(default_distance, string=""):
+    if string == "": string = "请输入距离: "
+    option = PromptDistanceOptions(string)
+    option.DefaultValue = default_distance
+    result = ed.GetDistance(option)
+    Prompt("\n")
+    if result.Status == PromptStatus.OK: return result.Value
+    return None
+
 def GetString(default_string:str, message=""):
     if message == "": message = "请输入字符串: "
-    options = PromptStringOptions(message)
-    options.DefaultValue = default_string
-    result = ed.GetString(options) # PromptResult # (OK,4000x123) # [result.Status, result.StringResult]
+    option = PromptStringOptions(message)
+    option.DefaultValue = default_string
+    result = ed.GetString(option) # PromptResult # (OK,4000x123) # [result.Status, result.StringResult]
     Prompt("\n")
     if result.StringResult == "": return None
     if result.Status == PromptStatus.OK: return result.StringResult
@@ -370,14 +380,15 @@ def SelectionSetFromID(objid:ObjectId):
 def Prompt(string):
     ed.WriteMessage(str(string))
 
-
+def EntSelEnt(string: str=""):
+    return EntSelEntity(string)
 def EntSelEntity(string: str=""):
     if string == "": string = "请选择对象: "
     result = ed.GetEntity(string)  # == AutoLisp entsel
     Prompt(f"[{result.PickedPoint}, (图元: {result.ObjectId})]\n")
-    pickpoint = [result.PickedPoint.X, result.PickedPoint.Y, result.PickedPoint.Z]
+    pickpt = [result.PickedPoint.X, result.PickedPoint.Y, result.PickedPoint.Z]
     objid = result.ObjectId
-    return [pickpoint, objid]
+    return [pickpt, objid]
 
 def EntSelSub(dxfcode_filter_list=[], string: str=""):
     # Erroer 001 
@@ -616,6 +627,19 @@ def TransRoation(objid, angle, axis=[], center=[]):
     return entity
 
 
+def TransDimTextBoundXY0(objid):
+    objref = trans.GetObject(objid, OpenMode.ForRead)
+    block_table_record = trans.GetObject(objref.DimBlockId, OpenMode.ForRead)
+    for objid in block_table_record: 
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        if type(objref) == MText:
+            extend = objref.GeometricExtents
+            point1 = extend.MinPoint
+            point2 = extend.MaxPoint
+            return [point1.X, point1.Y, 0], [point2.X, point2.Y, 0]
+    return None, None
+
+
 
 def ChangeObjectIdLayer(objid_list=[], layer_name="0"):
     AddLayer(layer_name)
@@ -672,8 +696,9 @@ def AddRect(ptmin, ptmax, layer_name="", color_index=0):
     pt3 = [x2, y2]
     pt4 = [x1, y2]
     pline = Polyline()
-    for i, pt0 in enumerate([pt1, pt2, pt3, pt4, pt1]):
+    for i, pt0 in enumerate([pt1, pt2, pt3, pt4]):
         pline.AddVertexAt(i, ToPoint2d(pt0), 0, 0, 0)
+    pline.Closed = True
     AddDBObject(pline, layer_name, color_index)
     return pline
 
@@ -695,12 +720,12 @@ def AddPointCloud(pt1, color_rgb=[255,255,255]):
 
 
 
-def AddText(pt1, string="单行文字", size=50, layer_name="", color_index=0):
+def AddText(pt1, string="单行文字", size=50, angle=0, layer_name="", color_index=0):
     text = DBText()
     text.Position = ToPoint3d(pt1) 
     text.TextString = string
     text.Height = size
-    text.Rotation = 0
+    text.Rotation = Angle2Rad(angle)
     # text.IsMirroredInX = True # 在X轴镜像
     # text.HorizontalMode = TextHorizontalMode.TextCenter # 设置对齐方式
     # text.AlignmentPoint = text.Position # 设置对齐点
@@ -708,25 +733,49 @@ def AddText(pt1, string="单行文字", size=50, layer_name="", color_index=0):
     return text
 
 
+
+
 # Autodesk.AutoCAD.DatabaseServices.AlignedDimension
 # DIMALIGNED
-def AddDal(pt1, pt2, pt3, dimstylenum=0, layer_name="", color_index=0):
-    return AddAlignedDimension(pt1, pt2, pt3, dimstylenum, layer_name, color_index)
-def AddAlignedDimension(pt1, pt2, pt3, dimstylenum=0, layer_name="", color_index=0):
+def AddDal(pt1, pt2, pt3, dimstylename="", layer_name="", color_index=0):
+    return AddAlignedDimension(pt1, pt2, pt3, dimstylename, layer_name, color_index)
+def AddAlignedDimension(pt1, pt2, pt3, dimstylename="", layer_name="", color_index=0):
     dal = AlignedDimension()
     dal.XLine1Point = ToPoint3d(pt1)
     dal.XLine2Point = ToPoint3d(pt2)
     dal.DimLinePoint = ToPoint3d(pt3)
+    # dal.TextPosition = txtpt,
+    dal.DimensionStyle = TransFindDimStyle(dimstylename) # 自带 if dimstylename != "": 判断
     AddDBObject(dal, layer_name, color_index)
     return dal
 
+def AddDalLinear(pt1, pt2, direct="+x", dle=50, dimflagnum=50):
+    x1, y1 = pt1[0], pt1[1]
+    x2, y2 = pt2[0], pt2[1]
+    try: z1 = pt1[2] 
+    except: pass
+    try: z2 = pt2[2] 
+    except: pass
+    xm, ym, zm = [(x1+x2)/2, (y1+y2)/2, (z1+z2)/2]
+    mid = [xm, ym, zm]
 
+    if dle < 0: raise ValueError("dle must >= 0 ... ... ")
+    pt1 = [x1, y1, z1]
+    pt2 = [x2, y2, z2]
+    if direct == "+x" : pt3 = [xm+dle, ym, zm]
+    if direct == "-x" : pt3 = [xm-dle, ym, zm]
+    if direct == "+y" : pt3 = [xm, ym+dle, zm]
+    if direct == "-y" : pt3 = [xm, ym-dle, zm]
+    dr1 = GetPerDirectResetLengthXY(pt1, pt2, pt3, dle)
+    pt3 = Vec3Add(mid, dr1)
+    dimstylename = f"副本{dimflagnum} ISO-25"
+    AddAlignedDimension(pt1, pt2, pt3, dimstylename)
 
 # Autodesk.AutoCAD.DatabaseServices.RotatedDimension
 # DIMLINEAR
-def AddDim(pt1, pt2, pt3, dimstylenum=0, layer_name="", color_index=0):
-    return AddRotatedDimension(pt1, pt2, pt3, dimstylenum, layer_name, color_index)
-def AddRotatedDimension(pt1, pt2, pt3, dimstylenum=0, layer_name="", color_index=0):
+def AddDim(pt1, pt2, pt3, dimstylename="", layer_name="", color_index=0):
+    return AddRotatedDimension(pt1, pt2, pt3, dimstylename, layer_name, color_index)
+def AddRotatedDimension(pt1, pt2, pt3, dimstylename="", layer_name="", color_index=0):
     angle = AngleFromCrossDr1Dr2(Direct(pt1, pt2), [1,0,0])
     if angle <  45: angle = 0
     if angle >= 45: angle = 90
@@ -735,8 +784,44 @@ def AddRotatedDimension(pt1, pt2, pt3, dimstylenum=0, layer_name="", color_index
     dim.XLine2Point = ToPoint3d(pt2)
     dim.Rotation = Angle2Rad(angle)
     dim.DimLinePoint = ToPoint3d(pt3)
+    # # dim.TextPosition = txtpt,
+    # dim.DimensionText = txtpt,
+    dim.DimensionStyle = TransFindDimStyle(dimstylename) # dim.DimensionStyle need ObjectId
     AddDBObject(dim, layer_name, color_index)
     return dim
+
+
+def AddDimLinear(pt1, pt2, direct="+x", dle=50, dimflagnum=50):
+    x1, y1 = pt1[0], pt1[1]
+    x2, y2 = pt2[0], pt2[1]
+    try: z1 = pt1[2] 
+    except: pass
+    try: z2 = pt2[2] 
+    except: pass
+    min_x, min_y, max_x, max_y = min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
+
+    if dle < 0: raise ValueError("dle must >= 0 ... ... ")
+    dimstylename = f"副本{dimflagnum} ISO-25"
+    if direct == "+x" :
+        pt3 = [max_x+dle, min_y]
+        AddRotatedDimension(pt1, pt2, pt3, dimstylename)
+    if direct == "-x" :
+        pt3 = [min_x-dle, min_y]
+        AddRotatedDimension(pt1, pt2, pt3, dimstylename)
+    if direct == "+y" :
+        pt3 = [min_x, max_y+dle]
+        AddRotatedDimension(pt1, pt2, pt3, dimstylename)
+    if direct == "-y" :
+        pt3 = [max_x, min_y-dle]
+        AddRotatedDimension(pt1, pt2, pt3, dimstylename)
+
+    if direct != "+x" and direct != "-x" and direct != "+y" and direct != "-y": raise ValueError("DimLinear::direct::must be +x or -x or +y or -y , not {direct}")
+
+
+
+
+
+
 
 
 def AddPolyline3d(ptlist, layer_name="", color_index=0):
@@ -859,6 +944,55 @@ def TransObjectForWrite(objid):
     return objref
 
 
+def TransFindDimStyle(stylename=""):
+    if stylename == "": return db.Dimstyle
+    dim_style_table = trans.GetObject(db.DimStyleTableId, OpenMode.ForRead)
+    if dim_style_table.Has(stylename):
+        dim_style_table_record_objid = dim_style_table[stylename]
+        # dim_style_table_record = trans.GetObject(dim_style_table_record_objid, OpenMode.ForRead)
+        return dim_style_table_record_objid
+    else:
+        return db.Dimstyle
+# Autodesk.AutoCAD.DatabaseServices.DimStyleTableRecord value cannot be converted to Autodesk.AutoCAD.DatabaseServices.ObjectId
+
+def TransCurrentDimStyle(stylename=""):
+    dim_style_table = trans.GetObject(db.DimStyleTableId, OpenMode.ForRead)
+    if dim_style_table.Has(stylename):
+        dim_style_table_record_objid = dim_style_table[stylename]
+        dim_style_table_record = trans.GetObject(dim_style_table_record_objid, OpenMode.ForRead)
+        db.Dimstyle = dim_style_table_record_objid
+        db.SetDimstyleData(dim_style_table_record) # 不设置这行，显示效果与标注名称应有的效果不一致
+        objref = dim_style_table_record
+    else:
+        objref = trans.GetObject(db.Dimstyle, OpenMode.ForRead)
+    return objref.ObjectId
+    
+def SetCurrentDimStyle(stylename=""):
+    with transaction() as trans:
+        dim_style_table = trans.GetObject(db.DimStyleTableId, OpenMode.ForRead)
+        if dim_style_table.Has(stylename):
+            dim_style_table_record_objid = dim_style_table[stylename]
+            dim_style_table_record = trans.GetObject(dim_style_table_record_objid, OpenMode.ForRead)
+            db.Dimstyle = dim_style_table_record_objid
+            db.SetDimstyleData(dim_style_table_record) # 不设置这行，显示效果与标注名称应有的效果不一致
+            objref = dim_style_table_record
+        else:
+            objref = trans.GetObject(db.Dimstyle, OpenMode.ForRead)
+    return objref.ObjectId
+
+
+def TransCurrentDimStyle(stylename=""):
+    if stylename == "": return db.Dimstyle
+    dim_style_table = trans.GetObject(db.DimStyleTableId, OpenMode.ForRead)
+    if dim_style_table.Has(stylename):
+        dim_style_table_record_objid = dim_style_table[stylename]
+        dim_style_table_record = trans.GetObject(dim_style_table_record_objid, OpenMode.ForRead)
+        db.Dimstyle = dim_style_table_record_objid
+        return dim_style_table_record_objid
+    else:
+        return db.Dimstyle
+
+
 def TransLWPolyLinePointList(objid:ObjectId):
     pline = trans.GetObject(objid, OpenMode.ForRead)
     result = []
@@ -881,7 +1015,11 @@ def TransLWPolyLinePointList(objid:ObjectId):
 
 
 
-
+def TransEntityStartEndPoint(objid:ObjectId):
+    objref = trans.GetObject(objid, OpenMode.ForRead)
+    point1 = objref.StartPoint
+    point2 = objref.EndPoint
+    return [point1.X, point1.Y, point1.Z], [point2.X, point2.Y, point2.Z]
 
 def TransStartPoint(objid):
     objref = trans.GetObject(objid, OpenMode.ForRead)
@@ -889,7 +1027,7 @@ def TransStartPoint(objid):
     return [start.X, start.Y, start.Z]
 
 
-def TransStartFinalPoint(objid):
+def TransStartEndPoint(objid):
     objref = trans.GetObject(objid, OpenMode.ForRead)
     start = objref.StartPoint
     final = objref.EndPoint
@@ -1144,12 +1282,12 @@ def IsInclude(objid1, objid2): # 交集
     area3 = regionmax.Area # AutoCAD规定，布尔后的对象ID与原先面积大的一致
 
 NoneType = type(None)
-def IsNone(obj):
-    if type(obj) == NoneType: return True
-    return False
-
-def IsNoneObjectId(obj):
-    if type(obj) == NoneType: return True
+def IsNoneObjectId(objid):
+    return IsNone(objid)
+def IsNone(objid):
+    if type(objid) == NoneType: return True
+    if type(objid) == ObjectId:
+        if objid.IsNull: return True
     return False
 
 
@@ -1327,7 +1465,7 @@ def Dot(dr1, dr2):
     x2, y2, z2 = Vec2toVec3(dr2)
     return x1*x2 + y1*y2 + z1*z2
 
-def DotNormal(dr1, dr2):
+def DotNormalized(dr1, dr2):
     # a⋅b=∣a∣∗∣b∣∗cosθ
     a = Vec2toVec3(dr1)
     b = Vec2toVec3(dr2)
@@ -1375,7 +1513,7 @@ def DirectListToPointList(pt, drlist):
 
 
 def AngleFromDotDr1Dr2(dr1=[1,0,0], dr2=[0,0,1]):
-    cos = DotNormal(dr1, dr2)
+    cos = DotNormalized(dr1, dr2)
     rad = math.acos(cos)
     angle = rad * 57.2957795
     return angle
@@ -1383,7 +1521,7 @@ def AngleFromDotDr1Dr2(dr1=[1,0,0], dr2=[0,0,1]):
 
 
 def AngleFromCrossDr1Dr2(dr1=[1,0,0], dr2=[0,0,1]):
-    normal = CrossNormal(dr1, dr2)
+    normal = CrossNormalized(dr1, dr2)
     length = Distance([0,0,0], normal)
     sin = length
     rad = math.asin(sin)
@@ -1672,6 +1810,13 @@ def GetEntityBoundLengthWidthHeight(objid:ObjectId):
         point2 = extend.MaxPoint
     return point2.X-point1.X, point2.Y-point1.Y, point2.Z-point1.Z
 
+def GetEntityStartEndPoint(objid:ObjectId):
+    with transaction() as trans:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        point1 = objref.StartPoint
+        point2 = objref.EndPoint
+    return [point1.X, point1.Y, point1.Z], [point2.X, point2.Y, point2.Z]
+
 
 def GetEntityArea(objid:ObjectId):
     with transaction() as trans:
@@ -1894,6 +2039,22 @@ def GetLWPolyLineNormal(objid:ObjectId):
     with transaction() as trans:
         pline = trans.GetObject(objid, OpenMode.ForRead)
         return pline.Normal
+
+llzhu_entnet_last = None
+def SetEntNext():
+    global llzhu_entnet_last
+    llzhu_entnet_last = Utils.EntLast()
+
+def GetEntNextIdList():
+    global llzhu_entnet_last
+    objid = llzhu_entnet_last
+    objidlist = []
+    while True:
+        objid = Utils.EntNext(objid, skipSubEnt=True)
+        if objid.IsNull: break
+        objidlist.append(objid)
+    llzhu_entnet_last = None
+    return objidlist 
 
 
 ll_old_osmode = 0
@@ -2139,6 +2300,9 @@ def TransAutoFindRectFencePointList(pb1, pb2, objidlist):
             result.append([pt1, pt2, direct]) 
     return result
 
+
+
+
 def TransAutoFindRectPointList(objidlist):
     result = []
     for objid in objidlist:
@@ -2155,6 +2319,140 @@ def TransAutoFindRectPointList(objidlist):
             direct = GetPerDirectWithPerflagXY(pt1, pt2, perflag) 
             result.append([pt1, pt2, direct]) 
     return result
+
+
+def TransAutoMoveXDimTextPointList(objidlist):
+    buflist = []
+    for objid in objidlist:
+        objref =  trans.GetObject(objid, OpenMode.ForRead)
+        pt0 = objref.TextPosition
+        pt1, pt2 = TransDimTextBoundXY0(objid)
+        [x1, y1, z1], [x2, y2, z2] = pt1, pt2
+        center, length, width = [(x1+x2)/2, (y1+y2)/2, 0], x2-x1, y2-y1
+        if pt1 == None: continue
+        buflist.append([x1, objid, pt0, pt1, pt2, center, length, width])
+
+    buflist.sort(key = lambda item: item[0], reverse=False) # 从小到大
+
+    result = []
+    for x, objid, pt0, pt1, pt2, length, width in buflist:
+        result.append([objid, pt0])
+    return result
+
+
+
+# def GeometryExternalCurve3dToDBLine(curve): 
+#     BrepCurveToDBLine(curve)
+# def BrepExternalCurve3dToDBLine(curve): 
+#     BrepCurveToDBLine(curve)
+def BrepCurveToDBLine(curve): # ExternalCurve3d
+    return Line(curve.NativeCurve.StartPoint, curve.NativeCurve.EndPoint) # 
+
+ 
+# def GeometryExternalCurve3dToDBArc(curve): 
+#     BrepCurveToDBArc(curve)
+# def BrepExternalCurve3dToDBArc(curve): 
+#     BrepCurveToDBArc(curve)
+def BrepCurveToDBArc(curve): # ExternalCurve3d
+    return Arc(curve.NativeCurve.Center, curve.NativeCurve.Normal,curve.NativeCurve.Radius,curve.NativeCurve.StartAngle, curve.NativeCurve.EndAngle)
+# Arc(Point3d center, Vector3d normal,double radius,double startAngle, double endAngle)
+# Arc(Point3d center, double radius, double startAngle, double endAngle)
+
+
+
+def DBObjectConvertRegionToPolylineXYZ(objref):
+    resultlist = []
+    brep = Brep(objref)
+    for face in brep.Faces: 
+        for loop in face.Loops:
+            buflist = []
+            for i, edge in enumerate(loop.Edges): # loop里的edge居然没有顺序
+                if edge.Curve.IsLineSegment:
+                    polyline = Polyline()
+                    point2d1 = Point2d(edge.Curve.NativeCurve.StartPoint.X, edge.Curve.NativeCurve.StartPoint.Y)
+                    point2d2 = Point2d(edge.Curve.NativeCurve.EndPoint.X, edge.Curve.NativeCurve.EndPoint.Y)
+                    polyline.AddVertexAt(0, point2d1, 0, 0, 0)
+                    polyline.AddVertexAt(1, point2d2, 0, 0, 0)
+                    buflist.append(polyline)
+                if edge.Curve.IsCircularArc: 
+                    point2d1 = Point2d(edge.Curve.NativeCurve.StartPoint.X, edge.Curve.NativeCurve.StartPoint.Y)
+                    point2d2 = Point2d(edge.Curve.NativeCurve.EndPoint.X, edge.Curve.NativeCurve.EndPoint.Y)
+                    if IsPointSame([point2d1.X, point2d1.Y, 0], [point2d2.X, point2d2.Y, 0]): continue # 跳过圆对象 # 圆弧和圆在region or brep中是一样的对象
+                    R = edge.Curve.NativeCurve.Radius
+                    L = point2d1.GetDistanceTo(point2d2)
+                    H = R - math.sqrt(R*R - L*L/4)
+                    polyline.AddVertexAt(0, point2d1, 2*H/L, 0, 0)
+                    polyline.AddVertexAt(1, point2d2, 0, 0, 0)
+                    buflist.append(polyline)
+            if buflist == []: continue
+
+            # JoinEntities不会自动进行相连排序，同样会遇到下个对象不相连报错
+            # entlist = System.Array[Entity](len(buflist)-1) # 'Entity[]' 
+            # i = 0
+            # for poly in buflist[1:]:
+            #     entlist[i] = poly
+            #     i += 1
+            # buflist[0].JoinEntities(entlist)
+            # for poly in buflist[1:]: 
+            #     CheckLayerAndColor(poly, "补偿1", 35)
+            #     currentblock.AppendEntity(poly)
+            #     trans.AddNewlyCreatedDBObject(poly, True) # 不用先提交到CAD，可以Explode 
+            #     buflist[0].JoinEntity(poly) # JoinEntity下一个对象如果不与现在对象相连，会出错
+            resultlist.append(buflist[0])
+
+    buflist = []
+    for objref in resultlist: buflist.append([objref.Area, objref])
+    buflist.sort(key = lambda item: item[0], reverse=True) # 从大到小
+
+    resultlist = []
+    for area, objref in buflist: resultlist.append(objref)
+
+    return resultlist
+
+        
+
+def DBObjectConvertLineToPolylineXY0(objref):
+    polyline = Polyline()
+    polyline.AddVertexAt(0, Point2d(objref.StartPoint.X, objref.StartPoint.Y), 0, 0, 0)
+    polyline.AddVertexAt(1, Point2d(objref.EndPoint.X, objref.EndPoint.Y), 0, 0, 0)
+    return polyline
+
+def DBObjectConvertArcToPolylineXY0(objref):
+    point1, point2 = Point2d(objref.StartPoint.X, objref.StartPoint.Y), Point2d(objref.EndPoint.X, objref.EndPoint.Y)
+    R = objref.Radius
+    L = point1.GetDistanceTo(point2)
+    H = R - math.sqrt(R*R - L*L/4)
+    polyline = Polyline()
+    polyline.AddVertexAt(0, Point2d(objref.StartPoint.X, objref.StartPoint.Y), 2*H/L, 0, 0)
+    polyline.AddVertexAt(1, Point2d(objref.EndPoint.X, objref.EndPoint.Y), 0, 0, 0)    
+    return polyline
+
+
+def DBObjectConvertCircleToPolylineXY0(objref):
+    C = objref.Center
+    R = objref.Radius
+    point1, point2 = Point2d(C.X+R, C.Y), Point2d(C.X-R, C.Y)
+    polyline = Polyline()
+    polyline.AddVertexAt(0, point1, 1, 0, 0)
+    polyline.AddVertexAt(1, point2, 1, 0, 0)
+    polyline.AddVertexAt(2, point1, 1, 0, 0)
+    # polyline.Color = reg.Color
+    # polyline.LineWeight = reg.LineWeight
+    # polyline.LinetypeId = reg.LinetypeId
+    return polyline
+
+
+
+def DBObjectConvertPolylineToPolylineXY0(objref):
+    polyline = Polyline()
+    for i in range(objref.NumberOfVertices):
+        polyline.AddVertexAt(i, Point2d(objref.GetPoint3dAt(i).X, objref.GetPoint3dAt(i).Y), objref.GetBulgeAt(i), objref.GetStartWidthAt(i), objref.GetEndWidthAt(i))
+    return polyline 
+
+
+
+
+
 
 # GetSelection() 用户在图形中选择实体
 # SelectAll()   选择所有实体

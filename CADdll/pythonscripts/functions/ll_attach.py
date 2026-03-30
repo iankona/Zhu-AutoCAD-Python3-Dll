@@ -6,8 +6,8 @@ import academit
 import System
 
 def 命令(): 
-    academit.添加命令("ll-attach-line-for", ll_attach_line_for)
-
+    academit.添加命令("llattach-line-for", llattach_line_for)
+    academit.添加命令("llattach-rect-length-width-for", llattach_rect_length_width_for)
 
 zhu_llattach_length = 2.0
 def zhu_ui_llattach_length():
@@ -17,7 +17,7 @@ def zhu_ui_llattach_length():
 
 
 @acad.decorator_command
-def ll_attach_line_for():
+def llattach_line_for():
     zhu_ui_llattach_length()
     while True:
         pt1, pt2 = acad.GetPoint2()
@@ -31,19 +31,17 @@ def ll_attach_line_for():
                 line2 = acad.AddLine(pt2, po2, layer_name="打标1", color_index=6)
 
 @acad.decorator_command
-def ll_attach_rect_length_width_for():
+def llattach_rect_length_width_for():
+    # textsize = acad.GetDouble(100, "请输入文字高度:")
     objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
     with acad.transaction() as trans:
-        buflist = []
         for objid in objidlist:
-            pt1, pt2 = acad.TransEntityBoundXY0()
+            pt1, pt2 = acad.TransEntityBoundXY0(objid)
             x1, y1, z1 = pt1
             x2, y2, z2 = pt2
             length, width = x2-x1, y2-y1
-
-        # for pt1, pt2 in result:
-        #     x1, y1, z1 = pt1
-        #     x2, y2, z2 = pt2
-        #     length, width = x2-x1, y2-y1
-        #     buflist.append([x1, length, width, [pt1, pt2]])
-        # buflist.sort(key = lambda item: item[0], reverse=False) # 排序规则，reverse = True 降序， reverse = False 升序（默认） 
+            textsize = min(length, width) / 4
+            if length > width:
+                acad.AddText([x1+textsize, y1+textsize], f"{length:.0f}x{width:.0f}", textsize, 0) # Unknown format code 'd' for object of type 'float'
+            else:
+                acad.AddText([x1+textsize*2, y1+textsize], f"{length:.0f}x{width:.0f}", textsize, 90)

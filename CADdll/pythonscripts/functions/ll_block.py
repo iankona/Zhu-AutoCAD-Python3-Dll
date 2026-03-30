@@ -8,15 +8,22 @@ import System
 
 def 命令(): 
     academit.添加命令("llblock", llblock)
-    academit.添加命令("llblock-pick-for", llblock_pick_for)
+    academit.添加命令("llblock-for", llblock_for)
     academit.添加命令("llblock-auto-for", llblock_auto_for)
     academit.添加命令("llblock-offset", llblock_offset)
-    academit.添加命令("llblock-offset-pick-for", llblock_offset_pick_for)
+    academit.添加命令("llblock-offset-for", llblock_offset_for)
     academit.添加命令("llblock-offset-auto-for", llblock_offset_auto_for)
 
     academit.添加命令("llexplode", llexplode)
 
 
+
+llzhu_align_filter = [
+    [-4, "<OR"], [0, "LINE"], [0, "LWPOLYLINE"], [0, "SPLINE"],  [0, "ARC"], [0, "CIRCLE"], [0, "ELLIPSE"], [-4, "OR>"]
+    ]
+
+llzhu_align_filter = [[0, "LWPOLYLINE"]]
+llzhu_align_filter = []
 
 
 @acad.decorator_command
@@ -36,7 +43,7 @@ def llblock():
         acad.AddBlockFromIdList(objidlist, pt1)
 
 @acad.decorator_command
-def llblock_pick_for():
+def llblock_for():
     while True:
         pt1, pt2 = acad.GetCorner2("请选择第1个顶点: ", "请选择第2个顶点: ")
         if pt1 == None: break
@@ -49,7 +56,7 @@ def llblock_pick_for():
 
 @acad.decorator_command
 def llblock_auto_for():
-    objidlist = acad.SSGetIdList()  
+    objidlist = acad.SSGetIdList(llzhu_align_filter)  
     with acad.transaction() as trans:
         result = acad.TransAutoFindRegionRectList(objidlist)
         for pt1, pt2 in result: 
@@ -81,7 +88,7 @@ def llblock_offset():
         acad.AddBlockFromIdList(objidlist, pt1)
 
 @acad.decorator_command
-def llblock_offset_pick_for():
+def llblock_offset_for():
     global zhu_block_offset
     length = acad.GetDouble(zhu_block_offset, "请输入外偏移大小:")
     if length != None: zhu_block_offset = length
@@ -109,7 +116,7 @@ def llblock_offset_auto_for():
     global zhu_block_offset
     length = acad.GetDouble(zhu_block_offset, "请输入外偏移大小:")
     if length != None: zhu_block_offset = length
-    objidlist = acad.SSGetIdList()  
+    objidlist = acad.SSGetIdList(llzhu_align_filter)  
     with acad.transaction() as trans:
         result = acad.TransAutoFindRegionRectList(objidlist)
         for pt1, pt2 in result: 

@@ -18,6 +18,7 @@ def 命令():
     academit.添加命令("llyx-fence-sidex-w-for", llyx_fence_sidex_w_for)
 
     academit.添加命令("llyx-rect-side3-for", llyx_rect_side3_for)
+    academit.添加命令("llyx-rect-side3-extend-for", llyx_rect_side3_extend_for)
     academit.添加命令("llyx-rect-sidex-for", llyx_rect_sidex_for)
     academit.添加命令("llyx-rect-sidex-n-for", llyx_rect_sidex_n_for)
     academit.添加命令("llyx-rect-sidex-w-for", llyx_rect_sidex_w_for)
@@ -42,6 +43,20 @@ def zhu_ui_llyx_offset():
     if length != None: zhu_llyx_offset_length = length
 
 
+def zhu_trans_llyx_att_n_point2(pt1, pt2, length): # per direct
+    po1, po2 = acad.GetAttachNDirectPointList(pt1, pt2, length)
+    return po1, po2, None
+
+def zhu_trans_llyx_att_w_point2(pt1, pt2, length): # per direct
+    po1, po2 = acad.GetAttachWDirectPointList(pt1, pt2, length)
+    return po1, po2, None
+
+def zhu_trans_llyx_per_p_point2(pt1, pt2, dr1, length): # per direct
+    dr1 = acad.Vec3ResetLength(dr1, length)
+    po1 = acad.Vec3Add(pt1, dr1)
+    po2 = acad.Vec3Add(pt2, dr1)
+    return po1, po2, None
+
 def zhu_trans_llyx_att_n_line2(pt1, pt2, length): # per direct
     po1, po2 = acad.GetAttachNDirectPointList(pt1, pt2, length)
     line1 = acad.AddLine(pt1, po1)
@@ -53,6 +68,21 @@ def zhu_trans_llyx_att_w_line2(pt1, pt2, length): # per direct
     line1 = acad.AddLine(pt1, po1)
     line2 = acad.AddLine(pt2, po2)
     return po1, po2, None
+
+
+def zhu_trans_llyx_att_n_line2_layer_dabiao1(pt1, pt2, length): # per direct
+    po1, po2 = acad.GetAttachNDirectPointList(pt1, pt2, length)
+    line1 = acad.AddLine(pt1, po1, "打标1")
+    line2 = acad.AddLine(pt2, po2, "打标1")
+    return po1, po2, None
+
+def zhu_trans_llyx_att_w_line2_layer_dabiao1(pt1, pt2, length): # per direct
+    po1, po2 = acad.GetAttachWDirectPointList(pt1, pt2, length)
+    line1 = acad.AddLine(pt1, po1, "打标1")
+    line2 = acad.AddLine(pt2, po2, "打标1")
+    return po1, po2, None
+
+
 
 def zhu_trans_llyx_per_p_line3(pt1, pt2, dr1, length): # per direct
     dr1 = acad.Vec3ResetLength(dr1, length)
@@ -196,6 +226,25 @@ def llyx_rect_side3_for():
             acad.AddLine(pt1, po1)
             acad.AddLine(pt2, po2)
             acad.AddLine(po1, po2)
+
+
+@acad.decorator_command
+def llyx_rect_side3_extend_for():
+    zhu_ui_llyx_ness()
+    zhu_ui_llyx_offset()
+    objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
+    with acad.transaction() as trans:
+        acad.ChangeObjectIdLayer(objidlist, "图层1")
+        result = acad.TransAutoFindRectPointList(objidlist)
+        for i, [pt1, pt2, dr1] in enumerate(result):
+            if i%2 == 0:
+                pt1, pt2, line3 = zhu_trans_llyx_att_w_line2_layer_dabiao1(pt1, pt2, zhu_llyx_ness_length)
+                pt1, pt2, line3 = zhu_trans_llyx_per_p_line3(pt1, pt2, dr1, zhu_llyx_offset_length)
+            else:
+                zhu_trans_llyx_att_n_line2_layer_dabiao1(pt1, pt2, 1.0)
+                pt1, pt2, line3 = zhu_trans_llyx_per_p_point2(pt1, pt2, dr1, zhu_llyx_ness_length)
+                pt1, pt2, line3 = zhu_trans_llyx_per_p_line3(pt1, pt2, dr1, zhu_llyx_offset_length-zhu_llyx_ness_length)
+            line3.Layer = "0"
 
 
 @acad.decorator_command

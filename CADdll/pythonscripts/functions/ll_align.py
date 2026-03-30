@@ -8,12 +8,12 @@ import academit
 import System
 
 def 命令(): 
-    academit.添加命令("llalign-pmin-x", llalign_pmin_x)
-    academit.添加命令("llalign-pmin-y", llalign_pmin_y)
-    academit.添加命令("llalign-pmax-x", llalign_pmax_x)
-    academit.添加命令("llalign-pmax-y", llalign_pmax_y)
-    academit.添加命令("llalign-center-x", llalign_center_x)
-    academit.添加命令("llalign-center-y", llalign_center_y)
+    # academit.添加命令("llalign-pmin-x", llalign_pmin_x)
+    # academit.添加命令("llalign-pmin-y", llalign_pmin_y)
+    # academit.添加命令("llalign-pmax-x", llalign_pmax_x)
+    # academit.添加命令("llalign-pmax-y", llalign_pmax_y)
+    # academit.添加命令("llalign-center-x", llalign_center_x)
+    # academit.添加命令("llalign-center-y", llalign_center_y)
     academit.添加命令("llalign-pmin-x-for", llalign_pmin_x_for)
     academit.添加命令("llalign-pmin-y-for", llalign_pmin_y_for)
     academit.添加命令("llalign-pmax-x-for", llalign_pmax_x_for)
@@ -42,9 +42,17 @@ def zhu_ui_llalign_distance():
     if distance != None: zhu_llalign_distance = distance
 
 
+
+# llzhu_align_filter = [
+#     [-4, "<OR"], [0, "LINE"], [0, "LWPOLYLINE"], [0, "SPLINE"],  [0, "ARC"], [0, "CIRCLE"], [0, "ELLIPSE"], [-4, "OR>"]
+#     ]
+# llzhu_align_filter = [[0, "LWPOLYLINE"]]
+llzhu_align_filter = []
+
+
 @acad.decorator_command
 def llalign_pmin_x():
-    objidlist = acad.SSGetIdList(string="请选择对齐对象: ")  
+    objidlist = acad.SSGetIdList(llzhu_align_filter, string="请选择对齐对象: ")  
     if objidlist == None: return
     # pb1 = acad.GetPoint("请选择对齐基点: ")
     # if pb1 == None: return
@@ -63,7 +71,7 @@ def llalign_pmin_x():
             
 @acad.decorator_command
 def llalign_pmin_y():
-    objidlist = acad.SSGetIdList(string="请选择对齐对象: ")  
+    objidlist = acad.SSGetIdList(llzhu_align_filter, string="请选择对齐对象: ")  
     if objidlist == None: return
     # pb1 = acad.GetPoint("请选择对齐基点: ")
     # if pb1 == None: return
@@ -82,7 +90,7 @@ def llalign_pmin_y():
 
 @acad.decorator_command
 def llalign_pmax_x():
-    objidlist = acad.SSGetIdList(string="请选择对齐对象: ")  
+    objidlist = acad.SSGetIdList(llzhu_align_filter, string="请选择对齐对象: ")  
     if objidlist == None: return
     # pb1 = acad.GetPoint("请选择对齐基点: ")
     # if pb1 == None: return
@@ -101,7 +109,7 @@ def llalign_pmax_x():
 
 @acad.decorator_command
 def llalign_pmax_y():
-    objidlist = acad.SSGetIdList(string="请选择对齐对象: ")  
+    objidlist = acad.SSGetIdList(llzhu_align_filter, string="请选择对齐对象: ")  
     if objidlist == None: return
     # pb1 = acad.GetPoint("请选择对齐基点: ")
     # if pb1 == None: return
@@ -120,7 +128,7 @@ def llalign_pmax_y():
 
 @acad.decorator_command
 def llalign_center_x():
-    objidlist = acad.SSGetIdList(string="请选择对齐对象: ")  
+    objidlist = acad.SSGetIdList(llzhu_align_filter, string="请选择对齐对象: ")  
     if objidlist == None: return
     # pb1 = acad.GetPoint("请选择对齐基点: ")
     # if pb1 == None: return
@@ -139,7 +147,7 @@ def llalign_center_x():
 
 @acad.decorator_command
 def llalign_center_y():
-    objidlist = acad.SSGetIdList(string="请选择对齐对象: ")  
+    objidlist = acad.SSGetIdList(llzhu_align_filter, string="请选择对齐对象: ")  
     if objidlist == None: return
     # pb1 = acad.GetPoint("请选择对齐基点: ")
     # if pb1 == None: return
@@ -159,7 +167,7 @@ def llalign_center_y():
 @acad.decorator_command
 def llalign_pmin_x_for():
     while True:
-        objidlist = acad.SSGetIdList(string="请选择对齐对象: ")  
+        objidlist = acad.SSGetIdList(llzhu_align_filter, string="请选择对齐对象: ")  
         if objidlist == None: break
         # pb1 = acad.GetPoint("请选择对齐基点: ")
         # if pb1 == None: break
@@ -179,7 +187,7 @@ def llalign_pmin_x_for():
 @acad.decorator_command
 def llalign_pmin_y_for():
     while True:
-        objidlist = acad.SSGetIdList(string="请选择对齐对象: ")  
+        objidlist = acad.SSGetIdList(llzhu_align_filter, string="请选择对齐对象: ")  
         if objidlist == None: break
         # pb1 = acad.GetPoint("请选择对齐基点: ")
         # if pb1 == None: break
@@ -199,7 +207,7 @@ def llalign_pmin_y_for():
 @acad.decorator_command
 def llalign_pmax_x_for():
     while True:
-        objidlist = acad.SSGetIdList(string="请选择对齐对象: ")  
+        objidlist = acad.SSGetIdList(llzhu_align_filter, string="请选择对齐对象: ")  
         if objidlist == None: break
         # pb1 = acad.GetPoint("请选择对齐基点: ")
         # if pb1 == None: break
@@ -219,7 +227,7 @@ def llalign_pmax_x_for():
 @acad.decorator_command
 def llalign_pmax_y_for():
     while True:
-        objidlist = acad.SSGetIdList(string="请选择对齐对象: ") 
+        objidlist = acad.SSGetIdList(llzhu_align_filter, string="请选择对齐对象: ") 
         if objidlist == None: break 
         # pb1 = acad.GetPoint("请选择对齐基点: ")
         # if pb1 == None: break
@@ -239,7 +247,7 @@ def llalign_pmax_y_for():
 @acad.decorator_command
 def llalign_center_x_for():
     while True:
-        objidlist = acad.SSGetIdList(string="请选择对齐对象: ") 
+        objidlist = acad.SSGetIdList(llzhu_align_filter, string="请选择对齐对象: ") 
         if objidlist == None: break 
         # pb1 = acad.GetPoint("请选择对齐基点: ")
         # if pb1 == None: break
@@ -259,7 +267,7 @@ def llalign_center_x_for():
 @acad.decorator_command
 def llalign_center_y_for():
     while True:
-        objidlist = acad.SSGetIdList(string="请选择对齐对象: ")  
+        objidlist = acad.SSGetIdList(llzhu_align_filter, string="请选择对齐对象: ")  
         if objidlist == None: break
         # pb1 = acad.GetPoint("请选择对齐基点: ")
         # if pb1 == None: break
@@ -280,7 +288,7 @@ def llalign_center_y_for():
 @acad.decorator_command
 def llalign_distance_x_for():
     zhu_ui_llalign_distance_x()
-    objidlist = acad.SSGetIdList(string="请选择对齐对象: ")  
+    objidlist = acad.SSGetIdList(llzhu_align_filter, string="请选择对齐对象: ")  
     if objidlist == None: return
     with acad.transaction() as trans:
         result = acad.TransAutoFindRegionRectList(objidlist)
@@ -306,7 +314,7 @@ def llalign_distance_x_for():
 @acad.decorator_command
 def llalign_distance_y_for():
     zhu_ui_llalign_distance_y()
-    objidlist = acad.SSGetIdList(string="请选择对齐对象: ")  
+    objidlist = acad.SSGetIdList(llzhu_align_filter, string="请选择对齐对象: ")  
     if objidlist == None: return
     with acad.transaction() as trans:
         result = acad.TransAutoFindRegionRectList(objidlist)
@@ -333,7 +341,7 @@ def llalign_distance_y_for():
 @acad.decorator_command
 def llalign_distance_region3():
     zhu_ui_llalign_distance()
-    objidlist = acad.SSGetIdList(string="请选择对齐对象: ")  
+    objidlist = acad.SSGetIdList(llzhu_align_filter, string="请选择对齐对象: ")  
     if objidlist == None: return
     with acad.transaction() as trans:
         result = acad.TransAutoFindRegionRectList(objidlist)[0:3]

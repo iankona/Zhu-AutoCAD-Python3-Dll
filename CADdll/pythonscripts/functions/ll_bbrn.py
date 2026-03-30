@@ -8,10 +8,10 @@ import System
 
 def 命令(): 
     academit.添加命令("llbbrn", llbbrn)
-    academit.添加命令("llbbrn-pick-for", llbbrn_pick_for)
+    academit.添加命令("llbbrn-for", llbbrn_for)
     academit.添加命令("llbbrn-auto-for", llbbrn_auto_for)
     academit.添加命令("llbbrn-offset", llbbrn_offset)
-    academit.添加命令("llbbrn-offset-pick-for", llbbrn_offset_pick_for)
+    academit.添加命令("llbbrn-offset-for", llbbrn_offset_for)
     academit.添加命令("llbbrn-offset-auto-for", llbbrn_offset_auto_for)
 
 
@@ -26,15 +26,14 @@ def llbbrn():
         acad.AddRect(pt1, pt2)
 
 @acad.decorator_command
-def llbbrn_pick_for():
+def llbbrn_for():
     while True:
         pt1, pt2 = acad.GetCorner2("请选择第1个顶点: ", "请选择第2个顶点: ")
-        if pt1 == None: break
+        if pt1 == None: return
         objidlist = acad.GetSelectCornerIdList(pt1, pt2)
         pt1, pt2 = acad.GetIdListBoundXY0(objidlist)
         with acad.transaction() as trans:
             acad.AddRect(pt1, pt2)
-
 
 
 @acad.decorator_command
@@ -63,7 +62,7 @@ def llbbrn_offset():
 
 
 @acad.decorator_command
-def llbbrn_offset_pick_for():
+def llbbrn_offset_for():
     global zhu_bbrn_offset
     length = acad.GetDouble(zhu_bbrn_offset, "请输入外偏移大小:")
     if length != None: zhu_bbrn_offset = length

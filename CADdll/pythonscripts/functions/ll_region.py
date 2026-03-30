@@ -20,7 +20,8 @@ def 命令():
     # academit.添加命令("llregion-mesh-sphm", llregion_mesh_sphm)
     # academit.添加命令("llregion-objidlist", llregion_objidlist) 
     # academit.添加命令("llregion-rotate", llregion_rotate) 
-    # academit.添加命令("llregion-rotate-to-z-up", llregion_rotate_to_z_up)
+    academit.添加命令("llregion-rotate-to-z-up", llregion_rotate_to_z_up)
+    academit.添加命令("llregion-rotate-to-align-xy0", llregion_rotate_to_align_xy0)
     # academit.添加命令("llregion-rotate-to-z-up-negative", llregion_rotate_to_z_up_negative)
     # academit.添加命令("llregion-rotate-point-cloud-to-z-up", llregion_rotate_point_cloud_to_z_up)
 
@@ -150,41 +151,57 @@ def llregion_normal():
 
 @acad.decorator_command
 def llregion_rotate_to_z_up():
-    objid1 = acad.EntSel([[0, "REGION"]])
-    pt1 = acad.GetPoint()
-    pt2 = acad.GetPoint()
-    normal = acad.GetEntityNormal(objid1)
-    normal = [normal.X, normal.Y, normal.Z]
-    angle = acad.AngleFromDotDr1Dr2(normal, [0,0,1])
-    axis = acad.CrossNormalized(normal, [0,0,1])
-    # with acad.command_undo():
-    #     direct = acad.Direct(pt1, pt2)
-    #     po1, po2 = pt1, pt2
-    #     if acad.Dot(axis, direct) < 0: po1, po2 = pt2, pt1
-    #     acad.CommandRotate3d(objid1, po1, po2, angle)
-    with acad.transaction() as trans:
-        acad.TransRoation(objid1, angle, axis, pt1)
-    acad.Prompt(angle)
+    while True:
+        objid1 = acad.EntSel([[0, "REGION"]])
+        if acad.IsNone(objid1): return
+        pt1 = acad.GetPoint()
+        normal = acad.GetEntityNormal(objid1)
+        normal = [normal.X, normal.Y, normal.Z]
+        angle1 = acad.AngleFromDotDr1Dr2(normal, [0,0, 1])
+        angle2 = acad.AngleFromDotDr1Dr2(normal, [0,0,-1])
+        if angle1 >= angle2:
+            axis = acad.CrossNormalized(normal, [0, 0, -1])
+            angle = angle2
+        else:
+            axis = acad.CrossNormalized(normal, [0, 0,  1])
+            angle = angle1
+        with acad.transaction() as trans:
+            acad.TransRoation(objid1, angle, axis, pt1)
+        acad.Prompt(angle), acad.Prompt("\n")
 
 
 @acad.decorator_command
-def llregion_rotate_to_z_up_negative():
-    objid1 = acad.EntSel([[0, "REGION"]])
-    pt1 = acad.GetPoint()
-    pt2 = acad.GetPoint()
-    normal = acad.GetEntityNormal(objid1)
-    normal = [normal.X, normal.Y, normal.Z]
-    angle = acad.AngleFromDotDr1Dr2(normal, [0,0,-1])
-    axis = acad.CrossNormalized(normal, [0,0,-1])
-    # with acad.command_undo():
-    #     direct = acad.Direct(pt1, pt2)
-    #     po1, po2 = pt1, pt2
-    #     if acad.Dot(axis, direct) < 0: po1, po2 = pt2, pt1
-    #     acad.CommandRotate3d(objid1, po1, po2, angle)
-    with acad.transaction() as trans:
-        acad.TransRoation(objid1, angle, axis, pt1)
-    acad.Prompt(angle)
+def llregion_rotate_to_align_xy0():
+    while True:
+        pt1, pt2 = acad.GetCorner2()
+        if pt1 == None: return
+        objidlist = acad.GetSelectCornerCrossIdList(pt1, pt2)
+        pt1, pt2 = acad.GetPoint2()
+        po2, po1 = acad.GetPoint2()
+        dr1 = acad.Direct(pt2[0:2], pt1[0:2])
+        dr2 = acad.Direct(po2[0:2], po1[0:2])
+        angle = acad.AngleFromDotDr1Dr2(dr1, dr2)
+        axis = acad.CrossNormalized(dr1, dr2) # 如果 axis = [0,0,1] 还是需要用Cross判断是外扩方向，还是内缩方向，还是判断angle正负
+        with acad.transaction() as trans:
+            for objid in objidlist:
+                acad.TransRoation(objid, angle, axis, pt2)
+                acad.TransMove(objid, pt2, po2)
 
+
+# @acad.decorator_command
+# def llregion_rotate_to_align_xyz():
+#     objidlist = acad.SSGetIdList()
+#     if objidlist == None: return
+#     pt1, pt2 = acad.GetPoint2()
+#     po2, po1 = acad.GetPoint2()
+#     dr1 = acad.Direct(pt2, pt1)
+#     dr2 = acad.Direct(po2, po1)
+#     angle = acad.AngleFromDotDr1Dr2(dr1, dr2)
+#     axis = acad.CrossNormalized(dr1, dr2)
+#     with acad.transaction() as trans:
+#         for objid in objidlist:
+#             acad.TransRoation(objid, angle, axis, pt2)
+#             acad.TransMove(objid, pt2, po2)
 
 
 @acad.decorator_command
@@ -427,3 +444,20 @@ def llregion_mesh_sphm():
 # Console.WriteLine($"叉乘结果: {crossProduct}");
 
 
+# @acad.decorator_command
+# def llregion_rotate_to_z_up_negative():
+#     objid1 = acad.EntSel([[0, "REGION"]])
+#     pt1 = acad.GetPoint()
+#     pt2 = acad.GetPoint()
+#     normal = acad.GetEntityNormal(objid1)
+#     normal = [normal.X, normal.Y, normal.Z]
+#     angle = acad.AngleFromDotDr1Dr2(normal, [0,0,-1])
+#     axis = acad.CrossNormalized(normal, [0,0,-1])
+#     # with acad.command_undo():
+#     #     direct = acad.Direct(pt1, pt2)
+#     #     po1, po2 = pt1, pt2
+#     #     if acad.Dot(axis, direct) < 0: po1, po2 = pt2, pt1
+#     #     acad.CommandRotate3d(objid1, po1, po2, angle)
+#     with acad.transaction() as trans:
+#         acad.TransRoation(objid1, angle, axis, pt1)
+#     acad.Prompt(angle)
