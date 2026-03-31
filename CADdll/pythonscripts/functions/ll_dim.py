@@ -11,7 +11,7 @@ def 命令():
     academit.添加命令("lldim-entsel-for", lldim_entsel_for)
     academit.添加命令("lldim-fence-qdim-x-for", lldim_fence_qdim_x_for)
     academit.添加命令("lldim-fence-qdim-y-for", lldim_fence_qdim_y_for)
-
+    academit.添加命令("lldim-align-for", lldim_align_for)
 
 
 llzhu_dim_biaohao = 15
@@ -40,8 +40,6 @@ def lldim_for():
         if pt1 == None: break
         with acad.transaction() as trans:
             acad.AddDim(pt1, pt2, pt3)
-
-
 
 llzhu_dim_filter = [
     [-4, "<OR"], [0, "LINE"], [0, "LWPOLYLINE"], [-4, "OR>"]] # , [0, "SPLINE"],  [0, "ARC"], [0, "CIRCLE"], [0, "ELLIPSE"], [-4, "OR>"]]
@@ -79,9 +77,9 @@ def lldim_fence_qdim_x_for():
             pd3 = [(x1+x2)/2, y1-llzhu_dim_height, 0]
         ss1 = acad.SSSetFromIdList(objidlist)
         acad.SetCurrentDimStyle(f"副本{llzhu_dim_biaohao} ISO-25")
-        acad.SetEntNext()
+        # acad.SetEntNext()
         acad.Command(["qdim", ss1, "", acad.ToPoint3d(pd3)])
-        objidlist = acad.GetEntNextIdList()
+        # objidlist = acad.GetEntNextIdList()
         # with acad.transaction() as trans:
         #     result = acad.TransAutoMoveXDimTextPointList(objidlist)
         #     for objid, pt0 in result:
@@ -107,6 +105,25 @@ def lldim_fence_qdim_y_for():
         ss1 = acad.SSSetFromIdList(objidlist)
         acad.SetCurrentDimStyle(f"副本{llzhu_dim_biaohao} ISO-25")
         acad.Command(["qdim", ss1, "", acad.ToPoint3d(pd3)])
+
+
+
+@acad.decorator_command
+def lldim_align_for():
+    while True:
+        pt1, pt2 = acad.GetPoint2()
+        if pt1 == None: break
+        objidlist = acad.GetSelectFenceIdList(pt1, pt2)
+        with acad.transaction() as trans:
+            result = acad.TransAutoDimTextAlignPointList(objidlist, pt1, pt2)
+            print(result)
+            for objid, pt0 in result:
+                objref = acad.TransObjectForWrite(objid)
+                objref.TextPosition = acad.ToPoint3d(pt0)
+
+
+
+
 
 
 

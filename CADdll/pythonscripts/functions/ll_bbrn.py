@@ -7,10 +7,10 @@ import academit
 import System
 
 def 命令(): 
-    academit.添加命令("llbbrn", llbbrn)
+    # academit.添加命令("llbbrn", llbbrn)
     academit.添加命令("llbbrn-for", llbbrn_for)
     academit.添加命令("llbbrn-auto-for", llbbrn_auto_for)
-    academit.添加命令("llbbrn-offset", llbbrn_offset)
+    # academit.添加命令("llbbrn-offset", llbbrn_offset)
     academit.添加命令("llbbrn-offset-for", llbbrn_offset_for)
     academit.添加命令("llbbrn-offset-auto-for", llbbrn_offset_auto_for)
 

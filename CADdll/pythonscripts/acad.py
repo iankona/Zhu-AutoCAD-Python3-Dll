@@ -637,7 +637,21 @@ def TransDimTextBoundXY0(objid):
             point1 = extend.MinPoint
             point2 = extend.MaxPoint
             return [point1.X, point1.Y, 0], [point2.X, point2.Y, 0]
-    return None, None
+  
+
+
+
+def TransDimLineObjectIdListBoundXY0(objidlist):
+    bufidlist = []
+    for objid in objidlist:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        block_table_record = trans.GetObject(objref.DimBlockId, OpenMode.ForRead)
+        for objid in block_table_record: 
+            objref = trans.GetObject(objid, OpenMode.ForRead)
+            if type(objref) == Line: bufidlist.append(objid)
+    return TransObjectIdListBoundXY0(bufidlist)
+
+
 
 
 
@@ -2321,25 +2335,77 @@ def TransAutoFindRectPointList(objidlist):
     return result
 
 
-def TransAutoMoveXDimTextPointList(objidlist):
+def TransAutoDimTextAlignPointList(objidlist, pt1, pt2):
+    dr1 = Direct(pt1, pt2)
+    angle1 = AngleFromDotDr1Dr2(dr1, [ 1, 0, 0])
+    angle2 = AngleFromDotDr1Dr2(dr1, [-1, 0, 0])
+    angle3 = AngleFromDotDr1Dr2(dr1, [0,  1, 0])
+    angle4 = AngleFromDotDr1Dr2(dr1, [0, -1, 0])
+    if angle1 < 45: flagd = "+X"
+    if angle2 < 45: flagd = "-X"
+    if angle3 < 45: flagd = "+Y"
+    if angle4 < 45: flagd = "-Y"
+
     buflist = []
     for objid in objidlist:
-        objref =  trans.GetObject(objid, OpenMode.ForRead)
-        pt0 = objref.TextPosition
-        pt1, pt2 = TransDimTextBoundXY0(objid)
-        [x1, y1, z1], [x2, y2, z2] = pt1, pt2
+        po1, po2 = TransDimTextBoundXY0(objid)
+        [x1,y1,z1], [x2,y2,z2] = po1, po2
         center, length, width = [(x1+x2)/2, (y1+y2)/2, 0], x2-x1, y2-y1
-        if pt1 == None: continue
-        buflist.append([x1, objid, pt0, pt1, pt2, center, length, width])
+        distance = Distance(pt2, center)
+        buflist.append([distance, objid, po1, po2, length, width])
 
-    buflist.sort(key = lambda item: item[0], reverse=False) # 从小到大
+    buflist.sort(key = lambda item: item[0], reverse=True)  # 大 -> 小
 
+    match flagd:
+        case "+X":
+            x0, y0, z0 = buflist[0][2]
+            for i in range(1, len(buflist)):
+                distance, objid, po1, po2, length1, width1 = buflist[i-1]
+                distance, objid, pd1, pd2, length2, width2 = buflist[i]
+                [x1, y1, z1] = po1
+                [x2, y2, z2] = pd1
+                xt = x0 + length1 + width1
+                dx = xt - x2
+                x0 = xt
+                buflist[i][2] = Vec3Add(pd1, [dx, 0, 0])
+        case "-X":
+            x0, y0, z0 = buflist[0][2]
+            for i in range(1, len(buflist)):
+                distance, objid, po1, po2, length1, width1 = buflist[i-1]
+                distance, objid, pd1, pd2, length2, width2 = buflist[i]
+                [x1, y1, z1] = po1
+                [x2, y2, z2] = pd1
+                xt = x0 - length1 - width1
+                dx = xt - x2
+                x0 = xt
+                buflist[i][2] = Vec3Add(pd1, [dx, 0, 0])
+        case "+Y":
+            x0, y0, z0 = buflist[0][2]
+            for i in range(1, len(buflist)):
+                distance, objid, po1, po2, length1, width1 = buflist[i-1]
+                distance, objid, pd1, pd2, length2, width2 = buflist[i]
+                [x1, y1, z1] = po1
+                [x2, y2, z2] = pd1
+                yt = y0 + length1 + width1
+                dy = yt - y2
+                y0 = yt
+                buflist[i][2] = Vec3Add(pd1, [0, dy, 0])
+        case "-Y":
+            x0, y0, z0 = buflist[0][2]
+            for i in range(1, len(buflist)):
+                distance, objid, po1, po2, length1, width1 = buflist[i-1]
+                distance, objid, pd1, pd2, length2, width2 = buflist[i]
+                [x1, y1, z1] = po1
+                [x2, y2, z2] = pd1
+                yt = y0 - length1 - width1
+                dy = yt - y2
+                y0 = yt
+                buflist[i][2] = Vec3Add(pd1, [0, dy, 0])
     result = []
-    for x, objid, pt0, pt1, pt2, length, width in buflist:
-        result.append([objid, pt0])
+    for distance, objid, po1, po2, length1, width1 in buflist:
+        result.append([objid, po1])
     return result
-
-
+        
 
 # def GeometryExternalCurve3dToDBLine(curve): 
 #     BrepCurveToDBLine(curve)
@@ -2360,24 +2426,29 @@ def BrepCurveToDBArc(curve): # ExternalCurve3d
 
 
 
+
+
 def DBObjectConvertRegionToPolylineXYZ(objref):
     resultlist = []
     brep = Brep(objref)
     for face in brep.Faces: 
-        for loop in face.Loops:
+        for loop in face.Loops: # 已经自带排序了
             buflist = []
             for i, edge in enumerate(loop.Edges): # loop里的edge居然没有顺序
                 if edge.Curve.IsLineSegment:
                     polyline = Polyline()
                     point2d1 = Point2d(edge.Curve.NativeCurve.StartPoint.X, edge.Curve.NativeCurve.StartPoint.Y)
                     point2d2 = Point2d(edge.Curve.NativeCurve.EndPoint.X, edge.Curve.NativeCurve.EndPoint.Y)
+                    pt1, pt2 = [point2d1.X, point2d1.Y, 0], [point2d2.X, point2d2.Y, 0]
                     polyline.AddVertexAt(0, point2d1, 0, 0, 0)
                     polyline.AddVertexAt(1, point2d2, 0, 0, 0)
                     buflist.append(polyline)
                 if edge.Curve.IsCircularArc: 
+                    polyline = Polyline()
                     point2d1 = Point2d(edge.Curve.NativeCurve.StartPoint.X, edge.Curve.NativeCurve.StartPoint.Y)
                     point2d2 = Point2d(edge.Curve.NativeCurve.EndPoint.X, edge.Curve.NativeCurve.EndPoint.Y)
-                    if IsPointSame([point2d1.X, point2d1.Y, 0], [point2d2.X, point2d2.Y, 0]): continue # 跳过圆对象 # 圆弧和圆在region or brep中是一样的对象
+                    pt1, pt2 = [point2d1.X, point2d1.Y, 0], [point2d2.X, point2d2.Y, 0]
+                    if IsPointSame(pt1, pt2): continue # 跳过圆对象 # 圆弧和圆在region or brep中是一样的对象，区别在圆的起始结束是同一个点
                     R = edge.Curve.NativeCurve.Radius
                     L = point2d1.GetDistanceTo(point2d2)
                     H = R - math.sqrt(R*R - L*L/4)
@@ -2386,20 +2457,12 @@ def DBObjectConvertRegionToPolylineXYZ(objref):
                     buflist.append(polyline)
             if buflist == []: continue
 
-            # JoinEntities不会自动进行相连排序，同样会遇到下个对象不相连报错
-            # entlist = System.Array[Entity](len(buflist)-1) # 'Entity[]' 
-            # i = 0
-            # for poly in buflist[1:]:
-            #     entlist[i] = poly
-            #     i += 1
-            # buflist[0].JoinEntities(entlist)
-            # for poly in buflist[1:]: 
-            #     CheckLayerAndColor(poly, "补偿1", 35)
-            #     currentblock.AppendEntity(poly)
-            #     trans.AddNewlyCreatedDBObject(poly, True) # 不用先提交到CAD，可以Explode 
-            #     buflist[0].JoinEntity(poly) # JoinEntity下一个对象如果不与现在对象相连，会出错
+            for poly in buflist[1:]: 
+                CheckLayerAndColor(poly, "补偿1", 35)
+                currentblock.AppendEntity(poly)
+                trans.AddNewlyCreatedDBObject(poly, True) # 不用先提交到CAD，可以Explode 
+                buflist[0].JoinEntity(poly) # 相连也会出错，原因未知 # JoinEntity下一个对象如果不与现在对象相连，会出错 
             resultlist.append(buflist[0])
-
     buflist = []
     for objref in resultlist: buflist.append([objref.Area, objref])
     buflist.sort(key = lambda item: item[0], reverse=True) # 从大到小
@@ -2409,7 +2472,11 @@ def DBObjectConvertRegionToPolylineXYZ(objref):
 
     return resultlist
 
-        
+
+
+      
+
+
 
 def DBObjectConvertLineToPolylineXY0(objref):
     polyline = Polyline()
@@ -2451,7 +2518,34 @@ def DBObjectConvertPolylineToPolylineXY0(objref):
 
 
 
+# # 使无序Loop变有序
+# print(buflist)
+# count = len(buflist)
+# sortlist = buflist[0:1]
+# indexlist = [0]
+# for i in range(count):
+#     for k, [polyline2, po1, po2] in enumerate(buflist):  
+#         if k in indexlist: continue
+#         polyline1, pt1, pt2 = sortlist[-1]
+#         if IsPointSame(pt1, po1) or IsPointSame(pt1, po2) or IsPointSame(pt2, po1) or IsPointSame(pt2, po2):
+#             indexlist.append(k)
+#             sortlist.append([polyline2, po1, po2])
+#             break
+# print(sortlist)
 
+
+# JoinEntities不会自动进行相连排序，同样会遇到下个对象不相连报错
+# entlist = System.Array[Entity](len(buflist)-1) # 'Entity[]' 
+# i = 0
+# for poly in buflist[1:]:
+#     entlist[i] = poly
+#     i += 1
+# buflist[0].JoinEntities(entlist)
+# for poly in buflist[1:]: 
+#     CheckLayerAndColor(poly, "补偿1", 35)
+#     currentblock.AppendEntity(poly)
+#     trans.AddNewlyCreatedDBObject(poly, True) # 不用先提交到CAD，可以Explode 
+#     buflist[0].JoinEntity(poly) # JoinEntity下一个对象如果不与现在对象相连，会出错
 
 
 # GetSelection() 用户在图形中选择实体
@@ -2553,6 +2647,41 @@ def DBObjectConvertPolylineToPolylineXY0(objref):
 # 1042	扩展数据缩放比例
 # 1070	扩展数据 16 位有符号整数
 # 1071	扩展数据 32 位有符号长整数
+
+
+    # buflist = []
+    # pb1, pb2 = TransDimObjectIdListBoundXY0(objidlist)
+    # flagx = (pb1[0]+pb2[0])/2
+    # for objid in objidlist:
+    #     objref =  trans.GetObject(objid, OpenMode.ForRead)
+    #     pt1, pt2 = TransDimTextBoundXY0(objid)
+    #     buflist.append([pt1[0], objid, pt1, pt2])
+
+    # auflist, cuflist = [], []
+    # x1, objid, pt1, pt2 = buflist[0]
+    # basex, basey, basez = pt1
+    # for x1, objid, pt1, pt2 in buflist:
+    #     if abs(x1-basex) < 0.0001 and x1 < flagx: auflist.append([x1, objid, pt1, pt2])
+    #     if abs(x1-basex) < 0.0001 and x1 > flagx: cuflist.append([x1, objid, pt1, pt2])
+
+    # auflist.sort(key = lambda item: item[0], reverse=True)  # 大 -> 小
+    # cuflist.sort(key = lambda item: item[0], reverse=False) # 小 -> 大
+    # sumx = auflist[0][0]
+    # for i, [x1, objid, pt1, pt2] in enumerate(auflist[1:]):
+    #     length, width = pt2[0]-pt1[0], pt2[1]-pt1[1]
+    #     sumx -= (length + width)
+    #     auflist[i][0] = sumx
+    # x1, objid, pt1, pt2 = auflist[0]
+    # sumx = x1 + pt2[0]-pt1[0] + pt2[1]-pt1[1]
+    # for i, [x1, objid, pt1, pt2] in enumerate(cuflist):
+    #         auflist[i][0] = sumx
+    #         length, width = pt2[0]-pt1[0], pt2[1]-pt1[1]
+    #         sumx += (length + width)
+
+    # result = []
+    # for x1, objid, pt1, pt2 in auflist:
+    #     result.append(objid, [x1, basey, 0])
+
 
 
 

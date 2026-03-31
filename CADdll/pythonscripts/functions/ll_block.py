@@ -7,10 +7,10 @@ import academit
 import System
 
 def 命令(): 
-    academit.添加命令("llblock", llblock)
+    # academit.添加命令("llblock", llblock)
     academit.添加命令("llblock-for", llblock_for)
     academit.添加命令("llblock-auto-for", llblock_auto_for)
-    academit.添加命令("llblock-offset", llblock_offset)
+    # academit.添加命令("llblock-offset", llblock_offset)
     academit.添加命令("llblock-offset-for", llblock_offset_for)
     academit.添加命令("llblock-offset-auto-for", llblock_offset_auto_for)
 

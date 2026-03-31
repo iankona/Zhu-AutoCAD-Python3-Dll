@@ -7,8 +7,8 @@ def 命令():
     academit.添加命令("llccb", llccb)
     academit.添加命令("llbreak-all", llbreak_all)
     academit.添加命令("llbreak-point", llbreak_point)
-    academit.添加命令("llbreak-subcount-whi", llbreak_subcount_whi)
-    academit.添加命令("llbreak-sublength-whi", llbreak_sublength_whi)
+    academit.添加命令("llbreak-subcount-for", llbreak_subcount_for)
+    academit.添加命令("llbreak-sublength-for", llbreak_sublength_for)
     academit.添加命令("llbreak-line-use-select", llbreak_line_use_select)
     academit.添加命令("llbreak-select-use-line", llbreak_select_use_line)
     academit.添加命令("llbreak-select-use-select", llbreak_select_use_select)
@@ -148,7 +148,7 @@ def llbreak_point():
 
 
 @acad.decorator_command
-def llbreak_sublength_whi():
+def llbreak_sublength_for():
     sublength = acad.GetDouble(0, "请输入间隔长度:")
     while True:
         pt0, objid = acad.EntSelEntity(string="请选择要打断的对象:")
@@ -189,7 +189,7 @@ def llbreak_sublength_whi():
 
 
 @acad.decorator_command
-def llbreak_subcount_whi():
+def llbreak_subcount_for():
     subcount = acad.GetInt(0, "请输入间隔数量:")
     while True:
         pt0, objid = acad.EntSelEntity(string="请选择要打断的对象:")
