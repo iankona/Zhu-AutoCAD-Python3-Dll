@@ -277,6 +277,22 @@ def llbreak_all():# IntersectWith
 
 
 
+# StartParam
+# EndParam
+# StartPoint
+# EndPoint
+# GetPointAtParameter(double value)
+# GetParameterAtPoint(Point3d point)
+# GetDistanceAtParameter(double value)
+# GetParameterAtDistance(double dist)
+# GetDistAtPoint(Point3d point)
+# GetPointAtDist(double value)
+# GetFirstDerivative(Point3d point)
+# GetFirstDerivative(double value)
+# GetSecondDerivative(Point3d point)
+# GetSecondDerivative(double value)
+
+
 
 # GetDistAtParam
 # EndParam

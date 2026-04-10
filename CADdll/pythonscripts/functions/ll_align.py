@@ -8,6 +8,9 @@ import academit
 import System
 
 def 命令(): 
+    academit.添加命令("llalign-entity-x-for", llalign_entity_x_for)
+    academit.添加命令("llalign-entity-y-for", llalign_entity_y_for)
+
     # academit.添加命令("llalign-pmin-x", llalign_pmin_x)
     # academit.添加命令("llalign-pmin-y", llalign_pmin_y)
     # academit.添加命令("llalign-pmax-x", llalign_pmax_x)
@@ -48,6 +51,36 @@ def zhu_ui_llalign_distance():
 #     ]
 # llzhu_align_filter = [[0, "LWPOLYLINE"]]
 llzhu_align_filter = []
+
+
+
+@acad.decorator_command
+def llalign_entity_y_for():
+    while True:
+        pt1, pt2 = acad.GetPoint2("请选择对象点1:", "请选择对象点2:") 
+        if pt1 == None or pt2 == None: return 
+        # objid1 = acad.GetSelectPickId(pt1)
+        objid2 = acad.GetSelectPickId(pt2)
+        pd1, pd2 = acad.GetEntityBoundXY0(objid2)
+        objidlist = acad.GetSelectCornerCrossIdList(pd1, pd2)
+        dx = pt2[0]-pt1[0]
+        with acad.transaction() as trans:
+            acad.TransMoveIdList(objidlist, pt2, acad.Vec3Add(pt2, [-dx, 0]))
+
+
+@acad.decorator_command
+def llalign_entity_x_for():
+    while True:
+        pt1, pt2 = acad.GetPoint2("请选择对象点1:", "请选择对象点2:") 
+        if pt1 == None or pt2 == None: return 
+        # objid1 = acad.GetSelectPickId(pt1)
+        objid2 = acad.GetSelectPickId(pt2)
+        pd1, pd2 = acad.GetEntityBoundXY0(objid2)
+        objidlist = acad.GetSelectCornerCrossIdList(pd1, pd2)
+        dy = pt2[1]-pt1[1]
+        with acad.transaction() as trans:
+            acad.TransMoveIdList(objidlist, pt2, acad.Vec3Add(pt2, [0, -dy]))
+
 
 
 @acad.decorator_command

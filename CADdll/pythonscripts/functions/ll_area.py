@@ -12,10 +12,30 @@ import subprocess
 
 
 def 命令():  
+    academit.添加命令("llmj-spl-for", llmj_spl_for)
     academit.添加命令("llarea-rec-for", llarea_rec_for)  
     academit.添加命令("llarea-rec-for-save-excel", llarea_rec_for_save_excel)  
 
 
+@acad.decorator_command
+def llmj_spl_for():
+    textsize = acad.GetInt(50, string="请输入文字大小: ")
+    while True:
+        objid1 = acad.EntSel()
+        if acad.IsNone(objid1): return
+        pt1 = acad.GetPoint()
+        if pt1 == None: return 
+        with acad.transaction() as trans:
+            objref = acad.TransObjectForRead(objid1)
+            if type(objref) == acad.Spline:
+                para = objref.EndParam
+                length = objref.GetDistanceAtParameter(para)
+            else:
+                length = objref.Length
+            char = f"{length:.2f}"
+            if char.endswith(".00"): char = char[:-3]
+            acad.AddText(pt1, char, textsize)
+        
 
 zhu_text_size = 100
 

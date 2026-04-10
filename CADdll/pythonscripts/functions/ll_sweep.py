@@ -57,7 +57,6 @@ def llzhu_trans_find_ness_length_pointlist(objid, ness_length):
     for numb, edgelist in bufedgelist[0:2]:
         for edge in edgelist:
             edgeindexlist.append(edge.SubentityPath.SubentId) # SubentityPath 只有在三维轴视图双击过实体或面域才会生效，俯视+二线线框点击出错，需要先切换到三维视图双击
-
     count = len(resultlist)
     indexlist = []
     buflist = []
@@ -111,11 +110,14 @@ def llzhu_trans_find_ness_length_pointlist(objid, ness_length):
         [pt2, pt4] = findlist
         # dr1 = acad.Direct(mid1, mid2)
         # [pt2, pt4] = acad.MatrixRotationPointList(90, dr1, mid1, [pt1, pt3])
-        mid1, mid2 = acad.GetAttachWDirectPointList(mid1, mid2, 2.0)
+        mid1, mid2 = acad.GetAttachWDirectPointList(mid1, mid2, 5)
         lineref1 = acad.AddLine(mid1, mid2)
         triref1 = acad.AddPolyline3d([pt1, pt3, pt2, pt1])
         triref2 = acad.AddPolyline3d([pt1, pt3, pt4, pt1])
-        reflist.append([lineref1, triref1, triref2])
+        dr1 = acad.Direct(pt1, pt3)
+        dr2 = acad.Direct(pt1, pt2)
+        angle = acad.AngleFromDotDr1Dr2(dr1, dr2)
+        reflist.append([lineref1, triref1, triref2, angle])
     return reflist
 
 
@@ -188,16 +190,17 @@ def llsweep_subtract_sheet_cube_for():
     # large_objref.BooleanOperation(BooleanOperationType.BoolSubtract, objref)
     for objid0, buflist in result:
         objidlist1 = []
-        for lineref1, triref1, triref2 in buflist:
+        for lineref1, triref1, triref2, angle in buflist:
+            if angle > 50 or angle < 40: continue
             objid1 = Utils.EntLast()
             ss1 = acad.SSSetFromIdList([triref1.ObjectId, triref2.ObjectId])   
-            acad.Command(["SWEEP", ss1, "", lineref1.ObjectId]), acad.Prompt("\n") # 分开单独扫掠会出错
+            acad.Command(["SWEEP", ss1, "", lineref1.ObjectId,""]), acad.Prompt("\n") # 分开单独扫掠会出错
             objid2 = Utils.EntNext(objid1, skipSubEnt=True)
             objid3 = Utils.EntNext(objid2, skipSubEnt=True)
             objidlist1.append(objid2)
             objidlist1.append(objid3)
         ss2 = acad.SSSetFromIdList(objidlist1)     
-        # acad.SSSetFirst(ss2)
+        acad.SSSetFirst(ss2)
         acad.Command(["SUBTRACT", objid0, "", ss2, ""]), acad.Prompt("\n")
 
 

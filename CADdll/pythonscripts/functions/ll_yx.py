@@ -16,6 +16,8 @@ def 命令():
     academit.添加命令("llyx-fence-sidex-for", llyx_fence_sidex_for)
     academit.添加命令("llyx-fence-sidex-n-for", llyx_fence_sidex_n_for)
     academit.添加命令("llyx-fence-sidex-w-for", llyx_fence_sidex_w_for)
+    academit.添加命令("llyx-fence-line2-side3-for", llyx_fence_line2_side3_for)
+
 
     academit.添加命令("llyx-rect-side3-for", llyx_rect_side3_for)
     academit.添加命令("llyx-rect-side3-extend-for", llyx_rect_side3_extend_for)
@@ -41,6 +43,23 @@ def zhu_ui_llyx_offset():
     global zhu_llyx_offset_length
     length = acad.GetDouble(zhu_llyx_offset_length, "请输入偏移大小: ")
     if length != None: zhu_llyx_offset_length = length
+
+zhu_llyx_attach_length = 2
+def zhu_ui_llyx_attach():
+    global zhu_llyx_attach_length
+    length = acad.GetDouble(zhu_llyx_attach_length, "请输入打标大小: ")
+    if length != None: zhu_llyx_attach_length = length
+
+
+def zhu_trans_llyx_connet_line2(objidlist):
+    objid1, objid2 = objidlist[0:2]
+    pt1, pt2 = acad.TransEntityStartEndPoint(objid1)
+    po1, po2 = acad.TransEntityStartEndPoint(objid2)
+    distance1 = acad.Distance(pt1, po1)
+    distance2 = acad.Distance(pt1, po2)
+    if distance1 > distance2: pt1, pt2 = pt2, pt1
+    line1 = acad.AddLine(pt1, po1)
+    line2 = acad.AddLine(pt2, po2)
 
 
 def zhu_trans_llyx_att_n_point2(pt1, pt2, length): # per direct
@@ -353,6 +372,26 @@ def llyx_fence_sidex_w_for():
             result = acad.TransAutoFindRectFencePointList(pt1, pt2, objidlist)
             for pt1, pt2, dr1 in result:
                 zhu_trans_llyx_per_w_lengthlist(pt1, pt2, dr1, 列表)
+
+
+@acad.decorator_command
+def llyx_fence_line2_side3_for():
+    zhu_ui_llyx_offset()
+    zhu_ui_llyx_attach()
+    while True:
+        pt1, pt2 = acad.GetPoint2()
+        if pt1 == None: return
+        objidlist = acad.GetSelectFenceIdList(pt1, pt2)
+        with acad.transaction() as trans:
+            acad.ChangeObjectIdLayer(objidlist, "图层1")
+            zhu_trans_llyx_connet_line2(objidlist)
+            result = acad.TransFenceLine2PointList(objidlist)
+            for pt1, pt2, dr1 in result:
+                po1, po2, line3 = zhu_trans_llyx_att_n_line2_layer_dabiao1(pt1, pt2, zhu_llyx_attach_length)
+                pt1, pt2, line3 = zhu_trans_llyx_per_p_line3(pt1, pt2, dr1, zhu_llyx_offset_length)
+                line3.Layer = "0"
+
+
 
 
 

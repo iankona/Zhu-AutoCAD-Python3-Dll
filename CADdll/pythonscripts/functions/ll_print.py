@@ -6,21 +6,43 @@ import academit
 import System
 
 def 命令(): 
-    academit.添加命令("ll-print", ll_print)
-    # academit.添加命令("ll-print-bound", ll_print_bound)    
-    academit.添加命令("ll-print-corner", ll_print_corner)
-    academit.添加命令("ll-print-corner-cross", ll_print_corner_cross)
-    academit.添加命令("ll-print-frence", ll_print_frence)
-    academit.添加命令("ll-print-entsel", ll_print_entsel)
-    academit.添加命令("ll-print-clayer", ll_print_current_layer)
-    academit.添加命令("ll-print-point-in-bound", ll_print_point_in_bound)
-    academit.添加命令("ll-print-include", ll_print_include)
-    academit.添加命令("ll-print-dr1dr2-angle", ll_print_dr1dr2_angle)
-    academit.添加命令("ll-print-bound-xyz-for", ll_print_bound_xyz_for)
+    # academit.添加命令("llprint", llprint)
+    # academit.添加命令("llprint-bound", llprint_bound)    
+    academit.添加命令("llprint-group", llprint_group)    
+    academit.添加命令("llprint-corner", llprint_corner)
+    # academit.添加命令("llprint-corner-cross", llprint_corner_cross)
+    # academit.添加命令("llprint-frence", llprint_frence)
+    # academit.添加命令("llprint-entsel", llprint_entsel)
+    # academit.添加命令("llprint-clayer", llprint_current_layer)
+    academit.添加命令("llprint-point-in-bound", llprint_point_in_bound)
+    academit.添加命令("llprint-point-in-polygon", llprint_point_in_polygon)
+    # academit.添加命令("llprint-include", llprint_include)
+    # academit.添加命令("llprint-dr1dr2-angle", llprint_dr1dr2_angle)
+    # academit.添加命令("llprint-bound-xyz-for", llprint_bound_xyz_for)
 
 
 @acad.decorator_command
-def ll_print_dr1dr2_angle():
+def llprint_point_in_polygon():
+    pt1 = acad.GetPoint()
+    objid = acad.EntSel([[0, "LWPOLYLINE"]])
+    if acad.IsNone(objid): return
+    ptlist = acad.GetLWPolyLinePointList(objid)
+    x, y, z = pt1
+    inside = False
+    p1x, p1y, p1z = ptlist[0]
+    for p2x, p2y, p2z in ptlist:
+        if y > min(p1y, p2y):
+            if y <= max(p1y, p2y):
+                if x <= max(p1x, p2x):
+                    if abs(p1y-p2y) > 0.00001: # p1y != p2y
+                        xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                    if abs(p1x-p2x) < 0.00001 or x <= xinters: # p1y == p2y
+                        inside = not inside
+        p1x, p1y = p2x, p2y
+    acad.Prompt(inside), acad.Prompt("\n")
+
+@acad.decorator_command
+def llprint_dr1dr2_angle():
     pt1 = acad.GetPoint("请选择dr1第1个顶点:")
     pt2 = acad.GetPoint("请选择dr1第2个顶点:")
     po1 = acad.GetPoint("请选择dr+2第1个顶点:")
@@ -52,7 +74,7 @@ def ll_print_dr1dr2_angle():
 
 
 @acad.decorator_command
-def ll_print_include():
+def llprint_include():
     objid1 = acad.EntSel()
     objid2 = acad.EntSel()
     acad.IsInclude(objid1, objid2)
@@ -60,7 +82,7 @@ def ll_print_include():
 
 
 @acad.decorator_command
-def ll_print():
+def llprint():
     objid = acad.EntSelSub()
     with acad.transaction() as trans:
         pass
@@ -69,7 +91,7 @@ def ll_print():
 
 
 # @acad.decorator_command
-# def ll_print_bound():
+# def llprint_bound():
 #     objid = acad.EntSel()
 #     pt1, pt2 = acad.GetEntityBound(objid)
 #     acad.CommandAddPoint(pt1)
@@ -78,7 +100,7 @@ def ll_print():
 
 
 @acad.decorator_command
-def ll_print_point_in_bound():
+def llprint_point_in_bound():
     objid = acad.EntSel()
     pt0 = acad.GetPoint()
     pt1, pt2 = acad.GetEntityBound(objid)
@@ -91,14 +113,14 @@ def ll_print_point_in_bound():
 
 
 @acad.decorator_command
-def ll_print_entsel():
+def llprint_entsel():
     ss1 =  acad.SSGet(sel_method=":S")
     acad.Prompt(ss1)
 
 
 
 @acad.decorator_command
-def ll_print_frence():
+def llprint_frence():
     pt1 = acad.GetPoint()
     pt2 = acad.GetPoint(base_point=pt1)
     # ss1 =  acad.SSGet(sel_method="+F")
@@ -106,7 +128,7 @@ def ll_print_frence():
     acad.Prompt(ss1)
 
 @acad.decorator_command
-def ll_print_corner_cross():
+def llprint_corner_cross():
     pt1 = acad.GetPoint()
     pt2 = acad.GetCorner("", pt1)
     # ss1 =  acad.SSGet(sel_method="+F")
@@ -115,7 +137,7 @@ def ll_print_corner_cross():
 
 
 @acad.decorator_command
-def ll_print_corner():
+def llprint_corner():
     pt1 = acad.GetPoint()
     pt2 = acad.GetCorner("", pt1)
     # ss1 =  acad.SSGet(sel_method="+F")
@@ -125,7 +147,7 @@ def ll_print_corner():
 
 
 @acad.decorator_command
-def ll_print_current_layer():
+def llprint_current_layer():
     with acad.transaction() as trans:
         objid = acad.db.Clayer
         layer_record = acad.GetObjectForRead(objid)
@@ -135,7 +157,7 @@ def ll_print_current_layer():
 
 
 @acad.decorator_command
-def ll_print_bound_xyz_for():
+def llprint_bound_xyz_for():
     objlist = acad.SSGetIdList()
     with acad.transaction() as trans:
         for objid in objlist:
@@ -144,6 +166,11 @@ def ll_print_bound_xyz_for():
             acad.Prompt([ptmin, ptmax]), acad.Prompt("\n")  
 
 
+@acad.decorator_command
+def llprint_group():
+    objlist = acad.SSGetIdList()
+    with acad.transaction() as trans:
+        acad.AddGroup(objlist)
 
 
 
@@ -214,3 +241,70 @@ def ll_print_bound_xyz_for():
 #     }
 #     transaction!.Commit();
 # }
+
+
+
+# 以下是一个射线法的Python实现：
+# def is_point_in_polygon(point, polygon):
+
+#     x, y = point
+
+
+#     n = len(polygon)
+
+
+#     inside = False
+
+
+#     p1x, p1y = polygon[0]
+
+
+#     for i in range(n + 1):
+
+
+#         p2x, p2y = polygon[i % n]
+
+
+#         if y > min(p1y, p2y):
+
+
+#             if y <= max(p1y, p2y):
+
+
+#                 if x <= max(p1x, p2x):
+
+
+#                     if p1y != p2y:
+
+
+#                         xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+
+
+#                     if p1x == p2x or x <= xinters:
+
+
+#                         inside = not inside
+
+
+#         p1x, p1y = p2x, p2y
+
+
+#     return inside
+
+
+# 定义多边形的顶点
+
+# polygon_points = [(0, 0), (1, 0), (1, 1), (0, 1)]
+
+
+# 定义需要判断的点
+
+# point = (0.5, 0.5)
+
+
+# 判断点是否在多边形内
+
+# is_inside = is_point_in_polygon(point, polygon_points)
+
+
+# print(is_inside)  # 输出：True

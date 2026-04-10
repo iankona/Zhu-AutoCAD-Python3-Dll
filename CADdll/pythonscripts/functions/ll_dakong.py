@@ -6,6 +6,8 @@ import academit
 import System
 
 def 命令(): 
+    academit.添加命令("lldk-copy-for", lldk_copy_for)
+    academit.添加命令("lldk-jiaoma-for", lldk_jiaoma_for)
     academit.添加命令("lldk-dis-circle-for", lldk_dis_circle_for)
     # academit.添加命令("lldk-div-circle-for", lldk_div_circle_for)
     academit.添加命令("lldk-rec-dis-circle-for", lldk_rec_dis_circle_for)
@@ -29,6 +31,19 @@ def zhu_uidk_dis_circle():
     if gapb != None: zhu_lldk_gapb = gapb
     if lsub != None: zhu_lldk_length_sub = lsub
 
+def zhu_uidk_copy():
+    global zhu_lldk_d, zhu_lldk_r, zhu_lldk_offs, zhu_lldk_gapa, zhu_lldk_gapb, zhu_lldk_length_sub
+    gapa = acad.GetDouble(zhu_lldk_gapa, "请输入边到中心的长度:")
+    lsub = acad.GetDouble(zhu_lldk_length_sub, "请输入间隔长度:")
+    if gapa != None: zhu_lldk_gapa, zhu_lldk_gapb = gapa, gapa
+    if lsub != None: zhu_lldk_length_sub = lsub
+
+
+
+def zhu_uidk_copy_offset():
+    global zhu_lldk_offs
+    offs = acad.GetDouble(zhu_lldk_offs, "请输入边到中心偏线距离:")
+    if offs != None: zhu_lldk_offs = offs
 
 def zhu_lldk_dis_circle(pt1, pt2, pt3):
     dr1 = acad.GetPerDirectXY(pt1, pt2, pt3) 
@@ -89,9 +104,63 @@ def lldk_rec_dis_circle_for():
 
 
 
+@acad.decorator_command
+def lldk_copy_for():
+    zhu_uidk_copy_offset()
+    zhu_uidk_copy()
+    pt1, pt2 = acad.GetPoint2("请选择打孔图像第1点:", "请选择打孔图像第2点:")
+    mid = acad.MidPt1Pt2(pt1, pt2)
+    objid = acad.GetSelectCornerCrossIdList(pt1, pt2)[0]
+    while True:
+        dr1 = acad.Direct(pt1, pt2)
+        po1, po2, po3 = acad.GetPoint3()
+        dr2 = acad.Direct(po1, po2)
+        angle = acad.AngleFromDotDr1Dr2(dr1, dr2)
+        axis = acad.CrossNormalized(dr1, dr2)
+        distance = acad.Distance(po1, po2)
+        distance = distance-zhu_lldk_gapa-zhu_lldk_gapb
+        count = round(distance/zhu_lldk_length_sub)
+        length = distance / count
+        perdr1 = acad.GetPerDirectResetLengthXY(po1, po2, po3, zhu_lldk_offs)
+        dr2 = acad.Vec3ResetLength(dr2, zhu_lldk_gapa)
+        po1 = acad.Vec3Add(po1, perdr1)
+        po1 = acad.Vec3Add(po1, dr2)
+        dr2 = acad.Vec3ResetLength(dr2, length)
+        with acad.transaction() as trans:
+            for i in range(count+1):
+                copy = acad.TransRoationCopy(objid, angle, axis, mid)
+                acad.TransMove(copy.ObjectId, mid, po1)
+                po1 = acad.Vec3Add(po1, dr2)
 
 
 
+
+@acad.decorator_command
+def lldk_jiaoma_for():
+    zhu_uidk_copy_offset()
+    zhu_uidk_copy()
+    pt1, pt2 = acad.GetPoint2("请选择打孔图像第1点:", "请选择打孔图像第2点:")
+    mid = acad.MidPt1Pt2(pt1, pt2)
+    objidlist = acad.GetSelectCornerCrossIdList(pt1, pt2)
+    while True:
+        dr1 = acad.Direct(pt1, pt2)
+        po1, po2, po3 = acad.GetPoint3()
+        dr2 = acad.Direct(po1, po2)
+        angle = acad.AngleFromDotDr1Dr2(dr1, dr2)
+        axis = acad.CrossNormalized(dr1, dr2)
+        distance = acad.Distance(po1, po2)
+        distance = distance-zhu_lldk_gapa
+        count = int(distance/zhu_lldk_length_sub)
+        perdr1 = acad.GetPerDirectResetLengthXY(po1, po2, po3, zhu_lldk_offs)
+        dr2 = acad.Vec3ResetLength(dr2, zhu_lldk_gapa)
+        po1 = acad.Vec3Add(po1, perdr1)
+        po1 = acad.Vec3Add(po1, dr2)
+        dr2 = acad.Vec3ResetLength(dr2, zhu_lldk_length_sub)
+        with acad.transaction() as trans:
+            for i in range(count+1):
+                copyidlist = acad.TransRoationCopyIdList(objidlist, angle, axis, mid)
+                acad.TransMoveIdList(copyidlist, mid, po1)
+                po1 = acad.Vec3Add(po1, dr2)
 
 
 

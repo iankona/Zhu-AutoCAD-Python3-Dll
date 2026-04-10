@@ -25,7 +25,7 @@ def llattach_line_for():
         objidlist = acad.GetSelectFenceIdList(pt1, pt2, [[0, "LWPOLYLINE"]])
         with acad.transaction() as trans:
             for objid in objidlist:
-                pt1, pt2 = acad.TransStartFinalPoint(objid)   
+                pt1, pt2 = acad.TransEntityStartEndPoint(objid)   
                 po1, po2 = acad.GetAttachNDirectPointList(pt1, pt2, zhu_llattach_length) 
                 line1 = acad.AddLine(pt1, po1, layer_name="打标1", color_index=6)
                 line2 = acad.AddLine(pt2, po2, layer_name="打标1", color_index=6)

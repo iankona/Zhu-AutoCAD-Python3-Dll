@@ -18,7 +18,7 @@ from Autodesk.AutoCAD.DatabaseServices import Entity, DBPoint, Extents3d, Polyli
 
 def 命令(): 
     academit.添加命令("lljgbc", lljgbc)
-    academit.添加命令("lljgbc-sheet-for", lljgbc_sheet_for)
+    # academit.添加命令("lljgbc-sheet-for", lljgbc_sheet_for)
 
 
 
@@ -41,7 +41,7 @@ def llzhu_trans_jiguanbuchang_add_region_polyline(objidlist):
         if objref.Layer == "0": collect.Add(objref)
     regions = Region.CreateFromCurves(collect)
     for objref in regions:
-        resultlist = acad.DBObjectConvertRegionToPolylineXYZ(objref)
+        resultlist = acad.DBObjectConvertRegionToPolylineXY0(objref)
         for polyline in resultlist: acad.AddDBObject(polyline, "补偿1", 3)   
 
 
@@ -98,7 +98,6 @@ def lljgbc():
     objidlist = acad.SSGetIdList()   
     pt1, pt2 = acad.GetPoint2("请选择基点: ", "请选择目标位置")
     with acad.transaction() as trans:
-        po1, po2 = acad.TransObjectIdListBoundXY0(objidlist)
         objidlist = acad.TransAutoExplodeObjectIdList(objidlist)
         result = acad.TransAutoFindRegionRectList(objidlist)
     with acad.transaction() as trans: # 涉及前置对象需要先提交cad
@@ -113,12 +112,12 @@ def lljgbc():
 
 
 
-@acad.decorator_command
-def lljgbc_sheet_for():
-    llzhu_ui_jiguanbuchang_input()
-    objidlist = acad.SSGetIdList()   
-    with acad.transaction() as trans:
-        result = llzhu_trans_jiguanbuchang_add_region_polyline(objidlist)
+# @acad.decorator_command
+# def lljgbc_sheet_for():
+#     llzhu_ui_jiguanbuchang_input()
+#     objidlist = acad.SSGetIdList()   
+#     with acad.transaction() as trans:
+#         result = llzhu_trans_jiguanbuchang_add_region_polyline(objidlist)
         # for pline in result:
         #     acad.AddDBObject(pline, "补偿1", 3)   
 

@@ -9,10 +9,11 @@ import academit
 import System
 
 def 命令(): 
+    academit.添加命令("llslto0", llslto0)
+    academit.添加命令("llsl-layerto0", llsl_layerto0)
     academit.添加命令("llsl-color", llsl_color)
     academit.添加命令("llsl-layer", llsl_layer)
     academit.添加命令("llsl-layer-and-color", llsl_layer_and_color)
-    # academit.添加命令("llsl-color-and-layer", llsl_layer_and_color)
     academit.添加命令("llsl", llsl)
     academit.添加命令("llsl-point", llsl_point)
     academit.添加命令("llsl-line", llsl_line)
@@ -38,6 +39,29 @@ def 命令():
     academit.添加命令("llsl-entitysel", llsl_entitysel)
     academit.添加命令("llsl-entsel-textedit", llsl_entsel_textedit)
     pass
+
+
+@acad.decorator_command
+def llslto0(): 
+    objlist = acad.SSGetIdList()
+    with acad.transaction() as trans:
+        for objid in objlist:
+            objref = acad.TransObjectForWrite(objid)
+            objref.Layer = "0"
+
+@acad.decorator_command
+def llsl_layerto0(): 
+    objlist = acad.SSGetIdList()
+    layerlist = []
+    with acad.transaction() as trans:
+        for objid in objlist:
+            objref = acad.TransObjectForRead(objid)
+            layerlist.append(objref.Layer)
+    objlist = acad.SSGetIdList()
+    with acad.transaction() as trans:
+        for objid in objlist:
+            objref = acad.TransObjectForWrite(objid)
+            if objref.Layer in layerlist: objref.Layer = "0"
 
 
 @acad.decorator_command

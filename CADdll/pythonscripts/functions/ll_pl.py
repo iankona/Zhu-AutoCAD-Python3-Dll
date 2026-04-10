@@ -13,10 +13,10 @@ def 命令():
 
 
 
-    academit.添加命令("llpl-to-midpl", llpl_to_midpl)
-    academit.添加命令("llpl-print", llpl_print)
-    academit.添加命令("llpl-add", llpl_add)
-    academit.添加命令("llpl-findstart", llpl_findstart)
+    # academit.添加命令("llpl-to-midpl", llpl_to_midpl)
+    # academit.添加命令("llpl-print", llpl_print)
+    # academit.添加命令("llpl-add", llpl_add)
+    # academit.添加命令("llpl-findstart", llpl_findstart)
     # academit.添加命令("llpl-change-copy-pl", llpl_change_copy_pl)
     # academit.添加命令("llpl-sweep", llpl_sweep)
     # academit.添加命令("llpl-sweep-set", llpl_sweep_set)

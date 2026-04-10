@@ -28,7 +28,7 @@ llzhu_jf_length_sube = 300
 llzhu_jf_length_numb = 5
 llzhu_jf_length_pere = 300
 
-def llzhu_ui_jf_input_clip_sublength(distance):
+def llzhu_ui_jf_input_clip_sublength():
     global llzhu_jf_gapa, llzhu_jf_gapb, llzhu_jf_length_pipe, llzhu_jf_length_sube, llzhu_jf_length_numb, llzhu_jf_length_pere
     gapa = acad.GetDouble(llzhu_jf_gapa, "请输入GapA:")
     pipe = acad.GetDouble(llzhu_jf_length_pipe, "请输入方管宽度:")
@@ -37,6 +37,11 @@ def llzhu_ui_jf_input_clip_sublength(distance):
     if pipe != None: llzhu_jf_length_pipe = pipe
     if sube != None: llzhu_jf_length_sube = sube
     if pere != None: llzhu_jf_length_pere = pere
+    llzhu_jf_gapa = gapa
+
+def llzhu_ui_jf_input_clip_sublength_distance(distance):
+    global llzhu_jf_gapa, llzhu_jf_gapb, llzhu_jf_length_pipe, llzhu_jf_length_sube, llzhu_jf_length_numb, llzhu_jf_length_pere
+    gapa = llzhu_jf_gapa
     distance = distance - llzhu_jf_length_pipe
     if gapa <= 0:
         subcount = distance / (llzhu_jf_length_sube + llzhu_jf_length_pipe)
@@ -53,7 +58,7 @@ def llzhu_ui_jf_input_clip_sublength(distance):
         llzhu_jf_gapa, llzhu_jf_gapb = gapa, gaplength
 
 
-def llzhu_ui_jf_input_clip_sublength_subcount(distance):
+def llzhu_ui_jf_input_clip_sublength_subcount():
     global llzhu_jf_gapa, llzhu_jf_gapb, llzhu_jf_length_pipe, llzhu_jf_length_sube, llzhu_jf_length_numb, llzhu_jf_length_pere
     gapa = acad.GetDouble(llzhu_jf_gapa, "请输入GapA:")
     pipe = acad.GetDouble(llzhu_jf_length_pipe, "请输入方管宽度:")
@@ -64,6 +69,12 @@ def llzhu_ui_jf_input_clip_sublength_subcount(distance):
     if sube != None: llzhu_jf_length_sube = sube
     if numb != None: llzhu_jf_length_numb = numb
     if pere != None: llzhu_jf_length_pere = pere
+    llzhu_jf_gapa = gapa
+
+
+def llzhu_ui_jf_input_clip_sublength_subcount_distance(distance):
+    global llzhu_jf_gapa, llzhu_jf_gapb, llzhu_jf_length_pipe, llzhu_jf_length_sube, llzhu_jf_length_numb, llzhu_jf_length_pere
+    gapa = llzhu_jf_gapa
     distance = distance - llzhu_jf_length_pipe
     gaplength = distance - (llzhu_jf_length_sube + llzhu_jf_length_pipe)*llzhu_jf_length_numb # + llzhu_jf_length_pipe - llzhu_jf_length_pipe
     if gapa <= 0 or gapa >= gaplength:
@@ -74,7 +85,7 @@ def llzhu_ui_jf_input_clip_sublength_subcount(distance):
 
 
 
-def llzhu_ui_jf_input_gap_sublength(distance):
+def llzhu_ui_jf_input_gap_sublength():
     global llzhu_jf_gapa, llzhu_jf_gapb, llzhu_jf_length_pipe, llzhu_jf_length_sube, llzhu_jf_length_numb, llzhu_jf_length_pere
     gapa = acad.GetDouble(llzhu_jf_gapa, "请输入GapA:")
     gapb = acad.GetDouble(llzhu_jf_gapb, "请输入GapB:")
@@ -86,6 +97,9 @@ def llzhu_ui_jf_input_gap_sublength(distance):
     if pipe != None: llzhu_jf_length_pipe = pipe
     if sube != None: llzhu_jf_length_sube = sube
     if pere != None: llzhu_jf_length_pere = pere
+
+def llzhu_ui_jf_input_gap_sublength_distance(distance):
+    global llzhu_jf_gapa, llzhu_jf_gapb, llzhu_jf_length_pipe, llzhu_jf_length_sube, llzhu_jf_length_numb, llzhu_jf_length_pere
     distance = distance - llzhu_jf_gapa - llzhu_jf_gapb
     distance = distance - llzhu_jf_length_pipe
     subcount = distance / (llzhu_jf_length_sube + llzhu_jf_length_pipe)
@@ -94,7 +108,7 @@ def llzhu_ui_jf_input_gap_sublength(distance):
     llzhu_jf_length_numb = count
 
 
-def llzhu_ui_jf_input_gap_subcount(distance):
+def llzhu_ui_jf_input_gap_subcount():
     global llzhu_jf_gapa, llzhu_jf_gapb, llzhu_jf_length_pipe, llzhu_jf_length_sube, llzhu_jf_length_numb, llzhu_jf_length_pere
     gapa = acad.GetDouble(llzhu_jf_gapa, "请输入GapA:")
     gapb = acad.GetDouble(llzhu_jf_gapb, "请输入GapB:")
@@ -106,6 +120,9 @@ def llzhu_ui_jf_input_gap_subcount(distance):
     if pipe != None: llzhu_jf_length_pipe = pipe
     if numb != None: llzhu_jf_length_numb = numb
     if pere != None: llzhu_jf_length_pere = pere
+
+def llzhu_ui_jf_input_gap_subcount_distance(distance):
+    global llzhu_jf_gapa, llzhu_jf_gapb, llzhu_jf_length_pipe, llzhu_jf_length_sube, llzhu_jf_length_numb, llzhu_jf_length_pere
     distance = distance - llzhu_jf_gapa - llzhu_jf_gapb
     distance = distance - llzhu_jf_length_pipe
     llzhu_jf_length_sube = distance/llzhu_jf_length_numb - llzhu_jf_length_pipe
@@ -113,7 +130,7 @@ def llzhu_ui_jf_input_gap_subcount(distance):
 
 
 
-def llzhu_ui_jf_input_sublength(distance):
+def llzhu_ui_jf_input_sublength():
     global llzhu_jf_length_pipe, llzhu_jf_length_sube, llzhu_jf_length_numb, llzhu_jf_length_pere
     pipe = acad.GetDouble(llzhu_jf_length_pipe, "请输入方管宽度:")
     sube = acad.GetDouble(llzhu_jf_length_sube, "请输入分段间隔:")
@@ -121,6 +138,9 @@ def llzhu_ui_jf_input_sublength(distance):
     if pipe != None: llzhu_jf_length_pipe = pipe
     if sube != None: llzhu_jf_length_sube = sube
     if pere != None: llzhu_jf_length_pere = pere
+
+def llzhu_ui_jf_input_sublength_distance(distance):
+    global llzhu_jf_length_pipe, llzhu_jf_length_sube, llzhu_jf_length_numb, llzhu_jf_length_pere
     distance = distance + llzhu_jf_length_pipe
     subcount = distance / (llzhu_jf_length_sube + llzhu_jf_length_pipe)
     count = round(subcount) # 四舍五入
@@ -128,7 +148,7 @@ def llzhu_ui_jf_input_sublength(distance):
     llzhu_jf_length_numb = count
 
 
-def llzhu_ui_jf_input_subcount(distance):
+def llzhu_ui_jf_input_subcount():
     global llzhu_jf_length_pipe, llzhu_jf_length_sube, llzhu_jf_length_numb, llzhu_jf_length_pere
     pipe = acad.GetDouble(llzhu_jf_length_pipe, "请输入方管宽度:")
     numb = acad.GetInt(llzhu_jf_length_numb, "请输入间隔数量:")
@@ -136,6 +156,9 @@ def llzhu_ui_jf_input_subcount(distance):
     if pipe != None: llzhu_jf_length_pipe = pipe
     if numb != None: llzhu_jf_length_numb = numb
     if pere != None: llzhu_jf_length_pere = pere
+
+def llzhu_ui_jf_input_subcount_distance(distance):
+    global llzhu_jf_length_pipe, llzhu_jf_length_sube, llzhu_jf_length_numb, llzhu_jf_length_pere
     distance = distance + llzhu_jf_length_pipe
     llzhu_jf_length_sube = distance/llzhu_jf_length_numb - llzhu_jf_length_pipe
 
@@ -324,169 +347,193 @@ def llzhu_trans_curve_gap_distance_pointlist(objid, pt1):
 
 @acad.decorator_command
 def lljf_line_sublength():
-    pt1, pt2, pt3 = acad.GetPoint3() 
-    if pt1 == None: return
-    llzhu_ui_jf_input_sublength(acad.Distance(pt1, pt2))
-    result = llzhu_calc_line_distance_pointlist(pt1, pt2, pt3)
-    with acad.transaction() as trans:
-        for po1, po2 in result: acad.AddLine(po1, po2)
+    llzhu_ui_jf_input_sublength()
+    while True:
+        pt1, pt2, pt3 = acad.GetPoint3() 
+        if pt1 == None: return
+        llzhu_ui_jf_input_sublength_distance(acad.Distance(pt1, pt2))
+        result = llzhu_calc_line_distance_pointlist(pt1, pt2, pt3)
+        with acad.transaction() as trans:
+            for po1, po2 in result: acad.AddLine(po1, po2)
 
 @acad.decorator_command
 def lljf_line_subcount():
-    pt1, pt2, pt3 = acad.GetPoint3() 
-    if pt1 == None: return
-    llzhu_ui_jf_input_subcount(acad.Distance(pt1, pt2))
-    result = llzhu_calc_line_distance_pointlist(pt1, pt2, pt3)
-    with acad.transaction() as trans:
-        for po1, po2 in result: acad.AddLine(po1, po2)
+    llzhu_ui_jf_input_subcount()
+    while True:
+        pt1, pt2, pt3 = acad.GetPoint3() 
+        if pt1 == None: return
+        llzhu_ui_jf_input_subcount_distance(acad.Distance(pt1, pt2))
+        result = llzhu_calc_line_distance_pointlist(pt1, pt2, pt3)
+        with acad.transaction() as trans:
+            for po1, po2 in result: acad.AddLine(po1, po2)
 
 
 @acad.decorator_command
 def lljf_line_gap_sublength():
-    pt1, pt2, pt3 = acad.GetPoint3() 
-    if pt1 == None: return
-    llzhu_ui_jf_input_gap_sublength(acad.Distance(pt1, pt2))
-    result = llzhu_calc_line_gap_distance_pointlist(pt1, pt2, pt3)
-    with acad.transaction() as trans:
-        for po1, po2 in result: acad.AddLine(po1, po2)
+    llzhu_ui_jf_input_gap_sublength()
+    while True:
+        pt1, pt2, pt3 = acad.GetPoint3() 
+        if pt1 == None: return
+        llzhu_ui_jf_input_gap_sublength_distance(acad.Distance(pt1, pt2))
+        result = llzhu_calc_line_gap_distance_pointlist(pt1, pt2, pt3)
+        with acad.transaction() as trans:
+            for po1, po2 in result: acad.AddLine(po1, po2)
 
 @acad.decorator_command
 def lljf_line_gap_subcount():
-    pt1, pt2, pt3 = acad.GetPoint3() 
-    if pt1 == None: return
-    llzhu_ui_jf_input_gap_subcount(acad.Distance(pt1, pt2))
-    result = llzhu_calc_line_gap_distance_pointlist(pt1, pt2, pt3)
-    with acad.transaction() as trans:
-        for po1, po2 in result: acad.AddLine(po1, po2)
+    llzhu_ui_jf_input_gap_subcount()
+    while True:
+        pt1, pt2, pt3 = acad.GetPoint3() 
+        if pt1 == None: return
+        llzhu_ui_jf_input_gap_subcount_distance(acad.Distance(pt1, pt2))
+        result = llzhu_calc_line_gap_distance_pointlist(pt1, pt2, pt3)
+        with acad.transaction() as trans:
+            for po1, po2 in result: acad.AddLine(po1, po2)
 
 
 @acad.decorator_command
 def lljf_curve_sublength():
-    objid = acad.EntSel()
-    if acad.IsNoneObjectId(objid): return 
-    length = acad.GetEntityLength(objid)
-    llzhu_ui_jf_input_sublength(length)
-    pt1 = acad.GetPoint("请点击方向点: ")
-    pipehalf = llzhu_jf_length_pipe/2
-    with acad.transaction() as trans:
-        result = llzhu_trans_curve_distance_pointlist(objid, pt1)
-        for po1, po2 in result: 
-            line = acad.DBObjectLine(po1, po2)
-            collect = line.GetOffsetCurves(pipehalf)
-            for objref in collect: acad.AddDBObject(objref)
-            collect = line.GetOffsetCurves(-pipehalf)
-            for objref in collect: acad.AddDBObject(objref)
+    llzhu_ui_jf_input_sublength()
+    while True:
+        objid = acad.EntSel()
+        if acad.IsNoneObjectId(objid): return 
+        length = acad.GetEntityLength(objid)
+        llzhu_ui_jf_input_sublength_distance(length)
+        pt1 = acad.GetPoint("请点击方向点: ")
+        pipehalf = llzhu_jf_length_pipe/2
+        with acad.transaction() as trans:
+            result = llzhu_trans_curve_distance_pointlist(objid, pt1)
+            for po1, po2 in result: 
+                line = acad.DBObjectLine(po1, po2)
+                collect = line.GetOffsetCurves(pipehalf)
+                for objref in collect: acad.AddDBObject(objref)
+                collect = line.GetOffsetCurves(-pipehalf)
+                for objref in collect: acad.AddDBObject(objref)
 
 
 @acad.decorator_command
 def lljf_curve_subcount():
-    objid = acad.EntSel()
-    if acad.IsNoneObjectId(objid): return 
-    length = acad.GetEntityLength(objid)
-    llzhu_ui_jf_input_subcount(length)
-    pt1 = acad.GetPoint("请点击方向点: ")
-    pipehalf = llzhu_jf_length_pipe/2
-    with acad.transaction() as trans:
-        result = llzhu_trans_curve_distance_pointlist(objid, pt1)
-        for po1, po2 in result: 
-            # acad.AddLine(po1, po2)
-            line = acad.DBObjectLine(po1, po2)
-            collect = line.GetOffsetCurves(pipehalf)
-            for objref in collect: acad.AddDBObject(objref)
-            collect = line.GetOffsetCurves(-pipehalf)
-            for objref in collect: acad.AddDBObject(objref)
+    llzhu_ui_jf_input_subcount()
+    while True:
+        objid = acad.EntSel()
+        if acad.IsNoneObjectId(objid): return 
+        length = acad.GetEntityLength(objid)
+        llzhu_ui_jf_input_subcount_distance(length)
+        pt1 = acad.GetPoint("请点击方向点: ")
+        pipehalf = llzhu_jf_length_pipe/2
+        with acad.transaction() as trans:
+            result = llzhu_trans_curve_distance_pointlist(objid, pt1)
+            for po1, po2 in result: 
+                # acad.AddLine(po1, po2)
+                line = acad.DBObjectLine(po1, po2)
+                collect = line.GetOffsetCurves(pipehalf)
+                for objref in collect: acad.AddDBObject(objref)
+                collect = line.GetOffsetCurves(-pipehalf)
+                for objref in collect: acad.AddDBObject(objref)
 
 
 
 
 @acad.decorator_command
 def lljf_curve_gap_sublength():
-    objid = acad.EntSel()
-    if acad.IsNoneObjectId(objid): return 
-    length = acad.GetEntityLength(objid)
-    llzhu_ui_jf_input_gap_sublength(length)
-    pt1 = acad.GetPoint("请点击方向点: ")
-    pipehalf = llzhu_jf_length_pipe/2
-    with acad.transaction() as trans:
-        result = llzhu_trans_curve_gap_distance_pointlist(objid, pt1)
-        for po1, po2 in result: 
-            line = acad.DBObjectLine(po1, po2)
-            collect = line.GetOffsetCurves(pipehalf)
-            for objref in collect: acad.AddDBObject(objref)
-            collect = line.GetOffsetCurves(-pipehalf)
-            for objref in collect: acad.AddDBObject(objref)
+    llzhu_ui_jf_input_gap_sublength()
+    while True:
+        objid = acad.EntSel()
+        if acad.IsNoneObjectId(objid): return 
+        length = acad.GetEntityLength(objid)
+        llzhu_ui_jf_input_gap_sublength_distance(length)
+        pt1 = acad.GetPoint("请点击方向点: ")
+        pipehalf = llzhu_jf_length_pipe/2
+        with acad.transaction() as trans:
+            result = llzhu_trans_curve_gap_distance_pointlist(objid, pt1)
+            for po1, po2 in result: 
+                line = acad.DBObjectLine(po1, po2)
+                collect = line.GetOffsetCurves(pipehalf)
+                for objref in collect: acad.AddDBObject(objref)
+                collect = line.GetOffsetCurves(-pipehalf)
+                for objref in collect: acad.AddDBObject(objref)
 
 
 @acad.decorator_command
 def lljf_curve_gap_subcount():
-    objid = acad.EntSel()
-    if acad.IsNoneObjectId(objid): return 
-    length = acad.GetEntityLength(objid)
-    llzhu_ui_jf_input_gap_subcount(length)
-    pt1 = acad.GetPoint("请点击方向点: ")
-    pipehalf = llzhu_jf_length_pipe/2
-    with acad.transaction() as trans:
-        result = llzhu_trans_curve_gap_distance_pointlist(objid, pt1)
-        for po1, po2 in result: 
-            # acad.AddLine(po1, po2)
-            line = acad.DBObjectLine(po1, po2)
-            collect = line.GetOffsetCurves(pipehalf)
-            for objref in collect: acad.AddDBObject(objref)
-            collect = line.GetOffsetCurves(-pipehalf)
-            for objref in collect: acad.AddDBObject(objref)
+    llzhu_ui_jf_input_gap_subcount()
+    while True:
+        objid = acad.EntSel()
+        if acad.IsNoneObjectId(objid): return 
+        length = acad.GetEntityLength(objid)
+        llzhu_ui_jf_input_gap_subcount_distance(length)
+        pt1 = acad.GetPoint("请点击方向点: ")
+        pipehalf = llzhu_jf_length_pipe/2
+        with acad.transaction() as trans:
+            result = llzhu_trans_curve_gap_distance_pointlist(objid, pt1)
+            for po1, po2 in result: 
+                # acad.AddLine(po1, po2)
+                line = acad.DBObjectLine(po1, po2)
+                collect = line.GetOffsetCurves(pipehalf)
+                for objref in collect: acad.AddDBObject(objref)
+                collect = line.GetOffsetCurves(-pipehalf)
+                for objref in collect: acad.AddDBObject(objref)
 
 
 
 @acad.decorator_command
 def lljf_line_clip_sublength():
-    pt1, pt2, pt3 = acad.GetPoint3() 
-    if pt1 == None: return
-    llzhu_ui_jf_input_clip_sublength(acad.Distance(pt1, pt2))
-    result = llzhu_calc_line_gap_distance_pointlist(pt1, pt2, pt3)
-    with acad.transaction() as trans:
-        for po1, po2 in result: acad.AddLine(po1, po2)
+    llzhu_ui_jf_input_clip_sublength()
+    while True:
+        pt1, pt2, pt3 = acad.GetPoint3() 
+        if pt1 == None: return
+        llzhu_ui_jf_input_clip_sublength_distance(acad.Distance(pt1, pt2))
+        result = llzhu_calc_line_gap_distance_pointlist(pt1, pt2, pt3)
+        with acad.transaction() as trans:
+            for po1, po2 in result: acad.AddLine(po1, po2)
 
 @acad.decorator_command
 def lljf_line_clip_sublength_subcount():
-    pt1, pt2, pt3 = acad.GetPoint3() 
-    if pt1 == None: return
-    llzhu_ui_jf_input_clip_sublength_subcount(acad.Distance(pt1, pt2))
-    result = llzhu_calc_line_gap_distance_pointlist(pt1, pt2, pt3)
-    with acad.transaction() as trans:
-        for po1, po2 in result: acad.AddLine(po1, po2)
+    llzhu_ui_jf_input_clip_sublength_subcount()
+    while True:
+        pt1, pt2, pt3 = acad.GetPoint3() 
+        if pt1 == None: return
+        llzhu_ui_jf_input_clip_sublength_subcount_distance(acad.Distance(pt1, pt2))
+        result = llzhu_calc_line_gap_distance_pointlist(pt1, pt2, pt3)
+        with acad.transaction() as trans:
+            for po1, po2 in result: acad.AddLine(po1, po2)
 
 
 @acad.decorator_command
 def lljf_curve_clip_sublength():
-    objid = acad.EntSel()
-    if acad.IsNoneObjectId(objid): return 
-    length = acad.GetEntityLength(objid)
-    llzhu_ui_jf_input_clip_sublength(length)
-    pt1 = acad.GetPoint("请点击方向点: ")
-    pipehalf = llzhu_jf_length_pipe/2
-    with acad.transaction() as trans:
-        result = llzhu_trans_curve_gap_distance_pointlist(objid, pt1)
-        for po1, po2 in result: 
-            line = acad.DBObjectLine(po1, po2)
-            collect = line.GetOffsetCurves(pipehalf)
-            for objref in collect: acad.AddDBObject(objref)
-            collect = line.GetOffsetCurves(-pipehalf)
-            for objref in collect: acad.AddDBObject(objref)
+    llzhu_ui_jf_input_clip_sublength()
+    while True:
+        objid = acad.EntSel()
+        if acad.IsNoneObjectId(objid): return 
+        length = acad.GetEntityLength(objid)
+        llzhu_ui_jf_input_clip_sublength_distance(length)
+        pt1 = acad.GetPoint("请点击方向点: ")
+        pipehalf = llzhu_jf_length_pipe/2
+        with acad.transaction() as trans:
+            result = llzhu_trans_curve_gap_distance_pointlist(objid, pt1)
+            for po1, po2 in result: 
+                line = acad.DBObjectLine(po1, po2)
+                collect = line.GetOffsetCurves(pipehalf)
+                for objref in collect: acad.AddDBObject(objref)
+                collect = line.GetOffsetCurves(-pipehalf)
+                for objref in collect: acad.AddDBObject(objref)
 
 
 @acad.decorator_command
 def lljf_curve_clip_sublength_subcount():
-    objid = acad.EntSel()
-    if acad.IsNoneObjectId(objid): return 
-    length = acad.GetEntityLength(objid)
-    llzhu_ui_jf_input_clip_sublength_subcount(length)
-    pt1 = acad.GetPoint("请点击方向点: ")
-    pipehalf = llzhu_jf_length_pipe/2
-    with acad.transaction() as trans:
-        result = llzhu_trans_curve_gap_distance_pointlist(objid, pt1)
-        for po1, po2 in result: 
-            line = acad.DBObjectLine(po1, po2)
-            collect = line.GetOffsetCurves(pipehalf)
-            for objref in collect: acad.AddDBObject(objref)
-            collect = line.GetOffsetCurves(-pipehalf)
-            for objref in collect: acad.AddDBObject(objref)
+    llzhu_ui_jf_input_clip_sublength_subcount()
+    while True:
+        objid = acad.EntSel()
+        if acad.IsNoneObjectId(objid): return 
+        length = acad.GetEntityLength(objid)
+        llzhu_ui_jf_input_clip_sublength_subcount_distance(length)
+        pt1 = acad.GetPoint("请点击方向点: ")
+        pipehalf = llzhu_jf_length_pipe/2
+        with acad.transaction() as trans:
+            result = llzhu_trans_curve_gap_distance_pointlist(objid, pt1)
+            for po1, po2 in result: 
+                line = acad.DBObjectLine(po1, po2)
+                collect = line.GetOffsetCurves(pipehalf)
+                for objref in collect: acad.AddDBObject(objref)
+                collect = line.GetOffsetCurves(-pipehalf)
+                for objref in collect: acad.AddDBObject(objref)

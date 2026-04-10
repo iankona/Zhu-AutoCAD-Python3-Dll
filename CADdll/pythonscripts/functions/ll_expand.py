@@ -5,6 +5,7 @@ import System
 
 
 def 命令(): 
+    academit.添加命令("rob", roa)
     academit.添加命令("roc", roc)
     academit.添加命令("xlv", xlv)
     academit.添加命令("xlh", xlh)
@@ -29,3 +30,15 @@ def xlh():
 @acad.decorator_command
 def zooma():
     acad.Command(["zoom", "a"])
+
+@acad.decorator_command
+def roa():
+    while True:
+        ss1 = acad.SSGet()
+        if ss1 == None: return
+        pt1, pt2 = acad.GetPoint2()
+        if pt1 == None: return
+        angle = acad.GetDouble(-90)
+        acad.Command(["rotate3d", ss1, "", acad.ToPoint3d(pt1), acad.ToPoint3d(pt2), angle])
+
+

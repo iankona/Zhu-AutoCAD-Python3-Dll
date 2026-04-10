@@ -6,6 +6,7 @@ import academit
 import System
 
 def 命令(): 
+    academit.添加命令("llconnet-line-and-line-for", llconnet_line_and_line_for)
     academit.添加命令("llconnet-pl-and-pl-for", llconnet_pl_and_pl_for)
     # academit.添加命令("llconnet-rect-and-rect-simple", llconnet_rect_and_rect_simple)
     academit.添加命令("llconnet-rect-and-rect-point", llconnet_rect_and_rect_point)
@@ -27,6 +28,64 @@ def zhu_connet_rect_and_rect(ptnlist, ptwlist):
         pt2 = lengthlist[0][0]
         buflist.append([pt1, pt2])
     return buflist
+
+
+def llzhu_trans_connect_line_and_line(objidlist):
+    result = []
+    objid1, objid2 = objidlist[0:2]
+    pt1, mid1, pt2 = acad.TransEntityStartMidEndPoint(objid1)
+    po1, mid2, po2 = acad.TransEntityStartMidEndPoint(objid2)
+    dr1 = acad.Direct(mid2, mid1)
+    dr1 = acad.Vec3ResetLength(dr1, 18)
+    pt4 = acad.Vec3Add(pt1, dr1)
+    pt3 = acad.Vec3Add(pt2, dr1)
+    result.append([pt2, pt3])
+    result.append([pt3, pt4])
+    result.append([pt1, pt4])
+    dr1 = acad.Direct(mid1, mid2)
+    dr1 = acad.Vec3ResetLength(dr1, 18)
+    po4 = acad.Vec3Add(po1, dr1)
+    po3 = acad.Vec3Add(po2, dr1)
+    result.append([po2, po3])
+    result.append([po3, po4])
+    result.append([po1, po4])
+    pa1, pa2 = acad.GetAttachNDirectPointList(pt1, pt2, 2.0)
+    result.append([pt1, pa1])
+    result.append([pt2, pa2])
+    pa1, pa2 = acad.GetAttachNDirectPointList(po1, po2, 2.0)
+    result.append([po1, pa1])
+    result.append([po2, pa2])
+    length1 = acad.Distance(pt1, po1)
+    length2 = acad.Distance(pt1, po2)
+    if length1 < length2: 
+        result.append([pt1, po1])
+    else:
+        result.append([pt1, po2])
+    length1 = acad.Distance(pt2, po1)
+    length2 = acad.Distance(pt2, po2)
+    if length1 < length2: 
+        result.append([pt2, po1])
+    else:
+        result.append([pt2, po2])
+    return result
+
+
+@acad.decorator_command
+def llconnet_line_and_line_for():
+    while True: 
+        pt1, pt2 = acad.GetPoint2()
+        if pt1 == None: return
+        objidlist = acad.GetSelectFenceIdList(pt1, pt2)
+        with acad.transaction() as trans:
+            result = llzhu_trans_connect_line_and_line(objidlist)
+            for pt1, pt2 in result: 
+                if acad.Distance(pt1, pt2) < 2.1:
+                    acad.AddLine(pt1, pt2, "打标1", 6)
+                else:
+                    acad.AddLine(pt1, pt2)
+        
+
+
 
 
 @acad.decorator_command

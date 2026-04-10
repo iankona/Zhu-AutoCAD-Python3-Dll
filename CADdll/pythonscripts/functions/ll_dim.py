@@ -9,8 +9,7 @@ import time
 def 命令(): 
     academit.添加命令("lldim-for", lldim_for)
     academit.添加命令("lldim-entsel-for", lldim_entsel_for)
-    academit.添加命令("lldim-fence-qdim-x-for", lldim_fence_qdim_x_for)
-    academit.添加命令("lldim-fence-qdim-y-for", lldim_fence_qdim_y_for)
+    academit.添加命令("lldim-fence-qdim-for", lldim_fence_qdim_for)
     academit.添加命令("lldim-align-for", lldim_align_for)
 
 
@@ -58,6 +57,28 @@ def lldim_entsel_for():
             pd1 = acad.Vec3Add(pd1, dr1)
             acad.TransCurrentDimStyle(f"副本{llzhu_dim_biaohao} ISO-25")
             acad.AddDal(pt1, pt2, pd1)
+
+
+@acad.decorator_command
+def lldim_fence_qdim_for():
+    llzhu_ui_dim_input()
+    while True:
+        pt1, pt2, pt3 = acad.GetPoint3(baseptflag=True)
+        if pt1 == None: break
+        objidlist = acad.GetSelectFenceIdList(pt1, pt2, llzhu_dim_filter)
+        [x1, y1, z1], [x2, y2, z2] = acad.GetIdListBoundXY0(objidlist)
+        dr1 = acad.GetPerDirectXY(pt1, pt2, pt3)
+        angle1 = acad.AngleFromDotDr1Dr2(dr1, [ 1, 0, 0])
+        angle2 = acad.AngleFromDotDr1Dr2(dr1, [-1, 0, 0])
+        angle3 = acad.AngleFromDotDr1Dr2(dr1, [0,  1, 0])
+        angle4 = acad.AngleFromDotDr1Dr2(dr1, [0, -1, 0])
+        if angle1 < 45: pd3 = [x2+llzhu_dim_height, (y1+y2)/2, 0] # +X
+        if angle2 < 45: pd3 = [x1-llzhu_dim_height, (y1+y2)/2, 0] # -X
+        if angle3 < 45: pd3 = [(x1+x2)/2, y2+llzhu_dim_height, 0] # +Y
+        if angle4 < 45: pd3 = [(x1+x2)/2, y1-llzhu_dim_height, 0] # -Y
+        ss1 = acad.SSSetFromIdList(objidlist)
+        acad.SetCurrentDimStyle(f"副本{llzhu_dim_biaohao} ISO-25")
+        acad.Command(["qdim", ss1, "", acad.ToPoint3d(pd3)])
 
 
 
@@ -116,7 +137,6 @@ def lldim_align_for():
         objidlist = acad.GetSelectFenceIdList(pt1, pt2)
         with acad.transaction() as trans:
             result = acad.TransAutoDimTextAlignPointList(objidlist, pt1, pt2)
-            print(result)
             for objid, pt0 in result:
                 objref = acad.TransObjectForWrite(objid)
                 objref.TextPosition = acad.ToPoint3d(pt0)

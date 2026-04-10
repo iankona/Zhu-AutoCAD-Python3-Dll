@@ -10,8 +10,8 @@ from Autodesk.AutoCAD.EditorInput import SelectionMethod, PromptStringOptions, S
 from Autodesk.AutoCAD.EditorInput import SelectedObject, SelectionMethod, PromptNestedEntityOptions, PromptDistanceOptions
 
 # from Autodesk.AutoCAD.Runtime
-from Autodesk.AutoCAD.DatabaseServices import Line, Arc, ObjectId, Transaction, OpenMode, BlockTable, BlockTableRecord, BlockReference, LayerTableRecord, ObjectIdCollection, TypedValue, DxfCode, DwgVersion
-from Autodesk.AutoCAD.DatabaseServices import Entity, DBPoint, Extents3d, Polyline, Polyline3d, Line, Circle, Poly3dType, DBText, MText, Region, DBObjectCollection, Intersect
+from Autodesk.AutoCAD.DatabaseServices import Line, Arc, ObjectId, Spline, Transaction, OpenMode, BlockTable, BlockTableRecord, BlockReference, LayerTableRecord, ObjectIdCollection, TypedValue, DxfCode, DwgVersion
+from Autodesk.AutoCAD.DatabaseServices import Entity, DBPoint, Extents3d, Polyline, Polyline3d, Line, Circle, Poly3dType, DBText, MText, Region, DBObjectCollection, Intersect, Group
 from Autodesk.AutoCAD.DatabaseServices import RotatedDimension, AlignedDimension, FullSubentityPath, AssocPersSubentityIdPE
 
 
@@ -243,13 +243,16 @@ def GetPoint2(string1="", string2=""):
     return pt1, pt2
 
 
-def GetPoint3(string1="", string2="", string3=""):
+def GetPoint3(string1="", string2="", string3="", baseptflag=False):
     if string1 == "": string1 = "请选择第1个点:"
     if string2 == "": string2 = "请选择第2个点:"
     if string3 == "": string3 = "请选择第3个点:"
     pt1 = GetPoint(string1)
     if pt1 == None: return None, None, None
-    pt2 = GetPoint(string2)
+    if baseptflag:
+        pt2 = GetPoint(string2, pt1)
+    else:
+        pt2 = GetPoint(string2)
     if pt2 == None: return None, None, None
     pt3 = GetPoint(string3)
     if pt3 == None: return None, None, None
@@ -354,7 +357,7 @@ def GetSelectPick(pt1, dxfcode_filter_list=[]):
     return ss1
 
 
-def GetObjectIdPick(pt1, dxfcode_filter_list=[]):
+def GetSelectPickId(pt1, dxfcode_filter_list=[]):
     ss1 = GetSelectCornerCross(pt1, pt1, dxfcode_filter_list)
     objidlist = ss1.GetObjectIds()
     return objidlist[0]
@@ -606,6 +609,18 @@ def TransRoationCopy(objid, angle, axis=[], center=[], layer_name="", color_inde
     AddDBObject(copyentity, layer_name, color_index)
     return copyentity
 
+def TransRoationCopyIdList(objidlist, angle, axis=[], center=[], layer_name="", color_index=0):
+    result = []
+    for objid in objidlist:
+        copyref = TransRoationCopy(objid, angle, axis, center, layer_name, color_index)
+        result.append(copyref.ObjectId)
+    return result
+
+def TransMoveIdList(objidlist, sourcept=[0,0,0], targetpt=[0,0,0], layer_name="", color_index=0):
+    for objid in objidlist:
+        TransMove(objid, sourcept, targetpt, layer_name, color_index)
+    return objidlist
+
 
 def TransMove(objid, sourcept=[0,0,0], targetpt=[0,0,0], layer_name="", color_index=0):
     pt1, pt2 = Vec2toVec3(sourcept), Vec2toVec3(targetpt)
@@ -617,7 +632,7 @@ def TransMove(objid, sourcept=[0,0,0], targetpt=[0,0,0], layer_name="", color_in
     return entity
 
 
-def TransRoation(objid, angle, axis=[], center=[]):
+def TransRoation(objid, angle, axis=[], center=[], layer_name="", color_index=0):
     center = ToPoint3d(center)
     axis = Vector3d(*axis)
     rad = angle * 0.01745329
@@ -625,6 +640,16 @@ def TransRoation(objid, angle, axis=[], center=[]):
     entity = trans.GetObject(objid, OpenMode.ForWrite)
     entity.TransformBy(matrix4x4)
     return entity
+
+
+
+def TransRoationIdList(objidlist, angle, axis=[], center=[], layer_name="", color_index=0):
+    result = []
+    for objid in objidlist:
+        copyref = TransRoation(objid, angle, axis, center, layer_name, color_index)
+        result.append(copyref.ObjectId)
+    return result
+
 
 
 def TransDimTextBoundXY0(objid):
@@ -721,6 +746,14 @@ def AddLWPolyLine(ptlist, layer_name="", color_index=0):
     pline = Polyline()
     for i, pt1 in enumerate(ptlist):
         pline.AddVertexAt(i, ToPoint2d(pt1), 0, 0, 0)
+    AddDBObject(pline, layer_name, color_index)
+    return pline
+
+def AddMKPolyLine(ptlist, layer_name="", color_index=0):
+    pline = Polyline()
+    for i, pt1 in enumerate(ptlist):
+        pline.AddVertexAt(i, ToPoint2d(pt1), 0, 0, 0)
+    pline.Closed = True
     AddDBObject(pline, layer_name, color_index)
     return pline
 
@@ -834,8 +867,15 @@ def AddDimLinear(pt1, pt2, direct="+x", dle=50, dimflagnum=50):
 
 
 
-
-
+def AddGroup(objidlist):
+    groupdict = trans.GetObject(db.GroupDictionaryId, OpenMode.ForWrite)
+    name = CalcGroupName()
+    group = Group(name, True)
+    for objid in objidlist:
+        group.Append(objid)
+    objid = groupdict.SetAt(name, group)
+    trans.AddNewlyCreatedDBObject(group, True)
+    return group
 
 
 def AddPolyline3d(ptlist, layer_name="", color_index=0):
@@ -845,6 +885,15 @@ def AddPolyline3d(ptlist, layer_name="", color_index=0):
     pline = Polyline3d(Poly3dType.SimplePoly, collection, False) # Closed = True
     AddDBObject(pline, layer_name, color_index)
     return pline
+
+def AddMKPolyline3d(ptlist, layer_name="", color_index=0):
+    collection = Point3dCollection()
+    for pt1 in ptlist:
+        collection.Add(ToPoint3d(pt1))
+    pline = Polyline3d(Poly3dType.SimplePoly, collection, True) # Closed = True
+    AddDBObject(pline, layer_name, color_index)
+    return pline
+
 
 
 def AddRegion(dbobj_collect:DBObjectCollection, layer_name="", color_index=0):
@@ -894,6 +943,15 @@ def DBObjectLWPolyLine(ptlist):
         pline.AddVertexAt(i, ToPoint2d(pt1), 0, 0, 0)
     return pline
 
+
+def DBObjectMKPolyLine(ptlist, layer_name="", color_index=0):
+    pline = Polyline()
+    for i, pt1 in enumerate(ptlist):
+        pline.AddVertexAt(i, ToPoint2d(pt1), 0, 0, 0)
+    pline.Closed = True
+    return pline
+
+
 def DBObjectCopy(objref):
     matrix4x4 = Matrix3d.Identity # 单位矩阵
     copyobjref = objref.GetTransformedCopy(matrix4x4)
@@ -906,11 +964,23 @@ zhu_block_name_count = 1
 def CalcBlockName():
     global zhu_block_name_count
     timestr = time.strftime("%Y%m%d%H%M%S")
-    namestr = f"ZBlock"+timestr+f"{zhu_block_name_count:03d}"
-    Prompt(namestr)
+    namestr = f"ZHUB"+timestr+f"{zhu_block_name_count:03d}"
+    # Prompt(namestr)
     zhu_block_name_count += 1
     if zhu_block_name_count > 999: zhu_block_name_count = 1
     return namestr
+
+
+zhu_group_name_count = 1
+def CalcGroupName():
+    global zhu_group_name_count
+    timestr = time.strftime("%Y%m%d%H%M%S")
+    namestr = f"ZHUG"+timestr+f"{zhu_group_name_count:03d}"
+    # Prompt(namestr)
+    zhu_group_name_count += 1
+    if zhu_group_name_count > 999: zhu_group_name_count = 1
+    return namestr
+
 
 def AddBlockFromIdList(objidlist, base_point=[0,0,0]):
     # 创建块
@@ -1017,6 +1087,44 @@ def TransLWPolyLinePointList(objid:ObjectId):
     return result
 
 
+def TransMKPolyLinePointList(objid:ObjectId):
+    pline = trans.GetObject(objid, OpenMode.ForRead)
+    result = []
+    if pline.Closed:
+        for i in range(pline.NumberOfVertices):
+            point = pline.GetPoint3dAt(i)
+            result.append([point.X, point.Y, point.Z])
+    return result
+
+
+def TransMKPolyLineDirectList(objid:ObjectId):
+    ptlist = TransMKPolyLinePointList(objid)
+    if ptlist == []: return []
+    ptlist = ptlist + ptlist[0:1]
+    drlist = []
+    for i in range(len(ptlist)-1):
+        pt1 = ptlist[i]
+        pt2 = ptlist[i+1]
+        dr1 = Direct(pt1, pt2)
+        drlist.append(dr1)
+    return drlist
+
+
+
+
+def TransLWPolyLineDirectList(objid:ObjectId):
+    ptlist = TransLWPolyLinePointList(objid)
+    drlist = []
+    for i in range(len(ptlist)-1):
+        pt1 = ptlist[i]
+        pt2 = ptlist[i+1]
+        dr1 = Direct(pt1, pt2)
+        drlist.append(dr1)
+    return drlist
+
+
+
+
 # def TransLWPolyLineArea(objid:ObjectId):
 #     dbobj_collect = DBObjectCollection()
 #     matrix4x4 = Matrix3d.Identity # 单位矩阵
@@ -1027,7 +1135,14 @@ def TransLWPolyLinePointList(objid:ObjectId):
 #     region = regions[0]
 #     return region.Area
 
-
+def TransEntityStartMidEndPoint(objid:ObjectId):
+    objref = trans.GetObject(objid, OpenMode.ForRead)
+    point1 = objref.StartPoint
+    point2 = objref.EndPoint
+    pt1 = [point1.X, point1.Y, point1.Z]
+    mid = [(point1.X+point2.X)/2, (point1.Y+point2.Y)/2, (point1.Z+point2.Z)/2]
+    pt2 = [point2.X, point2.Y, point2.Z]
+    return pt1, mid, pt2
 
 def TransEntityStartEndPoint(objid:ObjectId):
     objref = trans.GetObject(objid, OpenMode.ForRead)
@@ -1305,6 +1420,8 @@ def IsNone(objid):
     return False
 
 
+
+
 def IsPointInRect(pt0, ptlist=[]):
     pt1, pt2, pt3, pt4 = ptlist
     flag1 = GetPerflagXY(pt1, pt2, pt0)
@@ -1385,7 +1502,21 @@ def IsPointSame(pt1, pt2, precision=0.00001):
     if flag1 and flag2 and flag3: return True
     return False
 
-
+def IsPointInLWPolyLinePointList(pt1, ptlist): # ptlist 来自GetLWPoly not GetMkPoly
+    x, y = pt1[0:2]
+    inside = False
+    p1x, p1y = ptlist[0][0:2]
+    for pt2 in ptlist:
+        p2x, p2y = pt2[0:2]
+        if y > min(p1y, p2y):
+            if y <= max(p1y, p2y):
+                if x <= max(p1x, p2x):
+                    if abs(p1y-p2y) > 0.00001: # p1y != p2y
+                        xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                    if abs(p1x-p2x) < 0.00001 or x <= xinters: # p1y == p2y
+                        inside = not inside
+        p1x, p1y = p2x, p2y
+    return inside
 
 def ToPoint2d(pt0):
     x, y = pt0[0:2]
@@ -1563,9 +1694,18 @@ def MatrixRotationPointList(angle, axis, center, ptlist=[]):
     return resultlist
         
         
-
-
-
+def PointToPointNormalPlane(pt1, pt0, normal):
+    # 平面 点法式
+    # Ax + By + Cz - (Ax0 + By0 + Cz0) = 0
+    x0, y0, z0 = pt0
+    A , B , C  = normal
+    D = -(A*x0 + B*y0 + C*z0)
+    x1, y1, z1 = pt1
+    t = (A*x1 + B*y1 + C*z1 + D)/(A**2 + B**2 + C**2)
+    x = x1 - A*t
+    y = y1 - B*t
+    z = z1 - C*t
+    return [x, y, z]
 
 
 def GetAttachGapAGapBPt1Pt2(pt1, pt2, gapa, gapb):
@@ -1652,9 +1792,9 @@ def WhichSideOfLineXY(pt1, pt2, pt3):
     x2, y2, z2 = Vec2toVec3(pt2)
     x3, y3, z3 = Vec2toVec3(pt3)
     flag = (x2-x1) * (y3-y1) - (y2-y1) * (x3-x1)
-    if flag > 0: flag =  1
-    if flag < 0: flag = -1
-    return flag
+    if flag > 0: return  1
+    if flag < 0: return -1
+    return 0
 
 
 def GetPerflagXY(pt1, pt2, pt3):
@@ -1980,7 +2120,15 @@ def GetSSBoundCenterXY0(ss1:SelectionSet):
         point2 = extend.MaxPoint
     return [(point1.X+point2.X)/2, (point1.Y+point2.Y)/2, 0]
 
-
+def GetMKPolyLinePointList(objid:ObjectId):
+    result = []
+    with transaction() as trans:
+        pline = trans.GetObject(objid, OpenMode.ForRead)            
+        if pline.Closed:
+            for i in range(pline.NumberOfVertices):
+                point = pline.GetPoint3dAt(i)
+                result.append([point.X, point.Y, point.Z])
+    return result
 
 def GetLWPolyLinePointList(objid:ObjectId):
     with transaction() as trans:
@@ -1992,6 +2140,25 @@ def GetLWPolyLinePointList(objid:ObjectId):
     if pline.Closed: return result + result[0:1]
     return result
 
+def GetLWPolyLineLengthAndLengthAtPoint(objid:ObjectId, pt1):
+    with transaction() as trans:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        length = objref.GetDistAtPoint(ToPoint3d(pt1)) 
+    return objref.Length, length
+
+
+
+def GetMKPolyLineDirectList(objid:ObjectId):
+    ptlist = GetMKPolyLinePointList(objid)
+    if ptlist == []: return []
+    ptlist = ptlist + ptlist[0:1]
+    drlist = []
+    for i in range(len(ptlist)-1):
+        pt1 = ptlist[i]
+        pt2 = ptlist[i+1]
+        dr1 = Direct(pt1, pt2)
+        drlist.append(dr1)
+    return drlist
 
 
 def GetLWPolyLineDirectList(objid:ObjectId):
@@ -2223,7 +2390,25 @@ def CountColorIndexSet(count=1):
     zhu_count = count
 
 
+def TransExplodeIdList(objidlist):
+    buflist = []
+    for objid in objidlist:
+        objref = trans.GetObject(objid, OpenMode.ForWrite)   
+        match str(objref): 
+            case "Autodesk.AutoCAD.DatabaseServices.Polyline": # Polyline Rotation3D 后 还是 Polyline
+                result = DBObjectCollection()
+                objref.Explode(result) # Line Explode 会出错，要求PL or block # Autodesk.AutoCAD.DatabaseServices.Line
+                for objref in result: 
+                    buflist.append(objref.ObjectId)
+            case "Autodesk.AutoCAD.DatabaseServices.BlockReference":
+                pass  
+            case "Autodesk.AutoCAD.DatabaseServices.Line":
+                if objref.Layer != "打标1": buflist.append(objref.ObjectId)
+    return buflist
+
 def TransAutoExplodeObjectIdList(objidlist):
+    TransExplodeIdListWithErase(objidlist)
+def TransExplodeIdListWithErase(objidlist):
     buflist = []
     for objid in objidlist:
         objref = trans.GetObject(objid, OpenMode.ForWrite)   
@@ -2316,6 +2501,17 @@ def TransAutoFindRectFencePointList(pb1, pb2, objidlist):
 
 
 
+def TransFenceLine2PointList(objidlist):
+    result = []
+    objid1, objid2 = objidlist[0:2]
+    pt1, mid1, pt2 = TransEntityStartMidEndPoint(objid1)
+    po1, mid2, po2 = TransEntityStartMidEndPoint(objid2)
+    dr1 = Direct(mid2, mid1)
+    dr2 = Direct(mid1, mid2)
+    result.append([pt1, pt2, dr1])
+    result.append([po1, po2, dr2])
+    return result
+
 
 def TransAutoFindRectPointList(objidlist):
     result = []
@@ -2348,11 +2544,13 @@ def TransAutoDimTextAlignPointList(objidlist, pt1, pt2):
 
     buflist = []
     for objid in objidlist:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        po0 = [objref.TextPosition.X, objref.TextPosition.Y, objref.TextPosition.Z]
         po1, po2 = TransDimTextBoundXY0(objid)
         [x1,y1,z1], [x2,y2,z2] = po1, po2
         center, length, width = [(x1+x2)/2, (y1+y2)/2, 0], x2-x1, y2-y1
         distance = Distance(pt2, center)
-        buflist.append([distance, objid, po1, po2, length, width])
+        buflist.append([distance, objid, po0, length, width])
 
     buflist.sort(key = lambda item: item[0], reverse=True)  # 大 -> 小
 
@@ -2360,52 +2558,73 @@ def TransAutoDimTextAlignPointList(objidlist, pt1, pt2):
         case "+X":
             x0, y0, z0 = buflist[0][2]
             for i in range(1, len(buflist)):
-                distance, objid, po1, po2, length1, width1 = buflist[i-1]
-                distance, objid, pd1, pd2, length2, width2 = buflist[i]
+                distance, objid, po1, length1, width1 = buflist[i-1]
+                distance, objid, pd1, length2, width2 = buflist[i]
                 [x1, y1, z1] = po1
                 [x2, y2, z2] = pd1
                 xt = x0 + length1 + width1
                 dx = xt - x2
-                x0 = xt
                 buflist[i][2] = Vec3Add(pd1, [dx, 0, 0])
+                x0 = xt
         case "-X":
             x0, y0, z0 = buflist[0][2]
             for i in range(1, len(buflist)):
-                distance, objid, po1, po2, length1, width1 = buflist[i-1]
-                distance, objid, pd1, pd2, length2, width2 = buflist[i]
+                distance, objid, po1, length1, width1 = buflist[i-1]
+                distance, objid, pd1, length2, width2 = buflist[i]
                 [x1, y1, z1] = po1
                 [x2, y2, z2] = pd1
-                xt = x0 - length1 - width1
+                xt = x0 - width1
                 dx = xt - x2
-                x0 = xt
                 buflist[i][2] = Vec3Add(pd1, [dx, 0, 0])
+                x0 = xt - length1
         case "+Y":
             x0, y0, z0 = buflist[0][2]
             for i in range(1, len(buflist)):
-                distance, objid, po1, po2, length1, width1 = buflist[i-1]
-                distance, objid, pd1, pd2, length2, width2 = buflist[i]
+                distance, objid, po1, length1, width1 = buflist[i-1]
+                distance, objid, pd1, length2, width2 = buflist[i]
                 [x1, y1, z1] = po1
                 [x2, y2, z2] = pd1
-                yt = y0 + length1 + width1
+                yt = y0 + width1 + length1
                 dy = yt - y2
-                y0 = yt
                 buflist[i][2] = Vec3Add(pd1, [0, dy, 0])
+                y0 = yt
         case "-Y":
             x0, y0, z0 = buflist[0][2]
             for i in range(1, len(buflist)):
-                distance, objid, po1, po2, length1, width1 = buflist[i-1]
-                distance, objid, pd1, pd2, length2, width2 = buflist[i]
+                distance, objid, po1, length1, width1 = buflist[i-1]
+                distance, objid, pd1, length2, width2 = buflist[i]
                 [x1, y1, z1] = po1
                 [x2, y2, z2] = pd1
-                yt = y0 - length1 - width1
+                yt = y0 - length1
                 dy = yt - y2
-                y0 = yt
                 buflist[i][2] = Vec3Add(pd1, [0, dy, 0])
+                y0 = yt - width1
     result = []
-    for distance, objid, po1, po2, length1, width1 in buflist:
+    for distance, objid, po1, length1, width1 in buflist:
         result.append([objid, po1])
     return result
         
+def TransAutoPt1pt2ListToMKPolyLine(pt1pt2list, layer_name="排版1", color_index=0):
+    count  = len(pt1pt2list)
+    buflist = pt1pt2list[0:1]
+    reflist = pt1pt2list[1:]
+    indexlist = []
+    for i in range(count-1):
+        pt1, pt2 = buflist[-1]
+        for k, [po1, po2] in enumerate(reflist):
+            if k in indexlist: continue
+            flag = False
+            if IsPointSame(pt2, po1):
+                flag = True
+                buflist.append([po1, po2])
+            if IsPointSame(pt2, po2):
+                flag = True
+                buflist.append([po2, po1])
+            if flag:
+                indexlist.append(k)
+                break
+    ptlist = [pt1 for [pt1, pt2] in  buflist]
+    return AddMKPolyLine(ptlist, layer_name, color_index)
 
 # def GeometryExternalCurve3dToDBLine(curve): 
 #     BrepCurveToDBLine(curve)
@@ -2427,6 +2646,44 @@ def BrepCurveToDBArc(curve): # ExternalCurve3d
 
 
 
+def DBObjectConvertRegionToPolylineXY0(objref):
+    resultlist = []
+    brep = Brep(objref)
+    for face in brep.Faces: 
+        for loop in face.Loops: # 已经自带排序了
+            buflist = [None]
+            for i, edge in enumerate(loop.Edges): 
+                buflist.append(None)
+                if edge.Curve.IsLineSegment:
+                    point2d1 = Point2d(edge.Curve.NativeCurve.StartPoint.X, edge.Curve.NativeCurve.StartPoint.Y)
+                    point2d2 = Point2d(edge.Curve.NativeCurve.EndPoint.X, edge.Curve.NativeCurve.EndPoint.Y)
+                    buflist[i] = [point2d1, 0, 0, 0]
+                    buflist[i+1] = [point2d2, 0, 0, 0]
+                if edge.Curve.IsCircularArc: 
+                    point2d1 = Point2d(edge.Curve.NativeCurve.StartPoint.X, edge.Curve.NativeCurve.StartPoint.Y)
+                    point2d2 = Point2d(edge.Curve.NativeCurve.EndPoint.X, edge.Curve.NativeCurve.EndPoint.Y)
+                    if IsPointSame([point2d1.X, point2d1.Y, 0], [point2d2.X, point2d2.Y, 0]): continue # 跳过圆对象 # 圆弧和圆在region or brep中是一样的对象，区别在圆的起始结束是同一个点
+                    R = edge.Curve.NativeCurve.Radius
+                    L = point2d1.GetDistanceTo(point2d2)
+                    H = R - math.sqrt(R*R - L*L/4)
+                    buflist[i] = [point2d1, 2*H/L, 0, 0]
+                    buflist[i+1] = [point2d2, 0, 0, 0]
+            if buflist == []: continue
+            polyline = Polyline()
+            for i, [point, bulge, startwidth, endwidth] in buflist:     
+                polyline.AddVertexAt(i, point, bulge, startwidth, endwidth)
+            resultlist.append(polyline)
+    buflist = []
+    for objref in resultlist: buflist.append([objref.Area, objref])
+    buflist.sort(key = lambda item: item[0], reverse=True) # 从大到小
+
+    resultlist = []
+    for area, objref in buflist: resultlist.append(objref)
+
+    return resultlist
+
+
+
 
 def DBObjectConvertRegionToPolylineXYZ(objref):
     resultlist = []
@@ -2434,7 +2691,7 @@ def DBObjectConvertRegionToPolylineXYZ(objref):
     for face in brep.Faces: 
         for loop in face.Loops: # 已经自带排序了
             buflist = []
-            for i, edge in enumerate(loop.Edges): # loop里的edge居然没有顺序
+            for i, edge in enumerate(loop.Edges): 
                 if edge.Curve.IsLineSegment:
                     polyline = Polyline()
                     point2d1 = Point2d(edge.Curve.NativeCurve.StartPoint.X, edge.Curve.NativeCurve.StartPoint.Y)
@@ -2516,6 +2773,18 @@ def DBObjectConvertPolylineToPolylineXY0(objref):
         polyline.AddVertexAt(i, Point2d(objref.GetPoint3dAt(i).X, objref.GetPoint3dAt(i).Y), objref.GetBulgeAt(i), objref.GetStartWidthAt(i), objref.GetEndWidthAt(i))
     return polyline 
 
+
+
+
+
+
+# result = DBObjectCollection()
+# objref.Explode(result) # Line Explode 会出错，要求PL or block # Autodesk.AutoCAD.DatabaseServices.Line
+# objref.Erase()
+# for objref in result: 
+#     currentblock.AppendEntity(objref) # objid = currentblock.AppendEntity(objref)
+#     trans.AddNewlyCreatedDBObject(objref, True)
+#     buflist.append(objref.ObjectId)
 
 
 # # 使无序Loop变有序
