@@ -6,7 +6,7 @@ import academit
 import System
 
 def 命令(): 
-    # academit.添加命令("llprint", llprint)
+    academit.添加命令("llprint", llprint0)
     # academit.添加命令("llprint-bound", llprint_bound)    
     academit.添加命令("llprint-group", llprint_group)    
     academit.添加命令("llprint-corner", llprint_corner)
@@ -14,11 +14,27 @@ def 命令():
     # academit.添加命令("llprint-frence", llprint_frence)
     # academit.添加命令("llprint-entsel", llprint_entsel)
     # academit.添加命令("llprint-clayer", llprint_current_layer)
-    academit.添加命令("llprint-point-in-bound", llprint_point_in_bound)
-    academit.添加命令("llprint-point-in-polygon", llprint_point_in_polygon)
+    # academit.添加命令("llprint-point-in-bound", llprint_point_in_bound)
+    # academit.添加命令("llprint-point-in-polygon", llprint_point_in_polygon)
     # academit.添加命令("llprint-include", llprint_include)
     # academit.添加命令("llprint-dr1dr2-angle", llprint_dr1dr2_angle)
     # academit.添加命令("llprint-bound-xyz-for", llprint_bound_xyz_for)
+
+
+
+
+@acad.decorator_command
+def llprint0():
+    pt0 = acad.GetPoint()
+    length, width = 500, 400
+    with acad.transaction() as trans:
+        pt1, pt2, pt3, pt4 = acad.BoundLengthWidthToRectPointListXY0(pt0, length, width)
+        acad.AddMKPolyLine([pt1, pt2, pt3, pt4])
+        pt1, pt2, pt3, pt4 = acad.BoundLengthWidthToOffsetRectPointListXY0(pt0, length, width, 15)
+        acad.AddMKPolyLine([pt1, pt2, pt3, pt4])
+        pt1, pt2, pt3, pt4 = acad.BoundLengthWidthToOffsetRectPointListXY0(pt0, length, width, -25)
+        acad.AddMKPolyLine([pt1, pt2, pt3, pt4])
+
 
 
 @acad.decorator_command
@@ -308,3 +324,43 @@ def llprint_group():
 
 
 # print(is_inside)  # 输出：True
+
+# PromptSelectionResult selectionRes = ed.SelectImplied();
+
+#         // If there's no pickfirst set available...
+
+#         if (selectionRes.Status == PromptStatus.Error)
+
+#         {
+
+#           // ... ask the user to select entities
+
+#           PromptSelectionOptions selectionOpts =
+
+#             new PromptSelectionOptions();
+
+#           selectionOpts.MessageForAdding =
+
+#             "\nSelect objects to list: ";
+
+#           selectionRes =
+
+#             ed.GetSelection(selectionOpts);
+
+#         }
+
+#         else
+
+#         {
+
+#           // If there was a pickfirst set, clear it
+
+#           ed.SetImpliedSelection(new ObjectId[0]);
+
+#         }
+
+#         // If the user has not cancelled...
+
+#         if (selectionRes.Status == PromptStatus.OK)
+
+#         {

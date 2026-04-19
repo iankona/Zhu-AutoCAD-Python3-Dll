@@ -11,6 +11,7 @@ import System
 def 命令(): 
     academit.添加命令("llslto0", llslto0)
     academit.添加命令("llsl-layerto0", llsl_layerto0)
+    academit.添加命令("llsl-move", llsl_move)
     academit.添加命令("llsl-color", llsl_color)
     academit.添加命令("llsl-layer", llsl_layer)
     academit.添加命令("llsl-layer-and-color", llsl_layer_and_color)
@@ -62,6 +63,19 @@ def llsl_layerto0():
         for objid in objlist:
             objref = acad.TransObjectForWrite(objid)
             if objref.Layer in layerlist: objref.Layer = "0"
+
+
+@acad.decorator_command
+def llsl_move(): 
+    objidlist = acad.SSGetIdList(string="请选择移动对象: ")  
+    if objidlist == None: return
+    pt1, pt2 = acad.GetPoint2("请选择移动基点:", "请选择移动终点:")
+    if pt1 == None: return
+    with acad.transaction() as trans:
+        result = acad.TransAutoFindRegionRectList(objidlist)
+        for po1, po2 in result: 
+            objidlist = acad.GetSelectCornerCrossIdList(po1, po2)
+            for objid in objidlist: acad.TransMove(objid, pt1, pt2)
 
 
 @acad.decorator_command

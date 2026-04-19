@@ -14,7 +14,7 @@ def 命令():
 
 
 llzhu_dim_biaohao = 15
-llzhu_dim_height = 15
+llzhu_dim_height = 60
 def llzhu_ui_dim_input():
     global llzhu_dim_biaohao, llzhu_dim_height
     biaohao = acad.GetInt(llzhu_dim_biaohao, "请输入标注号:")
@@ -82,50 +82,50 @@ def lldim_fence_qdim_for():
 
 
 
-@acad.decorator_command
-def lldim_fence_qdim_x_for():
-    llzhu_ui_dim_input()
-    llzhu_ui_dim_direct_flag()
-    while True:
-        pt1, pt2 = acad.GetPoint2()
-        if pt1 == None: break
-        objidlist = acad.GetSelectFenceIdList(pt1, pt2, llzhu_dim_filter)
-        [x1, y1, z1], [x2, y2, z2] = acad.GetIdListBoundXY0(objidlist)
+# @acad.decorator_command
+# def lldim_fence_qdim_x_for():
+#     llzhu_ui_dim_input()
+#     llzhu_ui_dim_direct_flag()
+#     while True:
+#         pt1, pt2 = acad.GetPoint2()
+#         if pt1 == None: break
+#         objidlist = acad.GetSelectFenceIdList(pt1, pt2, llzhu_dim_filter)
+#         [x1, y1, z1], [x2, y2, z2] = acad.GetIdListBoundXY0(objidlist)
 
-        if llzhu_dim_direct_flag > 0:
-            pd3 = [(x1+x2)/2, y2+llzhu_dim_height, 0]
-        else:
-            pd3 = [(x1+x2)/2, y1-llzhu_dim_height, 0]
-        ss1 = acad.SSSetFromIdList(objidlist)
-        acad.SetCurrentDimStyle(f"副本{llzhu_dim_biaohao} ISO-25")
-        # acad.SetEntNext()
-        acad.Command(["qdim", ss1, "", acad.ToPoint3d(pd3)])
-        # objidlist = acad.GetEntNextIdList()
-        # with acad.transaction() as trans:
-        #     result = acad.TransAutoMoveXDimTextPointList(objidlist)
-        #     for objid, pt0 in result:
-        #         objref = acad.TransObjectForWrite(objid)
-        #         objref.TextPosition = acad.ToPoint3d(pt0)
+#         if llzhu_dim_direct_flag > 0:
+#             pd3 = [(x1+x2)/2, y2+llzhu_dim_height, 0]
+#         else:
+#             pd3 = [(x1+x2)/2, y1-llzhu_dim_height, 0]
+#         ss1 = acad.SSSetFromIdList(objidlist)
+#         acad.SetCurrentDimStyle(f"副本{llzhu_dim_biaohao} ISO-25")
+#         # acad.SetEntNext()
+#         acad.Command(["qdim", ss1, "", acad.ToPoint3d(pd3)])
+#         # objidlist = acad.GetEntNextIdList()
+#         # with acad.transaction() as trans:
+#         #     result = acad.TransAutoMoveXDimTextPointList(objidlist)
+#         #     for objid, pt0 in result:
+#         #         objref = acad.TransObjectForWrite(objid)
+#         #         objref.TextPosition = acad.ToPoint3d(pt0)
                 
 
 
 
-@acad.decorator_command
-def lldim_fence_qdim_y_for():
-    llzhu_ui_dim_input()
-    llzhu_ui_dim_direct_flag()
-    while True:
-        pt1, pt2 = acad.GetPoint2()
-        if pt1 == None: break
-        objidlist = acad.GetSelectFenceIdList(pt1, pt2, llzhu_dim_filter)
-        [x1, y1, z1], [x2, y2, z2] = acad.GetIdListBoundXY0(objidlist)
-        if llzhu_dim_direct_flag > 0:
-            pd3 = [x2+llzhu_dim_height, (y1+y2)/2, 0]
-        else:
-            pd3 = [x1-llzhu_dim_height, (y1+y2)/2, 0]
-        ss1 = acad.SSSetFromIdList(objidlist)
-        acad.SetCurrentDimStyle(f"副本{llzhu_dim_biaohao} ISO-25")
-        acad.Command(["qdim", ss1, "", acad.ToPoint3d(pd3)])
+# @acad.decorator_command
+# def lldim_fence_qdim_y_for():
+#     llzhu_ui_dim_input()
+#     llzhu_ui_dim_direct_flag()
+#     while True:
+#         pt1, pt2 = acad.GetPoint2()
+#         if pt1 == None: break
+#         objidlist = acad.GetSelectFenceIdList(pt1, pt2, llzhu_dim_filter)
+#         [x1, y1, z1], [x2, y2, z2] = acad.GetIdListBoundXY0(objidlist)
+#         if llzhu_dim_direct_flag > 0:
+#             pd3 = [x2+llzhu_dim_height, (y1+y2)/2, 0]
+#         else:
+#             pd3 = [x1-llzhu_dim_height, (y1+y2)/2, 0]
+#         ss1 = acad.SSSetFromIdList(objidlist)
+#         acad.SetCurrentDimStyle(f"副本{llzhu_dim_biaohao} ISO-25")
+#         acad.Command(["qdim", ss1, "", acad.ToPoint3d(pd3)])
 
 
 

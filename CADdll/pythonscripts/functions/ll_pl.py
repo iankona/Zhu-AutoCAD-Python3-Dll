@@ -13,7 +13,7 @@ def 命令():
 
 
 
-    # academit.添加命令("llpl-to-midpl", llpl_to_midpl)
+    academit.添加命令("llpl-to-midpl", llpl_to_midpl)
     # academit.添加命令("llpl-print", llpl_print)
     # academit.添加命令("llpl-add", llpl_add)
     # academit.添加命令("llpl-findstart", llpl_findstart)
@@ -233,7 +233,7 @@ def llpl_to_midpl():
                 pt2 = pline_point_list[i+1]
                 ptlist.append(acad.MidPt1Pt2(pt1, pt2))
             ptlist.append(pline_point_list[-1])
-            acad.AddLWPolyLine(ptlist)
+            acad.AddLWPolyLine(ptlist, color_index=3)
 
 
 @acad.decorator_command

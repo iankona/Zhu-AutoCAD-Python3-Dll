@@ -523,6 +523,7 @@ def SSGet(dxfcode_filter_list=[], sel_method="", string="", sssetfirst=False): #
         result = ed.GetSelection(option)
 
     str(result)
+    # result = ed.SelectImplied() #  need cad pickfirst set 1
     ss1 = result.Value # SelectionSet
     # ids = ss1.GetObjectIds()
     # ss2 = SelectionSet.FromObjectIds([ids[-1]])
@@ -530,6 +531,11 @@ def SSGet(dxfcode_filter_list=[], sel_method="", string="", sssetfirst=False): #
     if sssetfirst:
         ed.SetImpliedSelection(ss1) # Highlight(ss1) # (sssetfirst nil ss1)
     return ss1 
+
+# 6. SelectImplied 选择当前图形中已经选择的实体
+# 7. SelectLast 选择图形中最后一盒绘制的实体
+
+
 
 def SSGetIdList(dxfcode_filter_list=[], sel_method="", string="", sssetfirst=False):
     ss1 = SSGet(dxfcode_filter_list, sel_method, string, sssetfirst)
@@ -662,9 +668,6 @@ def TransDimTextBoundXY0(objid):
             point1 = extend.MinPoint
             point2 = extend.MaxPoint
             return [point1.X, point1.Y, 0], [point2.X, point2.Y, 0]
-  
-
-
 
 def TransDimLineObjectIdListBoundXY0(objidlist):
     bufidlist = []
@@ -1077,13 +1080,17 @@ def TransCurrentDimStyle(stylename=""):
         return db.Dimstyle
 
 
-def TransLWPolyLinePointList(objid:ObjectId):
+def TransLWPolyLinePointList(objid:ObjectId, pt1=None):
     pline = trans.GetObject(objid, OpenMode.ForRead)
+    po1 = [pline.StartPoint.X, pline.StartPoint.Y, pline.StartPoint.Z]
+    po2 = [pline.EndPoint.X, pline.EndPoint.Y, pline.EndPoint.Z]
     result = []
     for i in range(pline.NumberOfVertices):
         point = pline.GetPoint3dAt(i)
         result.append([point.X, point.Y, point.Z])
-    if pline.Closed: return result + result[0:1]
+    if pline.Closed: result = result + result[0:1]
+    if pt1 == None: return result
+    if Distance(pt1, po1) > Distance(pt1, po2): result = result[::-1]
     return result
 
 
@@ -1112,8 +1119,8 @@ def TransMKPolyLineDirectList(objid:ObjectId):
 
 
 
-def TransLWPolyLineDirectList(objid:ObjectId):
-    ptlist = TransLWPolyLinePointList(objid)
+def TransLWPolyLineDirectList(objid:ObjectId, pt1=None):
+    ptlist = TransLWPolyLinePointList(objid, pt1)
     drlist = []
     for i in range(len(ptlist)-1):
         pt1 = ptlist[i]
@@ -1122,6 +1129,105 @@ def TransLWPolyLineDirectList(objid:ObjectId):
         drlist.append(dr1)
     return drlist
 
+def TransLWPolyLineDotAngleList(objid:ObjectId, pt1=None):
+    ptlist = TransLWPolyLinePointList(objid, pt1)
+    anglelist = [None]
+    for i in range(1, len(ptlist)-1):
+        pt1 = ptlist[i-1]
+        pt2 = ptlist[i]
+        pt3 = ptlist[i+1]
+        dr1 = Direct(pt2, pt1)
+        dr2 = Direct(pt2, pt3)
+        angle = AngleFromDotDr1Dr2(dr1, dr2)
+        anglelist.append(angle)
+    anglelist.append(None)
+    return anglelist
+
+
+
+def TransLWPolyLineLengthList(objid:ObjectId, pt1=None):
+    ptlist = TransLWPolyLinePointList(objid, pt1)
+    lnlist = []
+    for i in range(len(ptlist)-1):
+        pt1 = ptlist[i]
+        pt2 = ptlist[i+1]
+        ln1 = Distance(pt1, pt2)
+        lnlist.append(ln1)
+    return lnlist
+
+def TransNRectPointListFromSheet(objid1:ObjectId, objid2:ObjectId, pt1=None):
+    if pt1 == None:
+        pt1, pt2 = GetIdListBoundXY0([objid1, objid2])
+        x1, y1, z1 = pt1
+        x2, y2, z2 = pt2
+        pt1 = [x1, y2, 0]
+    edgelist1 = TransLWPolyLineEdgeList(objid1, pt1)
+    edgelist2 = TransLWPolyLineEdgeList(objid2, pt1)
+    # ptlist1 = TransLWPolyLinePointList(objid1, pt1)
+    # ptlist2 = TransLWPolyLinePointList(objid1, pt1)
+    # pt1, pt2 = ptlist1[0], ptlist1[-1]
+    # po1, po2 = ptlist2[0], ptlist2[-1]
+    # if Distance(pt1, po1) > Distance(pt1, po2): ptlist2 = ptlist2[::-1]
+    # edgelist1 = []
+    # for i in range(len(ptlist1)-1):
+    #     pt1 = ptlist1[i]
+    #     pt2 = ptlist1[i+1]
+    #     edgelist1.append([pt1, pt2])
+    # edgelist2 = []
+    # for i in range(len(ptlist2)-1):
+    #     po1 = ptlist2[i]
+    #     po2 = ptlist2[i+1]
+    #     edgelist2.append([po1, po2])
+
+    buflist = []
+    for [pt1, pt2], [po1, po2] in zip(edgelist1, edgelist2):
+        # 平行线1
+        line1 = Line(ToPoint3d(pt1), ToPoint3d(pt2))
+        point = line1.GetClosestPointTo(ToPoint3d(po1), extend=False) # 会返回直线端点 # System.Boolean.Parse("False") 
+        pd1 = [point.X, point.Y, point.Z]
+        point = line1.GetClosestPointTo(ToPoint3d(po2), extend=False) 
+        pd2 = [point.X, point.Y, point.Z]
+        # 平行线2
+        line2 = Line(ToPoint3d(po1), ToPoint3d(po2))
+        point = line2.GetClosestPointTo(ToPoint3d(pt1), extend=False) # 会返回直线端点 # System.Boolean.Parse("False") 
+        pn1 = [point.X, point.Y, point.Z]
+        point = line2.GetClosestPointTo(ToPoint3d(pt2), extend=False) 
+        pn2 = [point.X, point.Y, point.Z]
+        buflist.append([pd1, pd2, pn2, pn1])
+    return buflist
+
+def TransNRectLengthListFromSheet(objid1:ObjectId, objid2:ObjectId, pt1=None):
+    buflist = TransNRectPointListFromSheet(objid1, objid2, pt1)
+    lengthlist, nesslist = [], []
+    for pt1, pt2, pt3, pt4 in buflist:
+        length = Distance(pt1, pt2)
+        ness = Distance(pt2, pt3)
+        lengthlist.append(length)
+        nesslist.append(ness)   
+    return lengthlist, ness
+
+def ShapLengthFromDeepthAndAngle(depth, angle):
+    angle = angle / 2 # tan = sin / cos
+    length = depth / math.tan(Angle2Rad(angle))
+    return length
+
+def ShapLengthFromDeepthAndPt1Pt2Pt3(depth, pt1, pt2, pt3):
+    dr1 = Direct(pt2, pt1)
+    dr2 = Direct(pt2, pt3)
+    angle = AngleFromDotDr1Dr2(dr1, dr2)
+    angle = angle / 2 # tan = sin / cos
+    length = depth / math.tan(Angle2Rad(angle))
+    return length
+
+
+def TransLWPolyLineEdgeList(objid:ObjectId, pt1=None):
+    ptlist = TransLWPolyLinePointList(objid, pt1)
+    buflist = []
+    for i in range(len(ptlist)-1):
+        pt1 = ptlist[i]
+        pt2 = ptlist[i+1]
+        buflist.append([pt1, pt2])
+    return buflist
 
 
 
@@ -1239,8 +1345,17 @@ def TransEntityArea(objid:ObjectId):
 
 def TransEntityLength(objid:ObjectId):
     objref = trans.GetObject(objid, OpenMode.ForRead)
-    length = objref.Length
+    if type(objref) == Spline:
+        para = objref.EndParam
+        length = objref.GetDistanceAtParameter(para)
+    else:
+        length = objref.Length
     return length
+
+
+def TransErase(objid:ObjectId):
+    objref = trans.GetObject(objid, OpenMode.ForWrite)
+    objref.Erase()
 
 
 def TransSSBoundXYZ(ss1:SelectionSet):
@@ -1361,6 +1476,36 @@ def TransObjectIdListBoundLengthWidthHeight(objidlist):
     point1 = extend.MinPoint
     point2 = extend.MaxPoint
     return point2.X-point1.X, point2.Y-point1.Y, point2.Z-point1.Z
+
+
+def BoundPointToRectPointListXY0(ptmin, ptmax):
+    x1, y1 = ptmin[0:2]
+    x2, y2 = ptmax[0:2]
+    pt1 = [x1, y1, 0]
+    pt2 = [x2, y1, 0]
+    pt3 = [x2, y2, 0]
+    pt4 = [x1, y2, 0]
+    return pt1, pt2, pt3, pt4
+
+def BoundLengthWidthToRectPointListXY0(pt1, length, width):
+    # 逆时针
+    x1, y1 = pt1[0:2]
+    pt1 = [x1,        y1, 0]
+    pt2 = [x1+length, y1, 0]
+    pt3 = [x1+length, y1+width, 0]
+    pt4 = [x1,        y1+width, 0]
+    return pt1, pt2, pt3, pt4
+
+
+def BoundLengthWidthToOffsetRectPointListXY0(pt1, length, width, offset):
+    # 逆时针
+    x1, y1 = pt1[0:2]
+    pt1 = [-offset+x1,        -offset+y1, 0]
+    pt2 = [+offset+x1+length, -offset+y1, 0]
+    pt3 = [+offset+x1+length, +offset+y1+width, 0]
+    pt4 = [-offset+x1,        +offset+y1+width, 0]
+    return pt1, pt2, pt3, pt4
+
 
 
 
@@ -1982,7 +2127,11 @@ def GetEntityArea(objid:ObjectId):
 def GetEntityLength(objid:ObjectId):
     with transaction() as trans:
         objref = trans.GetObject(objid, OpenMode.ForRead)
-        length = objref.Length
+        if type(objref) == Spline:
+            para = objref.EndParam
+            length = objref.GetDistanceAtParameter(para)
+        else:
+            length = objref.Length
     return length
 
 def GetEntityNormal(objid:ObjectId):
@@ -2130,15 +2279,20 @@ def GetMKPolyLinePointList(objid:ObjectId):
                 result.append([point.X, point.Y, point.Z])
     return result
 
-def GetLWPolyLinePointList(objid:ObjectId):
+def GetLWPolyLinePointList(objid:ObjectId, pt1=None):
     with transaction() as trans:
         pline = trans.GetObject(objid, OpenMode.ForRead)
+        po1 = [pline.StartPoint.X, pline.StartPoint.Y, pline.StartPoint.Z]
+        po2 = [pline.EndPoint.X, pline.EndPoint.Y, pline.EndPoint.Z]
         result = []
         for i in range(pline.NumberOfVertices):
             point = pline.GetPoint3dAt(i)
             result.append([point.X, point.Y, point.Z])
-    if pline.Closed: return result + result[0:1]
+    if pline.Closed: result = result + result[0:1]
+    if pt1 == None: return result
+    if Distance(pt1, po1) > Distance(pt1, po2): result = result[::-1]
     return result
+
 
 def GetLWPolyLineLengthAndLengthAtPoint(objid:ObjectId, pt1):
     with transaction() as trans:
@@ -2161,8 +2315,8 @@ def GetMKPolyLineDirectList(objid:ObjectId):
     return drlist
 
 
-def GetLWPolyLineDirectList(objid:ObjectId):
-    ptlist = GetLWPolyLinePointList(objid)
+def GetLWPolyLineDirectList(objid:ObjectId, pt1=None):
+    ptlist = GetLWPolyLinePointList(objid, pt1)
     drlist = []
     for i in range(len(ptlist)-1):
         pt1 = ptlist[i]
@@ -2171,8 +2325,8 @@ def GetLWPolyLineDirectList(objid:ObjectId):
         drlist.append(dr1)
     return drlist
 
-def GetLWPolyLineLengthList(objid:ObjectId):
-    ptlist = GetLWPolyLinePointList(objid)
+def GetLWPolyLineLengthList(objid:ObjectId, pt1=None):
+    ptlist = GetLWPolyLinePointList(objid, pt1)
     lengthlist = []
     for i in range(len(ptlist)-1):
         pt1 = ptlist[i]
@@ -2182,8 +2336,8 @@ def GetLWPolyLineLengthList(objid:ObjectId):
     return lengthlist
 
 
-def GetLWPolyLineMidPointList(objid:ObjectId):
-    pline_point_list = GetLWPolyLinePointList(objid)
+def GetLWPolyLineMidPointList(objid:ObjectId, pt1=None):
+    pline_point_list = GetLWPolyLinePointList(objid, pt1)
     midptlist = []
     for i in range(len(pline_point_list)-1):
         pt1 = pline_point_list[i]
@@ -2531,6 +2685,7 @@ def TransAutoFindRectPointList(objidlist):
     return result
 
 
+
 def TransAutoDimTextAlignPointList(objidlist, pt1, pt2):
     dr1 = Direct(pt1, pt2)
     angle1 = AngleFromDotDr1Dr2(dr1, [ 1, 0, 0])
@@ -2542,68 +2697,207 @@ def TransAutoDimTextAlignPointList(objidlist, pt1, pt2):
     if angle3 < 45: flagd = "+Y"
     if angle4 < 45: flagd = "-Y"
 
-    buflist = []
+    auflist = []
     for objid in objidlist:
         objref = trans.GetObject(objid, OpenMode.ForRead)
-        po0 = [objref.TextPosition.X, objref.TextPosition.Y, objref.TextPosition.Z]
+        # po0 = [objref.TextPosition.X, objref.TextPosition.Y, objref.TextPosition.Z]
         po1, po2 = TransDimTextBoundXY0(objid)
-        [x1,y1,z1], [x2,y2,z2] = po1, po2
-        center, length, width = [(x1+x2)/2, (y1+y2)/2, 0], x2-x1, y2-y1
-        distance = Distance(pt2, center)
-        buflist.append([distance, objid, po0, length, width])
+        match flagd:
+            case "+X"|"-X": po0 = po1[:]
+            case "+Y"|"-Y": po0 = po2[:]
+        # pd1 = [objref.XLine1Point.X, objref.XLine1Point.Y, objref.XLine1Point.Z] 
+        # pd2 = [objref.XLine2Point.X, objref.XLine2Point.Y, objref.XLine2Point.Z] 
+        # pd3 = [objref.DimLinePoint.X, objref.DimLinePoint.Y, objref.DimLinePoint.Z] 
+        dimmid = [(objref.XLine1Point.X + objref.XLine2Point.X)/2, (objref.XLine1Point.Y + objref.XLine2Point.Y)/2, 0]
+        auflist.append([objid, po0, po1, po2, dimmid])
 
-    buflist.sort(key = lambda item: item[0], reverse=True)  # 大 -> 小
+    
 
     match flagd:
         case "+X":
-            x0, y0, z0 = buflist[0][2]
+            buflist = []
+            for objid, po0, po1, po2, dimmid in auflist:
+                x1, y1, z1 = dimmid
+                buflist.append([x1, objid, po0, po1, po2, dimmid])
+            buflist.sort(key = lambda item: item[0], reverse=False)  # 小 -> 大
+
             for i in range(1, len(buflist)):
-                distance, objid, po1, length1, width1 = buflist[i-1]
-                distance, objid, pd1, length2, width2 = buflist[i]
-                [x1, y1, z1] = po1
-                [x2, y2, z2] = pd1
-                xt = x0 + length1 + width1
-                dx = xt - x2
-                buflist[i][2] = Vec3Add(pd1, [dx, 0, 0])
-                x0 = xt
+                aa, objid, po0, po1, po2, dimmid1 = buflist[i-1]
+                bb, objid, po0, pt1, pt2, dimmid2 = buflist[i]
+                x1, y1, z1 = po1
+                x2, y2, z2 = po2
+                length1, pad = x2 - x1, y2 - y1
+                x3, y3, z3 = pt1
+                x4, y4, z4 = pt2
+                length2, pad = x4 - x3, y4 - y3
+                xd, yd, zd = dimmid2
+
+                xt1 = x1 + length1 + pad
+                xt2 = xd + 0.1
+                xt = max(xt1, xt2)
+                dx = xt - x3
+                buflist[i][3] = Vec3Add(pt1, [dx, 0, 0])
+                buflist[i][4] = Vec3Add(pt2, [dx, 0, 0])
+
+            y0 = buflist[0][2][1]
+            for i in range(len(buflist)):
+                buflist[i][3][1] = y0
+                buflist[i][4][1] = y0
         case "-X":
-            x0, y0, z0 = buflist[0][2]
+            buflist = []
+            for objid, po0, po1, po2, dimmid in auflist:
+                x1, y1, z1 = dimmid
+                buflist.append([x1, objid, po0, po1, po2, dimmid])
+            buflist.sort(key = lambda item: item[0], reverse=True)  # 大 -> 小
+
             for i in range(1, len(buflist)):
-                distance, objid, po1, length1, width1 = buflist[i-1]
-                distance, objid, pd1, length2, width2 = buflist[i]
-                [x1, y1, z1] = po1
-                [x2, y2, z2] = pd1
-                xt = x0 - width1
-                dx = xt - x2
-                buflist[i][2] = Vec3Add(pd1, [dx, 0, 0])
-                x0 = xt - length1
+                aa, objid, po0, po1, po2, dimmid1 = buflist[i-1]
+                bb, objid, po0, pt1, pt2, dimmid2 = buflist[i]
+                x1, y1, z1 = po1
+                x2, y2, z2 = po2
+                length1, pad = x2 - x1, y2 - y1
+                x3, y3, z3 = pt1
+                x4, y4, z4 = pt2
+                length2, pad = x4 - x3, y4 - y3
+                xd, yd, zd = dimmid2
+
+                xt1 = x1 - pad - length2
+                xt2 = xd - 0.1 - length2
+                xt = min(xt1, xt2)
+                dx = xt - x3
+                buflist[i][3] = Vec3Add(pt1, [dx, 0, 0])
+                buflist[i][4] = Vec3Add(pt2, [dx, 0, 0])
+
+            y0 = buflist[0][2][1]
+            for i in range(len(buflist)):
+                buflist[i][3][1] = y0
+                buflist[i][4][1] = y0
+
+
         case "+Y":
-            x0, y0, z0 = buflist[0][2]
+            buflist = []
+            for objid, po0, po1, po2, dimmid in auflist:
+                x1, y1, z1 = dimmid
+                buflist.append([y1, objid, po0, po1, po2, dimmid])
+            buflist.sort(key = lambda item: item[0], reverse=False)  # 小 -> 大
+
             for i in range(1, len(buflist)):
-                distance, objid, po1, length1, width1 = buflist[i-1]
-                distance, objid, pd1, length2, width2 = buflist[i]
-                [x1, y1, z1] = po1
-                [x2, y2, z2] = pd1
-                yt = y0 + width1 + length1
-                dy = yt - y2
-                buflist[i][2] = Vec3Add(pd1, [0, dy, 0])
-                y0 = yt
+                aa, objid, po0, po1, po2, dimmid1 = buflist[i-1]
+                bb, objid, po0, pt1, pt2, dimmid2 = buflist[i]
+                x1, y1, z1 = po1
+                x2, y2, z2 = po2
+                pad, length1 = x2 - x1, y2 - y1
+                x3, y3, z3 = pt1
+                x4, y4, z4 = pt2
+                pad, length2 = x4 - x3, y4 - y3
+                xd, yd, zd = dimmid2
+
+                yt1 = y1 + length1 + pad
+                yt2 = yd + 0.1
+                yt = max(yt1, yt2)
+                dy = yt - y3
+                buflist[i][3] = Vec3Add(pt1, [0, dy, 0])
+                buflist[i][4] = Vec3Add(pt2, [0, dy, 0])
+
+            x0 = buflist[0][2][0]
+            for i in range(len(buflist)):
+                buflist[i][3][0] = x0
+                buflist[i][4][0] = x0
+
         case "-Y":
-            x0, y0, z0 = buflist[0][2]
+            buflist = []
+            for objid, po0, po1, po2, dimmid in auflist:
+                x1, y1, z1 = dimmid
+                buflist.append([y1, objid, po0, po1, po2, dimmid])
+            buflist.sort(key = lambda item: item[0], reverse=True)  # 大 -> 小
+
             for i in range(1, len(buflist)):
-                distance, objid, po1, length1, width1 = buflist[i-1]
-                distance, objid, pd1, length2, width2 = buflist[i]
-                [x1, y1, z1] = po1
-                [x2, y2, z2] = pd1
-                yt = y0 - length1
-                dy = yt - y2
-                buflist[i][2] = Vec3Add(pd1, [0, dy, 0])
-                y0 = yt - width1
+                aa, objid, po0, po1, po2, dimmid1 = buflist[i-1]
+                bb, objid, po0, pt1, pt2, dimmid2 = buflist[i]
+                x1, y1, z1 = po1
+                x2, y2, z2 = po2
+                pad, length1 = x2 - x1, y2 - y1
+                x3, y3, z3 = pt1
+                x4, y4, z4 = pt2
+                pad, length2 = x4 - x3, y4 - y3
+                xd, yd, zd = dimmid2
+
+                yt1 = y1 - pad - length2
+                yt2 = yd - 0.1 - length2
+                yt = min(yt1, yt2)
+                dy = yt - y3
+                buflist[i][3] = Vec3Add(pt1, [0, dy, 0])
+                buflist[i][4] = Vec3Add(pt2, [0, dy, 0])
+
+            x0 = buflist[0][2][0]
+            for i in range(len(buflist)):
+                buflist[i][3][0] = x0
+                buflist[i][4][0] = x0
+
     result = []
-    for distance, objid, po1, length1, width1 in buflist:
-        result.append([objid, po1])
+    for aa, objid, po0, po1, po2, dimmid1 in buflist:
+
+        if Distance(dimmid1, po1) < Distance(dimmid1, po2): 
+            result.append([objid, po1])
+        else:
+            result.append([objid, po2])
+
     return result
-        
+
+
+
+def TransAutoDimTextAlignLayer2PointList(objidlist, pt1, pt2):
+    dr1 = Direct(pt1, pt2)
+    angle1 = AngleFromDotDr1Dr2(dr1, [ 1, 0, 0])
+    angle2 = AngleFromDotDr1Dr2(dr1, [-1, 0, 0])
+    angle3 = AngleFromDotDr1Dr2(dr1, [0,  1, 0])
+    angle4 = AngleFromDotDr1Dr2(dr1, [0, -1, 0])
+    if angle1 < 45: flagd = "+X"
+    if angle2 < 45: flagd = "-X"
+    if angle3 < 45: flagd = "+Y"
+    if angle4 < 45: flagd = "-Y"
+
+    auflist = []
+    for i, objid in enumerate(objidlist):
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        # po0 = [objref.TextPosition.X, objref.TextPosition.Y, objref.TextPosition.Z]
+        po1, po2 = TransDimTextBoundXY0(objid)
+        x1, y1, z1 = po1
+        x2, y2, z2 = po2
+        numb = i%2 +0.5
+        match flagd:
+            case "+X": 
+                length, pad = x2 - x1, y2 - y1
+                dr = [0, numb*pad, 0]
+                po0 = Vec3Add(po1, dr)
+            case "-X": 
+                length, pad = x2 - x1, y2 - y1
+                dr = [0, -numb*pad, 0]
+                po0 = Vec3Add(po1, dr)
+            case "+Y": 
+                pad, length = x2 - x1, y2 - y1
+                dr = [numb*pad, 0, 0]
+                po0 = Vec3Add(po2, dr)
+            case "-Y": 
+                pad, length = x2 - x1, y2 - y1
+                dr = [-numb*pad, 0, 0]
+                po0 = Vec3Add(po2, dr)
+        # pd1 = [objref.XLine1Point.X, objref.XLine1Point.Y, objref.XLine1Point.Z] 
+        # pd2 = [objref.XLine2Point.X, objref.XLine2Point.Y, objref.XLine2Point.Z] 
+        # pd3 = [objref.DimLinePoint.X, objref.DimLinePoint.Y, objref.DimLinePoint.Z] 
+        dimmid = [(objref.XLine1Point.X + objref.XLine2Point.X)/2, (objref.XLine1Point.Y + objref.XLine2Point.Y)/2, 0]
+        auflist.append([objid, po0, po1, po2, dimmid])
+
+
+    result = []
+    for aa, objid, po0, po1, po2, dimmid1 in auflist:
+        result.append([objid, po0])
+
+    return result
+
+
+
+
 def TransAutoPt1pt2ListToMKPolyLine(pt1pt2list, layer_name="排版1", color_index=0):
     count  = len(pt1pt2list)
     buflist = pt1pt2list[0:1]
@@ -2625,6 +2919,25 @@ def TransAutoPt1pt2ListToMKPolyLine(pt1pt2list, layer_name="排版1", color_inde
                 break
     ptlist = [pt1 for [pt1, pt2] in  buflist]
     return AddMKPolyLine(ptlist, layer_name, color_index)
+
+def TransAutoFindMidLWPolyLine(objid1, objid2):
+    objref1 = trans.GetObject(objid1, OpenMode.ForRead)
+    pt1 = [objref1.StartPoint.X, objref1.StartPoint.Y, objref1.StartPoint.Z]
+    pt2 = [objref1.EndPoint.X, objref1.EndPoint.Y, objref1.EndPoint.Z]
+    objref2 = trans.GetObject(objid2, OpenMode.ForRead)
+    po1 = [objref2.StartPoint.X, objref2.StartPoint.Y, objref2.StartPoint.Z]
+    po2 = [objref2.EndPoint.X, objref2.EndPoint.Y, objref2.EndPoint.Z]
+    length1, length2 = Distance(po1, pt1), Distance(po1, pt2)
+    pd1 = pt1
+    if length1 > length2: pd1 = pt2
+    ness = min(length1, length2)
+    ness_half = ness / 2 
+    objref3 = objref2.GetOffsetCurves( ness_half)[0] # collection
+    objref4 = objref2.GetOffsetCurves(-ness_half)[0] # collection
+    pk1 = [objref3.StartPoint.X, objref3.StartPoint.Y, objref3.StartPoint.Z]
+    pm1 = [objref4.StartPoint.X, objref4.StartPoint.Y, objref4.StartPoint.Z]
+    if Distance(pd1, pk1) < Distance(pd1, pm1): return AddDBObject(objref3), ness
+    return AddDBObject(objref4), ness
 
 # def GeometryExternalCurve3dToDBLine(curve): 
 #     BrepCurveToDBLine(curve)
