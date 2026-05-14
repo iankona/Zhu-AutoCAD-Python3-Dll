@@ -18,11 +18,13 @@ def 命令():
     academit.添加命令("llsl", llsl)
     academit.添加命令("llsl-point", llsl_point)
     academit.添加命令("llsl-line", llsl_line)
+    academit.添加命令("llsl-line-length", llsl_line_length)
     academit.添加命令("llsl-lwpl", llsl_lwpl)
     academit.添加命令("llsl-3dpl", llsl_3dpl)
     academit.添加命令("llsl-spline", llsl_spline)
     academit.添加命令("llsl-arc", llsl_arc)
     academit.添加命令("llsl-circle", llsl_circle)
+    academit.添加命令("llsl-circle-length", llsl_circle_length)
     academit.添加命令("llsl-ellipse", llsl_ellipse)
     academit.添加命令("llsl-region", llsl_region)
     academit.添加命令("llsl-text", llsl_text)
@@ -39,6 +41,7 @@ def 命令():
     academit.添加命令("llsl-fence-circle", llsl_fence_circle)
     academit.添加命令("llsl-entitysel", llsl_entitysel)
     academit.添加命令("llsl-entsel-textedit", llsl_entsel_textedit)
+    academit.添加命令("llsl-text-from-input", llsl_text_from_input)
     pass
 
 
@@ -139,6 +142,19 @@ def llsl_point():
 def llsl_line(): 
     acad.SSGet([[0, "LINE"]], sssetfirst=True)
 
+@acad.decorator_command
+def llsl_line_length(): 
+    length1 = acad.GetDouble(0, "请输入选择线段长度下限值:")
+    length2 = acad.GetDouble(50, "请输入选择线段长度上限值:")
+    objidlist = acad.SSGetIdList([[0, "LINE"]])
+    with acad.transaction() as trans:
+        buflist = []
+        for objid in objidlist:
+            objref = acad.TransObjectForRead(objid)
+            length = objref.Length
+            if length1 < length and length < length2: buflist.append(objid)
+    ss1 = acad.SSSetFromIdList(buflist)
+    acad.SSSetFirst(ss1)
 
 @acad.decorator_command
 def llsl_pl(): 
@@ -168,6 +184,22 @@ def llsl_arc():
 @acad.decorator_command
 def llsl_circle(): 
     acad.SSGet([[0, "CIRCLE"]], sssetfirst=True)
+
+@acad.decorator_command
+def llsl_circle_length(): 
+    length1 = acad.GetDouble(0, "请输入选择圆直径下限值:")
+    length2 = acad.GetDouble(6, "请输入选择圆直径上限值:")
+    objidlist = acad.SSGetIdList([[0, "CIRCLE"]])
+    with acad.transaction() as trans:
+        buflist = []
+        for objid in objidlist:
+            objref = acad.TransObjectForRead(objid)
+            length = objref.Diameter
+            if length1 < length and length < length2: buflist.append(objid)
+    ss1 = acad.SSSetFromIdList(buflist)
+    acad.SSSetFirst(ss1)
+
+
 
 @acad.decorator_command
 def llsl_ellipse(): # 椭圆
@@ -264,5 +296,20 @@ def llsl_entsel_textedit():
 
 
 
-
+@acad.decorator_command
+def llsl_text_from_input(): 
+    char = acad.GetString("件", "请输入要寻找的文字对象:")
+    flist = [
+        [-4, "<OR"],[0, "TEXT"],[0, "MTEXT"], [-4, "OR>"]
+        ]
+    objidlist = acad.SSGetIdList(flist)
+    with acad.transaction() as trans:
+        buflist = []
+        for objid in objidlist:
+            objref = acad.TransObjectForRead(objid)
+            string = objref.TextString
+            if char in string: buflist.append(objid)
     
+    if buflist == []: return
+    ss1 = acad.SelectionSet.FromObjectIds(buflist)
+    acad.ed.SetImpliedSelection(ss1)

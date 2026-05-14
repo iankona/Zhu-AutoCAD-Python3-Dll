@@ -10,7 +10,7 @@ def 命令():
     academit.添加命令("xlv", xlv)
     academit.添加命令("xlh", xlh)
     academit.添加命令("zooma", zooma)
-
+    academit.添加命令("dset", dset)
     
 @acad.decorator_command
 def roc():
@@ -42,3 +42,12 @@ def roa():
         acad.Command(["rotate3d", ss1, "", acad.ToPoint3d(pt1), acad.ToPoint3d(pt2), angle])
 
 
+@acad.decorator_command
+def dset():
+    objid = acad.db.Dimstyle
+    with acad.transaction() as trans:
+        record = acad.TransObjectForRead(objid)
+        dimscale = record.Dimscale
+    numb = int(dimscale)
+    biaohao = acad.GetInt(numb, "请输入标注号:")
+    acad.SetCurrentDimStyle(f"副本{biaohao} ISO-25")

@@ -6,10 +6,12 @@ import academit
 
 def 命令(): 
     academit.添加命令("lltext-songti", lltext_songti)
+    academit.添加命令("lltext-replace", lltext_replace)
     academit.添加命令("lltext-count-point-x-for", lltext_count_point_x_for)
     academit.添加命令("lltext-count-point-y-for", lltext_count_point_y_for)
     academit.添加命令("lltext-count-rec-for", lltext_count_rec_for)   
     academit.添加命令("lltext-count-frence-for", lltext_count_frence_for) 
+    academit.添加命令("lltext-convert-from-attribute",lltext_convert_from_attribute)
 
 
 zhu_count = 1
@@ -100,3 +102,31 @@ def lltext_count_frence_for():
             pt1 = acad.GetEntityBoundCenterXY0(objid)
             char = f"{zhu_text_pre}{i+1}{zhu_text_post}"
             acad.AddText(pt1, char, zhu_text_size)
+
+
+@acad.decorator_command
+def lltext_replace():
+    char1 = acad.GetString("-金属板", "请输入要寻找的文字对象:")
+    char2 = acad.GetString("", "请输入用于替换的文字:")
+    if char2 == None: char2 = ""
+    objidlist = acad.SSGetIdList([[0, "TEXT"]]) # [0, "MTEXT"], mtext not has TextString
+    with acad.transaction() as trans:
+        for objid in objidlist:
+            objref = acad.TransObjectForWrite(objid)
+            string = objref.TextString
+            if char1 in string:
+                string = string.replace(char1, char2)
+                objref.TextString = string
+
+
+@acad.decorator_command
+def lltext_convert_from_attribute():
+    objidlist = acad.SSGetIdList([[0, "ATTDEF"]])
+    with acad.transaction() as trans:
+        for objid in objidlist:
+            objref = acad.TransObjectForWrite(objid)
+            string = objref.Tag
+            size = objref.Height
+            pt1 = [objref.Position.X, objref.Position.Y, objref.Position.Z]
+            text = acad.AddText(pt1, string, size)
+            objref.Erase() # Need OpenForWrite

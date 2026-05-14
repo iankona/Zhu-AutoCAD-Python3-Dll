@@ -26,7 +26,7 @@ def 命令():
     academit.添加命令("llyx-rect-sidex-w-for", llyx_rect_sidex_w_for)
 
     academit.添加命令("llyx-rect-sidex-panjiayuan-for", llyx_rect_sidex_panjiayuan_for)
-
+    academit.添加命令("llyx-rect-sidex-pengquan-for", llyx_rect_sidex_pengquan_for)
 
 
 
@@ -406,6 +406,21 @@ def llyx_rect_sidex_panjiayuan_for():
             pt1, pt2, line3 = zhu_trans_llyx_att_w_line2(pt1, pt2, 3.5)
             pt1, pt2, line3 = zhu_trans_llyx_per_p_line3(pt1, pt2, dr1, 6)
             pt1, pt2, line3 = zhu_trans_llyx_per_p_line3(pt1, pt2, dr1, 8.5)
+            line3.Layer = "0"
+
+
+@acad.decorator_command
+def llyx_rect_sidex_pengquan_for():
+    zhu_ui_llyx_ness()
+    objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
+    with acad.transaction() as trans:
+        acad.ChangeObjectIdLayer(objidlist, "图层1")
+        result = acad.TransAutoFindRectPointList(objidlist)
+        for pt1, pt2, dr1 in result:
+            pt1, pt2, line3 = zhu_trans_llyx_per_p_line3(pt1, pt2, dr1, 400)
+            pt1, pt2, line3 = zhu_trans_llyx_per_n_line3(pt1, pt2, dr1, 20)
+            pt1, pt2, line3 = zhu_trans_llyx_per_p_line3(pt1, pt2, dr1, 20)
+            pt1, pt2, line3 = zhu_trans_llyx_per_w_line3(pt1, pt2, dr1, 10)
             line3.Layer = "0"
 
 

@@ -5,8 +5,8 @@ import clr
 
 import System
 
-from Autodesk.AutoCAD.ApplicationServices import Application
-from Autodesk.AutoCAD.EditorInput import SelectionMethod, PromptStringOptions, SubtractedKeywords, AddedKeywords, PromptStatus, SelectionFilter, PromptSelectionOptions, SelectionSet, PromptIntegerOptions, PromptPointOptions, PromptDoubleOptions
+from Autodesk.AutoCAD.ApplicationServices import Application, DocumentExtension
+from Autodesk.AutoCAD.EditorInput import SelectionMethod, PromptStringOptions, SubtractedKeywords, AddedKeywords, PromptStatus, SelectionFilter, PromptSelectionOptions, SelectionSet, PromptIntegerOptions, PromptPointOptions, PromptDoubleOptions, PromptSaveFileOptions
 from Autodesk.AutoCAD.EditorInput import SelectedObject, SelectionMethod, PromptNestedEntityOptions, PromptDistanceOptions
 
 # from Autodesk.AutoCAD.Runtime
@@ -257,6 +257,22 @@ def GetPoint3(string1="", string2="", string3="", baseptflag=False):
     pt3 = GetPoint(string3)
     if pt3 == None: return None, None, None
     return pt1, pt2, pt3
+
+def GetPoint4(string1="", string2="", string3="", string4=""):
+    if string1 == "": string1 = "请选择第1个点:"
+    if string2 == "": string2 = "请选择第2个点:"
+    if string3 == "": string3 = "请选择第3个点:"
+    if string4 == "": string3 = "请选择第4个点:"
+    pt1 = GetPoint(string1)
+    if pt1 == None: return None, None, None, None
+    pt2 = GetPoint(string2)
+    if pt2 == None: return None, None, None, None
+    pt3 = GetPoint(string3)
+    if pt3 == None: return None, None, None, None
+    pt4 = GetPoint(string4)
+    if pt4 == None: return None, None, None, None
+    return pt1, pt2, pt3, pt4
+
 
 def GetCorner(string, base_point):
     if string == "": string = "请选择顶点: "
@@ -787,9 +803,9 @@ def AddText(pt1, string="单行文字", size=50, angle=0, layer_name="", color_i
 
 # Autodesk.AutoCAD.DatabaseServices.AlignedDimension
 # DIMALIGNED
-def AddDal(pt1, pt2, pt3, dimstylename="", layer_name="", color_index=0):
-    return AddAlignedDimension(pt1, pt2, pt3, dimstylename, layer_name, color_index)
-def AddAlignedDimension(pt1, pt2, pt3, dimstylename="", layer_name="", color_index=0):
+def AddDal(pt1, pt2, pt3, dimstylename="", height=None, layer_name="", color_index=0):
+    return AddAlignedDimension(pt1, pt2, pt3, dimstylename, height, layer_name, color_index)
+def AddAlignedDimension(pt1, pt2, pt3, dimstylename="", height=None, layer_name="", color_index=0):
     dal = AlignedDimension()
     dal.XLine1Point = ToPoint3d(pt1)
     dal.XLine2Point = ToPoint3d(pt2)
@@ -823,9 +839,9 @@ def AddDalLinear(pt1, pt2, direct="+x", dle=50, dimflagnum=50):
 
 # Autodesk.AutoCAD.DatabaseServices.RotatedDimension
 # DIMLINEAR
-def AddDim(pt1, pt2, pt3, dimstylename="", layer_name="", color_index=0):
-    return AddRotatedDimension(pt1, pt2, pt3, dimstylename, layer_name, color_index)
-def AddRotatedDimension(pt1, pt2, pt3, dimstylename="", layer_name="", color_index=0):
+def AddDim(pt1, pt2, pt3, dimstylename="", height=None, layer_name="", color_index=0):
+    return AddRotatedDimension(pt1, pt2, pt3, dimstylename, height, layer_name, color_index)
+def AddRotatedDimension(pt1, pt2, pt3, dimstylename="", height=None, layer_name="", color_index=0):
     angle = AngleFromCrossDr1Dr2(Direct(pt1, pt2), [1,0,0])
     if angle <  45: angle = 0
     if angle >= 45: angle = 90
@@ -837,6 +853,14 @@ def AddRotatedDimension(pt1, pt2, pt3, dimstylename="", layer_name="", color_ind
     # # dim.TextPosition = txtpt,
     # dim.DimensionText = txtpt,
     dim.DimensionStyle = TransFindDimStyle(dimstylename) # dim.DimensionStyle need ObjectId
+    if height != None:
+        po1 = [dim.XLine2Point.X, dim.XLine2Point.Y, dim.XLine2Point.Z]
+        po2 = [dim.DimLinePoint.X, dim.DimLinePoint.Y, dim.DimLinePoint.Z]
+        dr1 = Direct(po1, po2)
+        dr1 = Vec3ResetLength(dr1, height)
+        po2 = Vec3Add(po1, dr1)
+        dim.DimLinePoint = ToPoint3d(po2)
+        
     AddDBObject(dim, layer_name, color_index)
     return dim
 
@@ -926,6 +950,12 @@ def DBObjectLine(start_point, final_point):
     line = Line(ToPoint3d(start_point), ToPoint3d(final_point))
     return line
 
+def DBObjectCircle(center, radius, normal=[0,0,1]):
+    circle = Circle()
+    circle.Center = ToPoint3d(center)
+    circle.Normal = ToVector3d(normal)
+    circle.Radius = radius
+    return circle
 
 def DBObjectRect(ptmin, ptmax):
     x1, y1 = ptmin[0:2]
@@ -1509,6 +1539,13 @@ def BoundLengthWidthToOffsetRectPointListXY0(pt1, length, width, offset):
 
 
 
+
+
+
+
+
+
+
 def IsPointInRange(pt1, objid:ObjectId|SelectionSet|Region):
     regions = []
     objtype = str(objid.GetType())
@@ -1535,6 +1572,25 @@ def IsPointInRange(pt1, objid:ObjectId|SelectionSet|Region):
 
 
 
+def IsIntersect(objid1, objid2): # 交集
+    with transaction() as trans:
+        objref1 = trans.GetObject(objid1, OpenMode.ForRead)
+        objref2 = trans.GetObject(objid2, OpenMode.ForRead)
+    dbobj_collect1 = DBObjectCollection()
+    dbobj_collect1.Add(objref1)
+    dbobj_collect2 = DBObjectCollection()
+    dbobj_collect2.Add(objref2)
+    region1 = Region.CreateFromCurves(dbobj_collect1)[0]
+    region2 = Region.CreateFromCurves(dbobj_collect2)[0]
+    if region1.Area < region2.Area:
+        regionmin, regionmax = region1, region2
+    else: 
+        regionmin, regionmax = region2, region1
+    regionmin.BooleanOperation(BooleanOperationType.BoolIntersect, regionmax) # Void函数返回None
+    flag = False
+    if regionmin.Area > 0: flag = True
+    return flag
+
 def IsInclude(objid1, objid2): # 交集
     with transaction() as trans:
         objref1 = trans.GetObject(objid1, OpenMode.ForRead)
@@ -1545,15 +1601,17 @@ def IsInclude(objid1, objid2): # 交集
     dbobj_collect2.Add(objref2)
     region1 = Region.CreateFromCurves(dbobj_collect1)[0]
     region2 = Region.CreateFromCurves(dbobj_collect2)[0]
-    area1 = region1.Area
-    area2 = region2.Area
-    regionmax, regionmin = region1, region2
-    areamax, areamin = area1, area2
-    if area1 < area2: 
-        regionmax, regionmin = region2, region1
-        areamax, areamin = area2, area1
-    regionmax.BooleanOperation(BooleanOperationType.BoolIntersect, regionmin) # Void函数返回None
-    area3 = regionmax.Area # AutoCAD规定，布尔后的对象ID与原先面积大的一致
+    if region1.Area < region2.Area:
+        areamin = region1.Area
+        regionmin, regionmax = region1.Clone(), region2.Clone()
+    else: 
+        areamin = region2.Area
+        regionmin, regionmax = region2.Clone(), region1.Clone()
+    regionmin.BooleanOperation(BooleanOperationType.BoolIntersect, regionmax) # Void函数返回None
+    flag = False
+    if regionmin.Area == areamin: flag = True
+    return flag
+
 
 NoneType = type(None)
 def IsNoneObjectId(objid):
@@ -2346,6 +2404,17 @@ def GetLWPolyLineMidPointList(objid:ObjectId, pt1=None):
     return midptlist
 
 
+def GetLWPolyLineEdgeList(objid:ObjectId, pt1=None):
+    pline_point_list = GetLWPolyLinePointList(objid, pt1)
+    edgelist = []
+    for i in range(len(pline_point_list)-1):
+        pt1 = pline_point_list[i]
+        pt2 = pline_point_list[i+1]
+        edgelist.append([pt1, pt2])
+    return edgelist
+
+
+
 def ChangeCoordinateXY(drlist, target_coord1="-Y", target_coord2="X"):
     result = []
     for dr in drlist:
@@ -2846,7 +2915,7 @@ def TransAutoDimTextAlignPointList(objidlist, pt1, pt2):
 
 
 
-def TransAutoDimTextAlignLayer2PointList(objidlist, pt1, pt2):
+def TransAutoDimTextLayerPointList(objidlist, pt1, pt2, layer:int):
     dr1 = Direct(pt1, pt2)
     angle1 = AngleFromDotDr1Dr2(dr1, [ 1, 0, 0])
     angle2 = AngleFromDotDr1Dr2(dr1, [-1, 0, 0])
@@ -2864,7 +2933,8 @@ def TransAutoDimTextAlignLayer2PointList(objidlist, pt1, pt2):
         po1, po2 = TransDimTextBoundXY0(objid)
         x1, y1, z1 = po1
         x2, y2, z2 = po2
-        numb = i%2 +0.5
+        numb = i%layer + 0.5
+        if i%layer == 0: numb = 0
         match flagd:
             case "+X": 
                 length, pad = x2 - x1, y2 - y1
@@ -2890,7 +2960,7 @@ def TransAutoDimTextAlignLayer2PointList(objidlist, pt1, pt2):
 
 
     result = []
-    for aa, objid, po0, po1, po2, dimmid1 in auflist:
+    for objid, po0, po1, po2, dimmid1 in auflist:
         result.append([objid, po0])
 
     return result
@@ -3086,6 +3156,36 @@ def DBObjectConvertPolylineToPolylineXY0(objref):
         polyline.AddVertexAt(i, Point2d(objref.GetPoint3dAt(i).X, objref.GetPoint3dAt(i).Y), objref.GetBulgeAt(i), objref.GetStartWidthAt(i), objref.GetEndWidthAt(i))
     return polyline 
 
+def TransStardEndExtendNessHalf(objid, ness):
+    objref = trans.GetObject(objid, OpenMode.ForWrite)
+    ness_half = ness / 2
+    infolist = []
+    for i in range(objref.NumberOfVertices):
+        point = objref.GetPoint3dAt(i)
+        infolist.append([i, [point.X, point.Y, point.Z], objref.GetBulgeAt(i), objref.GetStartWidthAt(i), objref.GetEndWidthAt(i)])
+    count = len(infolist)
+    if count == 2:
+        pt1 = infolist[0][1]
+        pt2 = infolist[1][1]
+        dr1 = Direct(pt2, pt1)
+        dr1 = Vec3ResetLength(dr1, ness_half)
+        pt1 = Vec3Add(pt1, dr1)
+        objref.SetPointAt(0, ToPoint2d(pt1))
+        
+    if count > 2:
+        pt1 = infolist[0][1]
+        pt2 = infolist[1][1]
+        dr1 = Direct(pt2, pt1)
+        dr1 = Vec3ResetLength(dr1, ness_half)
+        pt1 = Vec3Add(pt1, dr1)
+        objref.SetPointAt(0, ToPoint2d(pt1))
+        i = objref.NumberOfVertices - 1
+        pt2 = infolist[i-1][1]
+        pt1 = infolist[i][1]
+        dr1 = Direct(pt2, pt1)
+        dr1 = Vec3ResetLength(dr1, ness_half)
+        pt1 = Vec3Add(pt1, dr1)
+        objref.SetPointAt(i, ToPoint2d(pt1))
 
 
 

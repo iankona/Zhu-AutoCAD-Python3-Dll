@@ -6,7 +6,7 @@ import System
 def 命令(): 
     academit.添加命令("llccb", llccb)
     academit.添加命令("llbreak-all", llbreak_all)
-    academit.添加命令("llbreak-point", llbreak_point)
+    academit.添加命令("llbreak-point-for", llbreak_point_for)
     academit.添加命令("llbreak-subcount-for", llbreak_subcount_for)
     academit.添加命令("llbreak-sublength-for", llbreak_sublength_for)
     academit.添加命令("llbreak-line-use-select", llbreak_line_use_select)
@@ -41,6 +41,7 @@ def llzhu_trans_break_objid_with_acadpointlist(objid, acadpointlist):
         if acad.IsPointSame(pt2, po1): continue
         para = objref.GetParameterAtPoint(point)
         para_list.append(para)
+    if para_list == []: return []
     para_list.sort() # 默认从小到大
     collect = acad.DoubleCollection()
     for para in para_list:
@@ -118,33 +119,60 @@ def llccb():
         acad.AddLWPolyLine(ptlist)
 
 
-@acad.decorator_command
-def llbreak_point():
-    objid = acad.EntSel(string="请选择要打断的对象:")
-    ptlist = []
-    while True:
-        pt1 = acad.GetPoint("请点击打断点:") 
-        if pt1 == None: break
-        ptlist.append(pt1)
-    if ptlist == None: return 
+# @acad.decorator_command
+# def llbreak_point():
+#     objid = acad.EntSel(string="请选择要打断的对象:")
+#     ptlist = []
+#     while True:
+#         pt1 = acad.GetPoint("请点击打断点:") 
+#         if pt1 == None: break
+#         ptlist.append(pt1)
+#     if ptlist == None: return 
 
-    with acad.transaction() as trans:
-        objref = acad.TransObjectForWrite(objid)
-        paralist = []
-        for pt1 in ptlist:
+#     with acad.transaction() as trans:
+#         objref = acad.TransObjectForWrite(objid)
+#         paralist = []
+#         for pt1 in ptlist:
+#             po1 = objref.GetClosestPointTo(acad.ToPoint3d(pt1), extend=False)
+#             pa1 = objref.GetParameterAtPoint(po1)
+#             paralist.append(pa1)
+#         if paralist != []:
+#             paralist.sort()
+#             collection = acad.DoubleCollection()
+#             for para in paralist: 
+#                 collection.Add(para) 
+#             result = objref.GetSplitCurves(collection)
+#             for i, objrefsub in enumerate(result):
+#                 objrefsub.ColorIndex = i+1
+#                 acad.AddDBObject(objrefsub)
+#             objref.Erase()
+
+
+
+@acad.decorator_command
+def llbreak_point_for():
+    count = 0
+    while True:
+        objid = acad.EntSel(string="请选择要打断的对象:")
+        pt1 = acad.GetPoint("请点击打断点:") 
+        if pt1 == None: return
+        with acad.transaction() as trans:
+            objref = acad.TransObjectForWrite(objid)
             po1 = objref.GetClosestPointTo(acad.ToPoint3d(pt1), extend=False)
             pa1 = objref.GetParameterAtPoint(po1)
-            paralist.append(pa1)
-        if paralist != []:
-            paralist.sort()
             collection = acad.DoubleCollection()
-            for para in paralist: 
-                collection.Add(para) 
+            collection.Add(pa1) 
             result = objref.GetSplitCurves(collection)
             for i, objrefsub in enumerate(result):
-                objrefsub.ColorIndex = i+1
+                count += 1
+                objrefsub.ColorIndex = count
                 acad.AddDBObject(objrefsub)
             objref.Erase()
+
+
+
+
+
 
 
 @acad.decorator_command

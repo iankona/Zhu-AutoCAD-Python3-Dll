@@ -21,6 +21,7 @@ from Autodesk.AutoCAD.Geometry import Point3d
 
 
 def 命令(): 
+    academit.添加命令("llxy-for", llxy_for)
     academit.添加命令("ll-line-for", ll_line_for)
     academit.添加命令("ll-pline-point", ll_pline_point)
     academit.添加命令("ll-offset", ll_offset)
@@ -36,6 +37,24 @@ def ll_line_for():
         with acad.transaction() as trans:
             acad.AddLine(pt1, pt2)
         
+llzhu_xy_length = 2
+@acad.decorator_command
+def llxy_for():
+    global llzhu_xy_length
+    numb = acad.GetDouble(llzhu_xy_length, string="请输入宽度")
+    if numb == None: return
+    llzhu_xy_length = numb
+    nubm_half = numb/2
+    while True:
+        pt1, pt2 = acad.GetPoint2("请选择1个点: ","请选择2个点: ")
+        if pt1 == None: break
+        with acad.transaction() as trans:
+            line1 = acad.DBObjectLine(pt1, pt2)
+            dbobjrefcollect1 = line1.GetOffsetCurves( nubm_half)  
+            dbobjrefcollect2 = line1.GetOffsetCurves(-nubm_half)  
+            for objref1 in dbobjrefcollect1: acad.AddDBObject(objref1)
+            for objref2 in dbobjrefcollect2: acad.AddDBObject(objref2)
+
 
 def ll_line_test():
     with acad.transaction() as trans:

@@ -7,11 +7,13 @@ import math
 import numpy as np
 import time 
 def 命令(): 
+    academit.添加命令("lldli", lldli)
+    academit.添加命令("lldal", lldal)
     academit.添加命令("lldim-for", lldim_for)
     academit.添加命令("lldim-entsel-for", lldim_entsel_for)
     academit.添加命令("lldim-fence-qdim-for", lldim_fence_qdim_for)
     academit.添加命令("lldim-align-for", lldim_align_for)
-
+    # academit.添加命令("lldim-layer-for", lldim_layer_for)
 
 llzhu_dim_biaohao = 15
 llzhu_dim_height = 60
@@ -22,12 +24,35 @@ def llzhu_ui_dim_input():
     if biaohao != None: llzhu_dim_biaohao = biaohao
     if height != None: llzhu_dim_height = height
 
+
 llzhu_dim_direct_flag = 1
 def llzhu_ui_dim_direct_flag():
     global llzhu_dim_direct_flag
     flag = acad.GetInt(llzhu_dim_direct_flag, "请输入标注方向+X+Y或-X-Y方向:")
     if flag > 0: llzhu_dim_direct_flag = 1
     else: llzhu_dim_direct_flag = -1
+
+
+
+@acad.decorator_command
+def lldli():
+    llzhu_ui_dim_input()
+    acad.SetCurrentDimStyle(f"副本{llzhu_dim_biaohao} ISO-25")
+    while True:
+        pt1, pt2, pt3 = acad.GetPoint3()
+        if pt1 == None: return
+        # acad.Command(["DIMLINEAR", acad.ToPoint3d(pt1), acad.ToPoint3d(pt2), acad.ToPoint3d(pt3)])
+        with acad.transaction() as trans:
+            acad.AddDim(pt1, pt2, pt3, height=llzhu_dim_height)
+
+@acad.decorator_command
+def lldal():
+    llzhu_ui_dim_input()
+    acad.SetCurrentDimStyle(f"副本{llzhu_dim_biaohao} ISO-25")
+    while True:
+        pt1, pt2, pt3 = acad.GetPoint3()
+        if pt1 == None: return
+        acad.Command(["DALLINEAR", acad.ToPoint3d(pt1), acad.ToPoint3d(pt2), acad.ToPoint3d(pt3)])
 
 
 
@@ -142,7 +167,18 @@ def lldim_align_for():
                 objref.TextPosition = acad.ToPoint3d(pt0)
 
 
-
+@acad.decorator_command
+def lldim_layer_for():
+    numb = acad.GetInt(3, string="请输入标注分层:")
+    while True:
+        pt1, pt2 = acad.GetPoint2()
+        if pt1 == None: break
+        objidlist = acad.GetSelectFenceIdList(pt1, pt2)
+        with acad.transaction() as trans:
+            result = acad.TransAutoDimTextLayerPointList(objidlist, pt1, pt2, numb)
+            for objid, pt0 in result:
+                objref = acad.TransObjectForWrite(objid)
+                objref.TextPosition = acad.ToPoint3d(pt0)
 
 
 

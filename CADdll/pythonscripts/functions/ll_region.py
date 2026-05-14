@@ -18,11 +18,14 @@ def 命令():
     academit.添加命令("llregion-alignY", llregion_alignY)
     # academit.添加命令("llregion-subtract", llregion_subtract)
     # academit.添加命令("llregion-print", llregion_print)
+    academit.添加命令("llregion-normal", llregion_normal)
     # academit.添加命令("llregion-check-inside", llregion_check_inside)
     # academit.添加命令("llregion-mesh-sphm", llregion_mesh_sphm)
     # academit.添加命令("llregion-objidlist", llregion_objidlist) 
     academit.添加命令("llregion-rotate", llregion_rotate) 
+    academit.添加命令("llregion-flatten", llregion_flatten)
     academit.添加命令("llregion-rotate-to-z-up", llregion_rotate_to_z_up)
+    academit.添加命令("llregion-ss-rotate-to-z-up", llregion_ss_rotate_to_z_up)
     academit.添加命令("llregion-rotate-to-align-xy0", llregion_rotate_to_align_xy0)
     # academit.添加命令("llregion-rotate-to-z-up-negative", llregion_rotate_to_z_up_negative)
     # academit.添加命令("llregion-rotate-point-cloud-to-z-up", llregion_rotate_point_cloud_to_z_up)
@@ -96,18 +99,104 @@ def llregion():
 
 
 
-zhu_objid_dict = {}
+def __trans_ptlist_from_region(objid):
+    objref = acad.TransObjectForWrite(objid)
+    brep = acad.Brep(objref)
+    ptlist = []
+    for vertex in brep.Vertices:
+        pt1 = [vertex.Point.X, vertex.Point.Y, vertex.Point.Z]
+        ptlist.append(pt1)
+    return ptlist
+
+def find_same_point(ptlist1, ptlist2):
+    ptlist0 = []
+    for pt1 in ptlist1:
+        for pt2 in ptlist2: 
+            if acad.IsPointSame(pt1, pt2): ptlist0.append(pt1)
+    return ptlist0
+
+def find_connet_list(buflist):
+    objid0 = buflist[0][0][0]
+    result = []
+    sklist = []
+    for i in range(len(buflist)):
+        for values in buflist:
+            for objid1, objid2 in values:
+                if objid0 == objid1: 
+                    if objid2 in sklist: continue # 防止回环
+                    result.append([objid1, objid2])
+                    objid0 = objid2
+                    sklist.append(objid1)
+    return result
+
 @acad.decorator_command
-def llregion_objidlist():
-    global zhu_objid_dict
-    pt1 = acad.GetPoint()
-    pt2 = acad.GetPoint(base_point=pt1)
-    objidlist = acad.GetSelectFenceIdList(pt1, pt2, [[0, "REGION"]])
-    objidlist = [objid for objid in objidlist]
-    zhu_objid_dict = {}
-    for i, objid in enumerate(objidlist):
-        key = str(objid)
-        zhu_objid_dict[key] = objidlist[i:]
+def llregion_flatten():
+    objidlist = acad.SSGetIdList([[0, "REGION"]])
+    objid0 = acad.EntSel([[0, "REGION"]], string="请选择基准对象:") 
+    objidlist.remove(objid0)    
+    with acad.transaction() as trans:
+        baselist0 = __trans_ptlist_from_region(objid0)
+        bufptlist = [[objid0, baselist0]]
+        for objid in objidlist:
+            ptlist = __trans_ptlist_from_region(objid)
+            bufptlist.append([objid, ptlist])
+
+    buflist = []
+    for objid1, ptlist1 in bufptlist:
+        cuflist = []
+        for objid2, ptlist2 in bufptlist:
+            if objid1 == objid2: continue
+            pslist = find_same_point(ptlist1, ptlist2)
+            if pslist == []: continue
+            cuflist.append([objid1, objid2])
+        buflist.append(cuflist)
+
+    print(buflist)
+    if len(buflist[0]) == 1:
+        buflist1 = find_connet_list(buflist)
+        buflist2 = None
+    if len(buflist[0]) == 2:
+        a = buflist[0][0]
+        b = buflist[0][1]
+        buflist1 = find_connet_list([[a]]+buflist[1:])
+        buflist2 = find_connet_list([[b]]+buflist[1:])
+
+    with acad.transaction() as trans:
+        __trans_flatten_(buflist1)
+    if buflist2 == None: return 
+    with acad.transaction() as trans:
+        __trans_flatten_(buflist2)
+
+def __trans_flatten_(buflist):
+    for i, [objid1, objid2] in enumerate(buflist):
+        ptlist1 = __trans_ptlist_from_region(objid1)
+        ptlist2 = __trans_ptlist_from_region(objid2)
+        pslist1 = find_same_point(ptlist1, ptlist2)
+        objref1 = acad.TransObjectForWrite(objid1)
+        objref2 = acad.TransObjectForWrite(objid2)
+        dr1 = [objref1.Normal.X, objref1.Normal.Y, objref1.Normal.Z]
+        dr2 = [objref2.Normal.X, objref2.Normal.Y, objref2.Normal.Z]
+        axis = acad.CrossNormalized(dr1, dr2)
+        angle = acad.AngleFromDotDr1Dr2(dr1, dr2)
+        acad.TransRoation(objid2, -angle, axis, pslist1[0])
+        for objid3, objid4 in buflist[i+1:]:
+            acad.TransRoation(objid4, -angle, axis, pslist1[0])
+
+
+    
+
+# zhu_objid_dict = {}
+# @acad.decorator_command
+# def llregion_objidlist():
+#     global zhu_objid_dict
+#     pt1 = acad.GetPoint()
+#     pt2 = acad.GetPoint(base_point=pt1)
+#     objidlist = acad.GetSelectFenceIdList(pt1, pt2, [[0, "REGION"]])
+#     objidlist = [objid for objid in objidlist]
+#     zhu_objid_dict = {}
+#     for i, objid in enumerate(objidlist):
+#         key = str(objid)
+#         zhu_objid_dict[key] = objidlist[i:]
 
 
 # @acad.decorator_command
@@ -269,6 +358,40 @@ def llregion_rotate_to_z_up():
         with acad.transaction() as trans:
             acad.TransRoation(objid1, angle, axis, pt1)
         acad.Prompt(angle), acad.Prompt("\n")
+
+
+
+@acad.decorator_command
+def llregion_ss_rotate_to_z_up():
+    while True:
+        objidlist = acad.SSGetIdList([[0, "REGION"]])
+        objid1 = acad.EntSel([[0, "REGION"]], string="请选择基准对象:") 
+        if acad.IsNone(objid1): return
+        pt1 = acad.GetPoint("请选择基点: ")
+        if pt1 == None: return
+        normal = acad.GetEntityNormal(objid1)
+        normal = [normal.X, normal.Y, normal.Z]
+        angle1 = acad.AngleFromDotDr1Dr2(normal, [0,0, 1])
+        angle2 = acad.AngleFromDotDr1Dr2(normal, [0,0,-1])
+        if angle1 >= angle2:
+            axis = acad.CrossNormalized(normal, [0, 0, -1])
+            angle = angle2
+        else:
+            axis = acad.CrossNormalized(normal, [0, 0,  1])
+            angle = angle1
+        with acad.transaction() as trans:
+            for objid1 in objidlist:
+                acad.TransRoation(objid1, angle, axis, pt1)
+        acad.Prompt(angle), acad.Prompt("\n")
+
+
+
+
+
+
+
+
+
 
 
 @acad.decorator_command

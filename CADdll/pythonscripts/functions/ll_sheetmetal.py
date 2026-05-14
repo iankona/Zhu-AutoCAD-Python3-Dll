@@ -15,6 +15,7 @@ import subprocess
 
 def 命令():  
     academit.添加命令("llsheet-to-zj", llsheet_to_zj_for)
+    academit.添加命令("llsheet-to-zjjg", llsheet_to_zjjg_for)
     academit.添加命令("llsheet-to-nj", llsheet_to_nj_for)
     academit.添加命令("llsheet-to-bc", llsheet_to_bc_for)
     academit.添加命令("llsheet-to-wj", llsheet_to_wj_for)
@@ -34,6 +35,35 @@ def llsheet_to_zj_for():
             objid1, objid2 = objidlist[0:2]
             objid3, ness = acad.TransAutoFindMidLWPolyLine(objid1, objid2)
             acad.TransMove(objid3, po1, po2)
+
+
+@acad.decorator_command
+def llsheet_to_zjjg_for():
+    po1, po2 = acad.GetPoint2()
+    if po1 == None: return
+    dr1 = acad.Direct(po1, po2)
+    while True:
+        objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
+        if len(objidlist) < 2 : return
+        with acad.transaction() as trans:
+            objid1, objid2 = objidlist[0:2]
+            objid3, ness = acad.TransAutoFindMidLWPolyLine(objid1, objid2)
+            acad.TransStardEndExtendNessHalf(objid3, ness)
+            acad.TransMove(objid3, po1, po2)
+
+
+
+def zj_to_zjjg(lengthlist, ness):
+    ness_half = ness / 2
+    count = len(lengthlist)
+    match count:
+        case 0: return []
+        case 1: lengthlist[0] = lengthlist[0] + ness_half
+        case _:
+            lengthlist[0]  = lengthlist[0]  + ness_half
+            lengthlist[-1] = lengthlist[-1] + ness_half
+    return lengthlist
+
 
 
 def zj_to_nj(lengthlist, ness):

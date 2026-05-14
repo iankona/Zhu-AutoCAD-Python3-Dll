@@ -8,13 +8,9 @@ import System
 def 命令(): 
     academit.添加命令("llconnet-line-and-line-for", llconnet_line_and_line_for)
     academit.添加命令("llconnet-pl-and-pl-for", llconnet_pl_and_pl_for)
-    # academit.添加命令("llconnet-rect-and-rect-simple", llconnet_rect_and_rect_simple)
-    # academit.添加命令("llconnet-rect-and-rect-point", llconnet_rect_and_rect_point)
-    academit.添加命令("llconnet-rect-and-rect-point-for", llconnet_rect_and_rect_point_for)
+    academit.添加命令("llconnet-rect-and-rect-point-for", llconnet_rect_and_rect_for)
     academit.添加命令("llconnet-rect-and-rect-perx-for", llconnet_rect_and_rect_perx_for)
     academit.添加命令("llconnet-rect-and-rect-pery-for", llconnet_rect_and_rect_pery_for)
-    pass
-
 
 
 def zhu_connet_rect_and_rect(ptnlist, ptwlist):
@@ -89,9 +85,11 @@ def llzhu_trans_connect_line_and_line(objidlist):
 @acad.decorator_command
 def llconnet_line_and_line_for():
     while True: 
-        pt1, pt2 = acad.GetPoint2()
-        if pt1 == None: return
-        objidlist = acad.GetSelectFenceIdList(pt1, pt2)
+        # pt1, pt2 = acad.GetPoint2()
+        # if pt1 == None: return
+        # objidlist = acad.GetSelectFenceIdList(pt1, pt2)
+        objidlist = acad.SSGetIdList()
+        if len(objidlist) < 2: return 
         pt1, pt2 = acad.GetEntityStartEndPoint(objidlist[0])
         po1, po2 = acad.GetEntityStartEndPoint(objidlist[1])
         if acad.Distance(pt1, po1) > acad.Distance(pt1, po2): po1, po2 = po2, po1
@@ -103,9 +101,11 @@ def llconnet_line_and_line_for():
 @acad.decorator_command
 def llconnet_pl_and_pl_for():
     while True: 
-        pt1, pt2 = acad.GetPoint2()
-        if pt1 == None: return
-        objidlist = acad.GetSelectFenceIdList(pt1, pt2)
+    #     pt1, pt2 = acad.GetPoint2()
+    #     if pt1 == None: return
+    #     objidlist = acad.GetSelectFenceIdList(pt1, pt2)
+        objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
+        if len(objidlist) < 2: return 
         ptlist1 = acad.GetLWPolyLinePointList(objidlist[0])
         ptlist2 = acad.GetLWPolyLinePointList(objidlist[1])
         pt1, pt2 = ptlist1[0], ptlist1[-1]
@@ -213,7 +213,7 @@ def llconnet_pl_and_pl_for():
 #             acad.AddLine(pt1, pt2)
 
 @acad.decorator_command
-def llconnet_rect_and_rect_point_for():
+def llconnet_rect_and_rect_for():
     objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
     with acad.transaction() as trans:
         buflist = []
