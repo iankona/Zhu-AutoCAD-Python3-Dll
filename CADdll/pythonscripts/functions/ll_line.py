@@ -22,21 +22,39 @@ from Autodesk.AutoCAD.Geometry import Point3d
 
 def 命令(): 
     academit.添加命令("llxy-for", llxy_for)
-    academit.添加命令("ll-line-for", ll_line_for)
-    academit.添加命令("ll-pline-point", ll_pline_point)
-    academit.添加命令("ll-offset", ll_offset)
-    academit.添加命令("ll-get-osmode", 函数2)
-    academit.添加命令("ll-set-osmode", 函数3)
+    academit.添加命令("llline-for", llline_for)
+    academit.添加命令("llline-to-z0-for", llline_to_z0_for)
+    # academit.添加命令("ll-pline-point", ll_pline_point)
+    # academit.添加命令("ll-offset", ll_offset)
+    # academit.添加命令("ll-get-osmode", 函数2)
+    # academit.添加命令("ll-set-osmode", 函数3)
 
 
 @acad.decorator_command
-def ll_line_for():
+def llline_for():
     while True:
         pt1, pt2 = acad.GetPoint2("请选择1个点: ","请选择2个点: ")
         if pt1 == None: break
         with acad.transaction() as trans:
             acad.AddLine(pt1, pt2)
         
+
+
+@acad.decorator_command
+def llline_to_z0_for():
+    while True:
+        objidlist = acad.SSGetIdList([[0, "LINE"]])
+        if objidlist == []: return
+        with acad.transaction() as trans:
+            for objid in objidlist:
+                objref = acad.TransObjectForWrite(objid)
+                pt1 = [objref.StartPoint.X, objref.StartPoint.Y, 0]
+                pt2 = [objref.EndPoint.X, objref.EndPoint.Y, 0]
+                objref.StartPoint = acad.ToPoint3d(pt1)
+                objref.EndPoint = acad.ToPoint3d(pt2)
+
+
+
 llzhu_xy_length = 2
 @acad.decorator_command
 def llxy_for():

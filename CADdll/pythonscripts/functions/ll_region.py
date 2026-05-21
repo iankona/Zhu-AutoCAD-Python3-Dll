@@ -26,8 +26,9 @@ def 命令():
     academit.添加命令("llregion-flatten", llregion_flatten)
     academit.添加命令("llregion-rotate-to-z-up", llregion_rotate_to_z_up)
     academit.添加命令("llregion-ss-rotate-to-z-up", llregion_ss_rotate_to_z_up)
-    academit.添加命令("llregion-rotate-to-align-xy0", llregion_rotate_to_align_xy0)
-    # academit.添加命令("llregion-rotate-to-z-up-negative", llregion_rotate_to_z_up_negative)
+    academit.添加命令("llregion-align-xy0-point4", llregion_align_xy0_point4)
+    academit.添加命令("llregion-align-point4", llregion_align_point4)
+    academit.添加命令("llregion-ss-face-rotate-to-z-up", llregion_ss_face_rotate_to_z_up)
     # academit.添加命令("llregion-rotate-point-cloud-to-z-up", llregion_rotate_point_cloud_to_z_up)
 
 
@@ -151,7 +152,6 @@ def llregion_flatten():
             cuflist.append([objid1, objid2])
         buflist.append(cuflist)
 
-    print(buflist)
     if len(buflist[0]) == 1:
         buflist1 = find_connet_list(buflist)
         buflist2 = None
@@ -386,6 +386,27 @@ def llregion_ss_rotate_to_z_up():
 
 
 
+@acad.decorator_command
+def llregion_ss_face_rotate_to_z_up():
+    while True:
+        objidlist = acad.SSGetIdList()
+        pt1, pt2, pt3 = acad.GetPoint3() 
+        if pt1 == None: return
+        dr1 = acad.Direct(pt1, pt2)
+        dr2 = acad.Direct(pt2, pt3)
+        normal = acad.CrossNormalized(dr1, dr2)
+        angle1 = acad.AngleFromDotDr1Dr2(normal, [0,0, 1])
+        angle2 = acad.AngleFromDotDr1Dr2(normal, [0,0,-1])
+        if angle1 >= angle2:
+            axis = acad.CrossNormalized(normal, [0, 0, -1])
+            angle = angle2
+        else:
+            axis = acad.CrossNormalized(normal, [0, 0,  1])
+            angle = angle1
+        with acad.transaction() as trans:
+            for objid1 in objidlist:
+                acad.TransRoation(objid1, angle, axis, pt1)
+        acad.Prompt(angle), acad.Prompt("\n")
 
 
 
@@ -395,7 +416,7 @@ def llregion_ss_rotate_to_z_up():
 
 
 @acad.decorator_command
-def llregion_rotate_to_align_xy0():
+def llregion_align_xy0_point4():
     while True:
         objid1 = acad.EntSel()
         pt1 = acad.GetPoint()
@@ -422,20 +443,21 @@ def llregion_rotate_to_align_xy0():
             acad.TransMove(objid1, pt2, po2)
 
 
-# @acad.decorator_command
-# def llregion_rotate_to_align_xyz():
-#     objidlist = acad.SSGetIdList()
-#     if objidlist == None: return
-#     pt1, pt2 = acad.GetPoint2()
-#     po2, po1 = acad.GetPoint2()
-#     dr1 = acad.Direct(pt2, pt1)
-#     dr2 = acad.Direct(po2, po1)
-#     angle = acad.AngleFromDotDr1Dr2(dr1, dr2)
-#     axis = acad.CrossNormalized(dr1, dr2)
-#     with acad.transaction() as trans:
-#         for objid in objidlist:
-#             acad.TransRoation(objid, angle, axis, pt2)
-#             acad.TransMove(objid, pt2, po2)
+@acad.decorator_command
+def llregion_align_point4():
+    while True:
+        objidlist = acad.SSGetIdList()
+        if objidlist == None: return
+        pt1, pt2 = acad.GetPoint2()
+        po2, po1 = acad.GetPoint2()
+        dr1 = acad.Direct(pt2, pt1)
+        dr2 = acad.Direct(po2, po1)
+        angle = acad.AngleFromDotDr1Dr2(dr1, dr2)
+        axis = acad.CrossNormalized(dr1, dr2)
+        with acad.transaction() as trans:
+            for objid in objidlist:
+                acad.TransRoation(objid, angle, axis, pt2)
+                acad.TransMove(objid, pt2, po2)
 
 
 # @acad.decorator_command

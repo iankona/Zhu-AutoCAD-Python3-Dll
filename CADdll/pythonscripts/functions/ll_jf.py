@@ -18,6 +18,7 @@ def 命令():
     academit.添加命令("lljf-curve-gap-subcount", lljf_curve_gap_subcount)
     academit.添加命令("lljf-curve-clip-sublength", lljf_curve_clip_sublength)
     academit.添加命令("lljf-curve-clip-sublength-subcount", lljf_curve_clip_sublength_subcount)
+    academit.添加命令("lljf-line-sublength-set1", lljf_line_sublength_set1)
 
 
 
@@ -537,3 +538,67 @@ def lljf_curve_clip_sublength_subcount():
                 for objref in collect: acad.AddDBObject(objref)
                 collect = line.GetOffsetCurves(-pipehalf)
                 for objref in collect: acad.AddDBObject(objref)
+
+
+@acad.decorator_command
+def lljf_line_sublength_set1():
+    pipe1 = acad.GetDouble(40, "请输入方管1宽度:")
+    pipe2 = acad.GetDouble(20, "请输入方管2宽度:")
+    sublength = acad.GetDouble(70, "请输入分段间隔:")
+    perlength = acad.GetDistance(300, "请输入立杆长度:")
+    while True:
+        pt1, pt2, pt3 = acad.GetPoint3() 
+        if pt1 == None: return
+        distance = acad.Distance(pt1, pt2)
+        count = 1
+        lastbias = distance
+        buflist = []
+        while True:
+            count += 1
+            acount = count
+            bcount = count - 1
+            ccount = acount + bcount + 1
+            remain = distance - acount*pipe1 - bcount*pipe2
+            length = remain / ccount
+            bias = abs(length-sublength)
+            buflist.append([bias, acount, bcount, ccount, length])
+            # print([bias, acount, bcount, ccount, length])
+            if bias < lastbias: lastbias = bias
+            if bias > lastbias: break
+        bias, acount, bcount, ccount, sublength = buflist[-2]
+
+        per = acad.GetPerDirectResetLengthXY(pt1, pt2, pt3, perlength)
+        dr0 = acad.Direct(pt1, pt2)
+        dr1 = acad.Vec3ResetLength(dr0, sublength)
+        dr2 = acad.Vec3ResetLength(dr0, pipe1)
+        dr3 = acad.Vec3ResetLength(dr0, sublength)
+        dr4 = acad.Vec3ResetLength(dr0, pipe2)
+        ptlist1 = []
+        for i in range(bcount):
+            pt1 = acad.Vec3Add(pt1, dr1)
+            ptlist1.append(pt1)
+            pt1 = acad.Vec3Add(pt1, dr2)
+            ptlist1.append(pt1)
+            pt1 = acad.Vec3Add(pt1, dr3)
+            ptlist1.append(pt1)
+            pt1 = acad.Vec3Add(pt1, dr4)
+            ptlist1.append(pt1)
+        pt1 = acad.Vec3Add(pt1, dr1)
+        ptlist1.append(pt1)
+        pt1 = acad.Vec3Add(pt1, dr2)
+        ptlist1.append(pt1)
+
+        ptlist2 = [acad.Vec3Add(po1, per) for po1 in ptlist1]
+
+        with acad.transaction() as trans:
+            for po1, po2 in zip(ptlist1, ptlist2): acad.AddLine(po1, po2)
+
+
+# pipe1 = acad.GetDouble(llzhu_jf_length_pipe, "请输入方管1宽度:")
+# pipe2 = acad.GetDouble(llzhu_jf_length_pipe, "请输入方管2宽度:")
+# sube = acad.GetDouble(llzhu_jf_length_sube, "请输入分段间隔:")
+# numb = acad.GetInt(llzhu_jf_length_numb, "请输入间隔数量:")
+# pere = acad.GetDistance(llzhu_jf_length_pere, "请输入立杆长度:")
+
+
+

@@ -2,8 +2,11 @@ import math
 import copy
 import time
 import clr
+import sys
+import traceback
 
 import System
+
 
 from Autodesk.AutoCAD.ApplicationServices import Application, DocumentExtension
 from Autodesk.AutoCAD.EditorInput import SelectionMethod, PromptStringOptions, SubtractedKeywords, AddedKeywords, PromptStatus, SelectionFilter, PromptSelectionOptions, SelectionSet, PromptIntegerOptions, PromptPointOptions, PromptDoubleOptions, PromptSaveFileOptions
@@ -122,7 +125,9 @@ def decorator_command(func):
         try:
             func()
         except Exception as e:
-            print(e)
+            # print(e)
+            # print(sys.exc_info())
+            print(traceback.format_exc())
             # print(f"错误信息: {e}")
             # print(f"发生错误的文件: {e.__traceback__.tb_frame.f_globals['__file__']}")
             # print(f"发生错误的行号: {e.__traceback__.tb_lineno}")
@@ -989,6 +994,26 @@ def DBObjectCopy(objref):
     matrix4x4 = Matrix3d.Identity # 单位矩阵
     copyobjref = objref.GetTransformedCopy(matrix4x4)
     return copyobjref
+
+
+
+def DBObjectMoveCopy(objref, sourcept=[0,0,0], targetpt=[0,0,0]):
+    pt1, pt2 = Vec2toVec3(sourcept), Vec2toVec3(targetpt)
+    dr1 = Direct(pt1, pt2)
+    vecdr = Vector3d(*dr1)
+    matrix4x4 = Matrix3d.Displacement(vecdr)
+    copyentity = objref.GetTransformedCopy(matrix4x4)
+    return copyentity
+
+
+def DBObjectRoationCopy(objref, angle, axis=[], center=[]):
+    center = ToPoint3d(center)
+    axis = Vector3d(*axis)
+    rad = angle * 0.01745329
+    matrix4x4 = Matrix3d.Rotation(rad, axis, center)
+    copyentity = objref.GetTransformedCopy(matrix4x4)
+    return copyentity
+
 
 
 

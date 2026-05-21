@@ -24,9 +24,10 @@ def 命令():
     academit.添加命令("llsl-spline", llsl_spline)
     academit.添加命令("llsl-arc", llsl_arc)
     academit.添加命令("llsl-circle", llsl_circle)
-    academit.添加命令("llsl-circle-length", llsl_circle_length)
+    academit.添加命令("llsl-circle-diameter", llsl_circle_diameter)
     academit.添加命令("llsl-ellipse", llsl_ellipse)
     academit.添加命令("llsl-region", llsl_region)
+    academit.添加命令("llsl-wipeout", llsl_wipeout)
     academit.添加命令("llsl-text", llsl_text)
     academit.添加命令("llsl-dtext", llsl_dtext)
     academit.添加命令("llsl-mtext", llsl_mtext)
@@ -186,7 +187,7 @@ def llsl_circle():
     acad.SSGet([[0, "CIRCLE"]], sssetfirst=True)
 
 @acad.decorator_command
-def llsl_circle_length(): 
+def llsl_circle_diameter(): 
     length1 = acad.GetDouble(0, "请输入选择圆直径下限值:")
     length2 = acad.GetDouble(6, "请输入选择圆直径上限值:")
     objidlist = acad.SSGetIdList([[0, "CIRCLE"]])
@@ -208,6 +209,12 @@ def llsl_ellipse(): # 椭圆
 @acad.decorator_command
 def llsl_region(): 
     acad.SSGet([[0, "REGION"]], sssetfirst=True)
+
+
+@acad.decorator_command
+def llsl_wipeout(): 
+    acad.SSGet([[0, "WIPEOUT"]], sssetfirst=True)
+
 
 @acad.decorator_command
 def llsl_text(): 

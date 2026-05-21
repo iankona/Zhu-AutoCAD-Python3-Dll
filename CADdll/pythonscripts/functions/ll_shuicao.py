@@ -84,9 +84,9 @@ def llsc_diff_for():
             # line5.Erase()
 
 def __input_string_numblist(char):
-    char.replace("　", "")
-    char.replace(" ", "")
-    char.replace("，", ",")
+    char = char.replace("　", "")
+    char = char.replace(" ", "")
+    char = char.replace("，", ",")
     if char.startswith(","): char = char[1:]
     if char.endswith(","): char = char[0:-1]
     charlist = char.split(",")

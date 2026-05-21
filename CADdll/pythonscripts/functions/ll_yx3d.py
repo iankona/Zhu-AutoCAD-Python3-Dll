@@ -11,6 +11,7 @@ def 命令():
     academit.添加命令("llyx3d-region-for", llyx3d_region_for)
     academit.添加命令("llyx3d-region-from3-for", llyx3d_region_from3_for)
     academit.添加命令("llyx3d-region-from4-for", llyx3d_region_from4_for)
+    academit.添加命令("llyx3d-region-from6-for", llyx3d_region_from6_for)
     academit.添加命令("llyx3d-region-fromx-for", llyx3d_region_fromx_for)
 
 
@@ -111,6 +112,28 @@ def llyx3d_region_from4_for():
             for line1 in buflist: collect.Add(line1)
             regions = acad.Region.CreateFromCurves(collect)
             for region in regions: acad.AddDBObject(region)
+
+@acad.decorator_command
+def llyx3d_region_from6_for():
+    while True:
+        pt1, pt2, pt3, pt4 = acad.GetPoint4()
+        if pt1 == None: return
+        pt5, pt6 = acad.GetPoint2()
+        if pt1 == None: return
+        with acad.transaction() as trans:
+            line1 = acad.DBObjectLine(pt1, pt2)
+            line2 = acad.DBObjectLine(pt2, pt3)
+            line3 = acad.DBObjectLine(pt3, pt4)
+            line4 = acad.DBObjectLine(pt4, pt5)
+            line5 = acad.DBObjectLine(pt5, pt6)
+            line6 = acad.DBObjectLine(pt6, pt1)
+            buflist = [line1, line2, line3, line4, line5, line6]
+            collect = acad.DBObjectCollection()
+            for line1 in buflist: collect.Add(line1)
+            regions = acad.Region.CreateFromCurves(collect)
+            for region in regions: acad.AddDBObject(region)
+
+
 
 @acad.decorator_command
 def llyx3d_region_fromx_for():
