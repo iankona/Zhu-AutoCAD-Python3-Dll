@@ -7,8 +7,8 @@ import System
 import math
 
 def 命令(): 
-    # academit.添加命令("llcurve-face-flatten-zhiwen_up", llcurve_face_flatten_zhiwen_up)
-    academit.添加命令("llcurve-face-flatten-zhiwen_down", llcurve_face_flatten_zhiwen_down)
+    academit.添加命令("llcurve-face-flatten-hutiao-down", llcurve_face_flatten_hutiao_down)
+    academit.添加命令("llcurve-face-flatten-zhiwen-down", llcurve_face_flatten_zhiwen_down)
     academit.添加命令("llcurve-face-flatten-zhiwen-up-sample", llcurve_face_flatten_zhiwen_up_sample)
     academit.添加命令("llcurve-face-flatten-zhiwen-down-sample", llcurve_face_flatten_zhiwen_down_sample)
 
@@ -82,6 +82,8 @@ def trans_calc_row_column_curve_pointlist(pt1, pt2, pt3, pt4, countrow, countcol
                 looplist.append([index1, index2, index3])
 
     return pointlist, looplist
+
+
 
 def trans_calc_row_column_curve_gap_pointlist(pt1, pt2, pt3, pt4, countrow, countcol):
     ptlist1 = trans_line_ptlist(pt1, pt2, countrow)
@@ -162,19 +164,19 @@ def row_column_count_to_springloop(countrow, countcol):
     springlooplist = []
     for i in range(countrow+1):
         for j in range(countcol+1):
-            index2 = [i+1, j+1]
-            index3 = [i,   j+1]
-            index4 = [i-1, j+1]
-
-            index1 = [i+1, j]
-            index0 = [i  , j]
-            index5 = [i-1, j]
-
-            index8 = [i+1, j-1]
-            index7 = [i  , j-1]
-            index6 = [i-1, j-1]
-
             loop = []
+            step = 1
+            index2 = [i+step, j+step]
+            index3 = [i,      j+step]
+            index4 = [i-step, j+step]
+
+            index1 = [i+step, j]
+            index0 = [i     , j]
+            index5 = [i-step, j]
+
+            index8 = [i+step, j-step]
+            index7 = [i     , j-step]
+            index6 = [i-step, j-step]
             if is_index_in_row_column_index(index1, countrow, countcol): loop.append([index0, index1])
             if is_index_in_row_column_index(index2, countrow, countcol): loop.append([index0, index2])
             if is_index_in_row_column_index(index3, countrow, countcol): loop.append([index0, index3])
@@ -183,6 +185,28 @@ def row_column_count_to_springloop(countrow, countcol):
             if is_index_in_row_column_index(index6, countrow, countcol): loop.append([index0, index6])
             if is_index_in_row_column_index(index7, countrow, countcol): loop.append([index0, index7])
             if is_index_in_row_column_index(index8, countrow, countcol): loop.append([index0, index8])
+
+            # step = 4 # 不起作用
+            # index2 = [i+step, j+step]
+            # index3 = [i,      j+step]
+            # index4 = [i-step, j+step]
+
+            # index1 = [i+step, j]
+            # index0 = [i     , j]
+            # index5 = [i-step, j]
+
+            # index8 = [i+step, j-step]
+            # index7 = [i     , j-step]
+            # index6 = [i-step, j-step]
+            # if is_index_in_row_column_index(index1, countrow, countcol): loop.append([index0, index1])
+            # if is_index_in_row_column_index(index2, countrow, countcol): loop.append([index0, index2])
+            # if is_index_in_row_column_index(index3, countrow, countcol): loop.append([index0, index3])
+            # if is_index_in_row_column_index(index4, countrow, countcol): loop.append([index0, index4])
+            # if is_index_in_row_column_index(index5, countrow, countcol): loop.append([index0, index5])
+            # if is_index_in_row_column_index(index6, countrow, countcol): loop.append([index0, index6])
+            # if is_index_in_row_column_index(index7, countrow, countcol): loop.append([index0, index7])
+            # if is_index_in_row_column_index(index8, countrow, countcol): loop.append([index0, index8])
+
             springlooplist.append(loop)
     return springlooplist
 
@@ -267,20 +291,22 @@ def spring_update_pointlistV2(pointlist, springlooplist, springlengthlist):
 
 
 def spring_update_pointlist_huke(pointlist, springlooplist, springlengthlist):
-    elasticity = 0.7
+
     result = pointlist[:]
     has_update = False
     for loop, lengthlist in zip(springlooplist, springlengthlist):
         for [index1, index2], length1 in zip(loop, lengthlist):
             a, b = index1
             c, d = index2
-            pt1 = result[a][b]
-            pt2 = result[c][d]
+            # pt1 = result[a][b]
+            # pt2 = result[c][d]
+            pt1 = pointlist[a][b]
+            pt2 = pointlist[c][d]            
             dr1 = acad.Direct(pt1, pt2)
             dr2 = acad.Direct(pt2, pt1)
             distance = acad.Distance(pt1, pt2)
             x = distance - length1
-            dx = elasticity*x
+            dx = x*0.7
             dr1 = acad.Vec3ResetLength(dr1, 0.5*dx)
             dr2 = acad.Vec3ResetLength(dr2, 0.5*dx)
             pt1 = acad.Vec3Add(pt1, dr1)
@@ -296,6 +322,64 @@ def spring_update_pointlist_huke(pointlist, springlooplist, springlengthlist):
 
     # pointB.position += 0.5f * move;
     # pointA.position += 0.5f * -move;
+
+
+
+
+def spring(pt1, pt2, targetlength, pb1, pb2):
+    # dra = acad.Direct(pb1, pb2) # 未起作用
+    # drb = acad.Direct(pt1, pt2)
+    # angle = acad.AngleFromDotDr1Dr2(dra, drb)
+    # if angle > 90: pt1, pt2 = pt2, pt1
+
+    dr1 = acad.Direct(pt1, pt2)
+    dr2 = acad.Direct(pt2, pt1)
+    distance = acad.Distance(pt1, pt2)
+    x = distance - targetlength
+    dx = x*0.5
+    if dx > 5: dx = 5
+    dr1 = acad.Vec3ResetLength(dr1, 0.5*dx)
+    dr2 = acad.Vec3ResetLength(dr2, 0.5*dx)
+    pt1 = acad.Vec3Add(pt1, dr1)
+    pt2 = acad.Vec3Add(pt2, dr2)
+    return pt1, pt2
+
+def spring_update_pointlist_loop_huke(pointlist, looplist, lengthlist):
+
+    result = pointlist[:]
+    has_update = False
+    for loop, length in zip(looplist, lengthlist):
+        a, b = loop[0]
+        c, d = loop[1]
+        e, f = loop[2]
+        dis1 = length[0]
+        dis2 = length[1]
+        dis3 = length[2]
+        pb1 = pointlist[a][b]
+        pb2 = pointlist[c][d]
+        pb3 = pointlist[e][f]
+        pt1 = result[a][b]
+        pt2 = result[c][d]
+        pt3 = result[e][f]
+        pt1, pt2 = spring(pt1, pt2, dis1, pb1, pb2)
+        pt2, pt3 = spring(pt2, pt3, dis2, pb2, pb3)
+        pt3, pt1 = spring(pt3, pt1, dis3, pb3, pb1)
+        result[a][b] = pt1
+        result[c][d] = pt2
+        result[e][f] = pt3
+
+    return has_update, result
+    # //胡克定律：弹力=弹力系数*距离*方向
+    # Vector3 vector = positionA - positionB;
+    # float distance = vector.magnitude - spring.length; //距离
+    # Vector3 direction = vector.normalized; //方向
+    # Vector3 move = elasticity * distance * direction;//弹力系数为[0,2]，无阻力时应小于1
+
+    # pointB.position += 0.5f * move;
+    # pointA.position += 0.5f * -move;
+
+
+
 
 
 def lengthlist_deviation(lengthlist1, lengthlist2):
@@ -363,7 +447,7 @@ def trans_calc_triangle_angle_point(perflag, pt1, pt2, pt3, angle2, angle3):
 
 
 
-def trans_calc_row_column_flatten_pointlist_shape(perflag, pointlist, looplist, lengthlist): # 无约束展开，角长度过长
+def trans_calc_row_column_flatten_pointlist_shape(perflag, pointlist, looplist, lengthlist): # 无约束展开，角长度过长，对角三角形压扁过度
     pt1 = pointlist[0][0]
     for loop in looplist: 
         a, b = loop[0]
@@ -403,6 +487,49 @@ def trans_calc_row_column_flatten_pointlist_shape(perflag, pointlist, looplist, 
             # print("dis1", acad.Distance(pt1, pt2), "pt3", dis1, pt3, dis3, pt1, pt2, dis2)
             pt3 = trans_calc_triangle_point(perflag, pt3, dis3, pt1, pt2, dis2)
             pointlist[e][f] = pt3
+
+
+def trans_calc_row_column_flatten_pointlist_triangle(perflag, pointlist, looplist): # 无约束展开，角长度过长，对角三角形压扁过度
+    pt1 = pointlist[0][0]
+    for loop in looplist: 
+        a, b = loop[0]
+        c, d = loop[1]
+        e, f = loop[2]
+        pointlist[a][b] = None
+        pointlist[c][d] = None
+        pointlist[e][f] = None
+    dis1 = llzhu_flatten_sublength
+    pt1 = [pt1[0], pt1[1], 0]
+    pt2 = acad.Vec3Add(pt1, [dis1, 0, 0])
+    a, b = looplist[0][0]
+    c, d = looplist[0][1]
+    e, f = looplist[0][2]
+    pointlist[a][b] = pt1
+    pointlist[c][d] = pt2
+
+    for loop in looplist: 
+        a, b = loop[0]
+        c, d = loop[1]
+        e, f = loop[2]
+        dis1 = llzhu_flatten_sublength
+        dis2 = llzhu_flatten_sublength
+        dis3 = llzhu_flatten_sublength
+        pt1 = pointlist[a][b]
+        pt2 = pointlist[c][d]
+        pt3 = pointlist[e][f]
+        if pt1 == None:
+            # print("dis2", acad.Distance(pt2, pt3), "pt1", dis2, pt1, dis1, pt2, pt3, dis3)
+            pt1 = trans_calc_triangle_point(perflag, pt1, dis1, pt2, pt3, dis3)
+            pointlist[a][b] = pt1
+        if pt2 == None:
+            # print("dis3", acad.Distance(pt3, pt1), "pt2", dis3, pt2, dis2, pt3, pt1, dis1)
+            pt2 = trans_calc_triangle_point(perflag, pt2, dis2, pt3, pt1, dis1)
+            pointlist[c][d] = pt2
+        if pt3 == None:
+            # print("dis1", acad.Distance(pt1, pt2), "pt3", dis1, pt3, dis3, pt1, pt2, dis2)
+            pt3 = trans_calc_triangle_point(perflag, pt3, dis3, pt1, pt2, dis2)
+            pointlist[e][f] = pt3
+
 
 
 
@@ -505,6 +632,63 @@ def trans_calc_row_column_flatten_pointlist_shape_junfen(perflag, pointlist, loo
             pt2 = acad.Vec3Add(pt1, dr1)
             # print("dis1", acad.Distance(pt1, pt2), "pt3", dis1, pt3, dis3, pt1, pt2, dis2)
             pt3 = trans_calc_triangle_point(perflag, pt3, dis3, pt1, pt2, dis2)
+            pointlist[c][d] = pt2
+            pointlist[e][f] = pt3
+
+
+def trans_calc_row_column_flatten_pointlist_shape_kuoda(perflag, pointlist, looplist, lengthlist): # 有限约束展开
+    pt1 = pointlist[0][0]
+    for loop in looplist: 
+        a, b = loop[0]
+        c, d = loop[1]
+        e, f = loop[2]
+        pointlist[a][b] = None
+        pointlist[c][d] = None
+        pointlist[e][f] = None
+    dis1 = lengthlist[0][0]
+    pt1 = [pt1[0], pt1[1], 0]
+    pt2 = acad.Vec3Add(pt1, [dis1, 0, 0])
+    a, b = looplist[0][0]
+    c, d = looplist[0][1]
+    e, f = looplist[0][2]
+    pointlist[a][b] = pt1
+    pointlist[c][d] = pt2
+
+    for loop, length in zip(looplist, lengthlist): 
+        a, b = loop[0]
+        c, d = loop[1]
+        e, f = loop[2]
+        dis1 = length[0]
+        dis2 = length[1]
+        dis3 = length[2]
+        pt1 = pointlist[a][b]
+        pt2 = pointlist[c][d]
+        pt3 = pointlist[e][f]
+        if pt1 == None:
+            dx = abs(acad.Distance(pt2, pt3) - dis2) 
+            # dr2 = acad.Direct(pt2, pt3)
+            # dr2 = acad.Vec3ResetLength(dr2, dis2)
+            # pt3 = acad.Vec3Add(pt2, dr2)
+            # print("dis2", acad.Distance(pt2, pt3), "pt1", dis2, pt1, dis1, pt2, pt3, dis3)
+            pt1 = trans_calc_triangle_point(perflag, pt1, dis1+dx, pt2, pt3, dis3+dx)
+            pointlist[a][b] = pt1
+            pointlist[e][f] = pt3
+        if pt2 == None:
+            dx = abs(acad.Distance(pt3, pt1) - dis3)
+            # dr3 = acad.Direct(pt3, pt1)
+            # dr3 = acad.Vec3ResetLength(dr3, dis3)
+            # pt1 = acad.Vec3Add(pt3, dr3)
+            # print("dis3", acad.Distance(pt3, pt1), "pt2", dis3, pt2, dis2, pt3, pt1, dis1)
+            pt2 = trans_calc_triangle_point(perflag, pt2, dis2+dx, pt3, pt1, dis1+dx)
+            pointlist[a][b] = pt1
+            pointlist[c][d] = pt2
+        if pt3 == None:
+            dx = abs(acad.Distance(pt1, pt2) - dis1) 
+            # dr1 = acad.Direct(pt1, pt2)
+            # dr1 = acad.Vec3ResetLength(dr1, dis1)
+            # pt2 = acad.Vec3Add(pt1, dr1)
+            # print("dis1", acad.Distance(pt1, pt2), "pt3", dis1, pt3, dis3, pt1, pt2, dis2)
+            pt3 = trans_calc_triangle_point(perflag, pt3, dis3+dx, pt1, pt2, dis2+dx)
             pointlist[c][d] = pt2
             pointlist[e][f] = pt3
 
@@ -659,8 +843,8 @@ def llcurve_face_flatten_zhiwen_down():
     while True:
         count += 1
         # print(f"第{count}迭代:")
-        flag, pointlist = spring_update_pointlist_huke(pointlist, springlooplist, springlengthlist)
-        # if count % 2 == 1: # 效果极差
+        flag, pointlist = spring_update_pointlist_loop_huke(pointlist, springlooplist, springlengthlist)
+        # if count % 2 == 1: 
         #     flag, pointlist = spring_update_pointlist_huke(pointlist, springlooplist, springlengthlist)
         # else:
         #     flag, pointlist = spring_update_pointlist_huke(pointlist, springlooplist_reverse, springlengthlist_reverse)
@@ -678,7 +862,7 @@ def llcurve_face_flatten_zhiwen_down():
         # print("sumbias:", sumbias)
         if count > 10 and sumbias > bias: break
         if sumbias < 5: break
-        if count > 1000: break
+        if count > 3000: break
 
     acad.Prompt(sumbias)
       
@@ -695,6 +879,136 @@ def llcurve_face_flatten_zhiwen_down():
     # draw_curve_face_mesh(pointlist, looplist)
     # lengthlist3 = pointlist_to_lengthlist(pointlist, looplist)
     # lengthlist_deviation(lengthlist, lengthlist3)
+
+
+
+
+def acad_get_ent_length(objid):
+    with acad.transaction() as trans:
+        objref1 = acad.TransObjectForRead(objid)
+        endparam = objref1.EndParam
+        distance = objref1.GetDistanceAtParameter(endparam)
+    return distance
+
+
+
+def trans_curve_ptlist(objid, subcount):
+    with acad.transaction() as trans:
+        objref1 = acad.TransObjectForRead(objid)
+        endparam = objref1.EndParam
+        distance = objref1.GetDistanceAtParameter(endparam)
+        pt1 = [objref1.StartPoint.X, objref1.StartPoint.Y, objref1.StartPoint.Z]
+        pt2 = [objref1.EndPoint.X, objref1.EndPoint.Y, objref1.EndPoint.Z]
+
+    sublength = distance/subcount
+    ptlist = [pt1]
+    sumlength = 0
+    for i in range(subcount-1):
+        sumlength += sublength
+        point = objref1.GetPointAtDist(sumlength)
+        ptlist.append([point.X, point.Y, point.Z])
+    ptlist.append(pt2)
+    return ptlist
+
+
+
+def trans_calc_row_column_spline_pointlist(pb1, objid1, objid3, countrow, countcol):
+    ptlist1 = trans_curve_ptlist(objid1, countrow)
+    ptlist3 = trans_curve_ptlist(objid3, countrow)
+    pt1, pt2 = ptlist1[0], ptlist1[-1]
+    po1, po2 = ptlist3[0], ptlist3[-1]
+    if acad.Distance(pb1, pt1) > acad.Distance(pb1, pt2): ptlist1 = ptlist1[::-1]
+    if acad.Distance(pb1, po1) > acad.Distance(pb1, po2): ptlist3 = ptlist3[::-1]
+
+    pointlist = []
+    for po1, po2 in zip(ptlist1, ptlist3):
+        collist = trans_line_ptlist(po1, po2, countcol)
+        pointlist.append(collist)
+
+    looplist = []
+    for i in range(countrow):
+        for j in range(countcol):
+            index1 = [i, j]
+            index2 = [i+1, j]
+            index3 = [i+1, j+1]
+            index4 = [i, j+1]
+            if i == 0: 
+                looplist.append([index1, index2, index3])
+                looplist.append([index1, index3, index4])
+            else:
+                looplist.append([index1, index3, index4])
+                looplist.append([index1, index2, index3])
+
+    return pointlist, looplist
+
+
+
+
+
+
+@acad.decorator_command
+def llcurve_face_flatten_hutiao_down():
+    zhuui_flatten_sublength()
+    pt1, objid1 = acad.EntSelEntity(string="请选择第1个对象:")
+    pt2, objid2 = acad.EntSelEntity(string="请选择第2个对象:")
+    pt3, objid3 = acad.EntSelEntity(string="请选择第3个对象:")
+    pt4, objid4 = acad.EntSelEntity(string="请选择第4个对象:")
+    if pt1 == None: return
+    if pt2 == None: return
+    if pt3 == None: return
+    if pt4 == None: return
+    dis1 = acad_get_ent_length(objid1)
+    dis2 = acad_get_ent_length(objid2)
+    dis3 = acad_get_ent_length(objid3)
+    dis4 = acad_get_ent_length(objid4)
+    maxrowlength = max(dis1, dis3)
+    maxcollength = max(dis2, dis4)
+    countrow = int(maxrowlength/llzhu_flatten_sublength)
+    countcol = int(maxcollength/llzhu_flatten_sublength)
+
+    pointlist, looplist = trans_calc_row_column_spline_pointlist(pt1, objid1, objid3, countrow, countcol)
+    lengthlist = pointlist_to_lengthlist(pointlist, looplist)
+    draw_curve_face_mesh(pointlist, looplist)
+    perflag = -1
+
+    springlooplist = row_column_count_to_springloop(countrow, countcol)
+    springlengthlist = pointlist_to_springlength(pointlist, springlooplist)
+
+    trans_calc_row_column_flatten_pointlist_triangle(perflag, pointlist, looplist)
+    draw_curve_face_mesh(pointlist, looplist)
+    lengthlist2 = pointlist_to_lengthlist(pointlist, looplist)
+    sumbias, biaslist = lengthlist_deviation(lengthlist, lengthlist2)
+    acad.Prompt(sumbias), acad.Prompt("\n")
+
+
+    springlooplist_reverse = springlooplist[::-1]
+    springlengthlist_reverse = springlengthlist[::-1]
+
+    bias = sumbias
+    count = 0
+    while True:
+        count += 1
+        print(f"第{count}迭代:")
+        # flag, pointlist = spring_update_pointlist_huke(pointlist, springlooplist, springlengthlist)
+        flag, pointlist = spring_update_pointlist_loop_huke(pointlist, looplist, lengthlist)
+        # if count % 2 == 1: 
+        #     flag, pointlist = spring_update_pointlist_huke(pointlist, springlooplist, springlengthlist)
+        # else:
+        #     flag, pointlist = spring_update_pointlist_huke(pointlist, springlooplist_reverse, springlengthlist_reverse)
+        # flag, pointlist = spring_update_pointlist_huke(pointlist, springlooplist_reverse, springlengthlist_reverse) # 与正序结果1样
+
+        lengthlist2 = pointlist_to_lengthlist(pointlist, looplist)    
+        sumbias, biaslist = lengthlist_deviation(lengthlist, lengthlist2)  
+        if sumbias < bias: bias = sumbias
+
+        if count > 10 and sumbias > bias: break
+        # if sumbias < 5: break
+        if count > 4000: break
+
+    acad.Prompt(sumbias)
+    draw_curve_face_mesh(pointlist, looplist)
+    draw_curve_face_range(pointlist, countrow, countcol)
+
 
 
 def __segment_center(pt1, pt2):
@@ -734,10 +1048,47 @@ def draw_curve_face_mesh(pointlist, looplist):
             objidlist.append(line1.ObjectId)
             objidlist.append(line2.ObjectId)
             objidlist.append(line3.ObjectId)
-            pt4 = __triangle_center(pt1, pt2, pt3)
-            text1 = acad.AddText(pt4, string=str(count), size=5)
-            objidlist.append(text1.ObjectId)
+            # pt4 = __triangle_center(pt1, pt2, pt3)
+            # text1 = acad.AddText(pt4, string=str(count), size=5)
+            # objidlist.append(text1.ObjectId)
         acad.AddGroup(objidlist)
+
+
+
+def draw_curve_face_range(pointlist, countrow, countcol): 
+    with acad.transaction() as trans:
+        objidlist = []
+        edgelist = []
+        for i in range(countrow):
+            index1 = [i,   0]
+            index2 = [i+1, 0]
+            index3 = [i,   countcol]
+            index4 = [i+1, countcol]
+            edgelist.append([index1, index2])
+            edgelist.append([index3, index4])
+
+
+        for j in range(countcol):
+            index1 = [0, j]
+            index2 = [0, j+1]
+            index3 = [countrow, j]
+            index4 = [countrow, j+1]
+            edgelist.append([index1, index2])
+            edgelist.append([index3, index4])
+
+
+
+        objidlist = []
+        for edge in edgelist: 
+            a, b = edge[0]
+            c, d = edge[1]
+            pt1 = pointlist[a][b]
+            pt2 = pointlist[c][d]
+            line1 = acad.AddLine(pt1, pt2)
+            objidlist.append(line1.ObjectId)
+        acad.AddGroup(objidlist)
+
+
 
 
 

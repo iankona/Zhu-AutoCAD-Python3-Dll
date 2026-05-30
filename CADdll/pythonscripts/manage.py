@@ -18,6 +18,7 @@ import clr
 class NetConsole:
     def __init__(self):
         pass
+
     
     def write(self, message): # 1个print(), 调用2次write()
         message = str(message)
@@ -35,6 +36,31 @@ sys.stderr = NetConsole()
 
 # print(os.getcwd()) # C:\Users\Administrator\user\Documents
 os.chdir("F:\\CADdll")
+
+import coredumpy
+coredumpy.patch_except(directory='F:\\CADdll\\pythonscripts\\dumps')
+from coredumpy import config
+# The dump depth if not specified
+config.default_recursion_depth: int = 5
+
+# Best effort timeout for dump - not guaranteed. Only checked for each new depth.
+config.dump_timeout: int = 60
+
+# Whether dump all threads
+config.dump_all_threads: bool = False
+
+# # Whether hide strings that match config.secret_patterns
+# config.hide_secret: bool = True
+
+# # The patterns for secrets
+# config.secret_patterns: list[re.Pattern] = [re.compile(r"[A-Za-z0-9]{32,1024}")]
+
+# # Whether hide strings that match os.environ.values()
+# config.hide_environ: bool = True
+
+# # The filter to determine whether an environ should be hidden
+# config.environ_filter: Callable = lambda env: len(env) > 8
+
 
 
 import academit

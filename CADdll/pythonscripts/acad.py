@@ -4,6 +4,7 @@ import time
 import clr
 import sys
 import traceback
+import coredumpy
 
 import System
 
@@ -118,6 +119,29 @@ class test_context2:
         string2 = "管理器2.2之后...\n"
         print(string2), Prompt(string2)
 
+# import sys
+# def get_cur_info():
+#     print(sys._getframe().f_code.co_filename)  # 当前文件名，可以通过__file__获得
+#     print(sys._getframe(0).f_code.co_name) # 当前函数名
+#     print(sys._getframe(1).f_code.co_name)  # 调用该函数的函数名字，如果没有被调用，则返回<module>
+#     print(sys._getframe(0).f_lineno) #当前函数的行号
+#     print(sys._getframe(1).f_lineno) # 调用该函数的行号
+
+# # sys._getframe()
+# class FrameType:
+#     f_back: Optional[FrameType]f_builtins: Dict[str, Any]
+#     f_code: CodeType
+#     f_globals: Dict[str, Any]
+#     f_lasti: int
+#     f_lineno: int
+#     f_locals: Dict[str, Any]
+#     f_trace: Optional[Callable[[FrameType, str, Any], Any]]if sys.version_info >= (3, 7)
+#     f_trace_lines: bool
+#     f_trace_opcodes: bool
+#     def clear(self) -> None:
+#         pass
+
+
 
 def decorator_command(func):
     def wrapper():
@@ -125,6 +149,9 @@ def decorator_command(func):
         try:
             func()
         except Exception as e:
+            # print(sys._getframe())
+            # get_cur_info()
+            # coredumpy.dump(directory='F:\\CADdll\\pythonscripts\\dumps', depth=3)
             # print(e)
             # print(sys.exc_info())
             print(traceback.format_exc())
@@ -982,7 +1009,7 @@ def DBObjectLWPolyLine(ptlist):
     return pline
 
 
-def DBObjectMKPolyLine(ptlist, layer_name="", color_index=0):
+def DBObjectMKPolyLine(ptlist):
     pline = Polyline()
     for i, pt1 in enumerate(ptlist):
         pline.AddVertexAt(i, ToPoint2d(pt1), 0, 0, 0)
@@ -1005,6 +1032,16 @@ def DBObjectMoveCopy(objref, sourcept=[0,0,0], targetpt=[0,0,0]):
     copyentity = objref.GetTransformedCopy(matrix4x4)
     return copyentity
 
+def DBObjectMove(objref, sourcept=[0,0,0], targetpt=[0,0,0]):
+    pt1, pt2 = Vec2toVec3(sourcept), Vec2toVec3(targetpt)
+    dr1 = Direct(pt1, pt2)
+    vecdr = Vector3d(*dr1)
+    matrix4x4 = Matrix3d.Displacement(vecdr)
+    copyentity = objref.TransformBy(matrix4x4)
+    return copyentity
+
+
+
 
 def DBObjectRoationCopy(objref, angle, axis=[], center=[]):
     center = ToPoint3d(center)
@@ -1014,7 +1051,13 @@ def DBObjectRoationCopy(objref, angle, axis=[], center=[]):
     copyentity = objref.GetTransformedCopy(matrix4x4)
     return copyentity
 
-
+def DBObjectRoation(objref, angle, axis=[], center=[]):
+    center = ToPoint3d(center)
+    axis = Vector3d(*axis)
+    rad = angle * 0.01745329
+    matrix4x4 = Matrix3d.Rotation(rad, axis, center)
+    copyentity = objref.TransformBy(matrix4x4)
+    return copyentity
 
 
 
@@ -1074,6 +1117,13 @@ def AddBlockFromRefList(objreflist, base_point=[0,0,0]):
     blockref = BlockReference(block.Origin, blockobjid)
     AddDBObject(blockref)
     return blockref
+
+def AddBlockRef(blockobjid, pt1):
+    blockref = BlockReference(ToPoint3d(pt1), blockobjid)
+    AddDBObject(blockref)
+    return blockref
+
+
 
 
 def TransObjectForRead(objid):
@@ -2267,41 +2317,37 @@ def GetIdListBoundCenterXY0(objidlist):
 
 
 def GetRefListBoundXYZ(objreflist):
-    with transaction() as trans:
-        extend = Extents3d()
-        for objref in objreflist:
-            extend.AddExtents(objref.GeometricExtents) 
-        point1 = extend.MinPoint
-        point2 = extend.MaxPoint
+    extend = Extents3d()
+    for objref in objreflist:
+        extend.AddExtents(objref.GeometricExtents) 
+    point1 = extend.MinPoint
+    point2 = extend.MaxPoint
     return [point1.X, point1.Y, point1.Z], [point2.X, point2.Y, point2.Z]
 
 
 def GetRefListBoundCenterXYZ(objreflist):
-    with transaction() as trans:
-        extend = Extents3d()
-        for objref in objreflist:
-            extend.AddExtents(objref.GeometricExtents) 
-        point1 = extend.MinPoint
-        point2 = extend.MaxPoint
+    extend = Extents3d()
+    for objref in objreflist:
+        extend.AddExtents(objref.GeometricExtents) 
+    point1 = extend.MinPoint
+    point2 = extend.MaxPoint
     return [(point1.X+point2.X)/2, (point1.Y+point2.Y)/2, (point1.Z+point2.Z)/2]
 
 def GetRefListBoundXY0(objreflist):
-    with transaction() as trans:
-        extend = Extents3d()
-        for objref in objreflist:
-            extend.AddExtents(objref.GeometricExtents) 
-        point1 = extend.MinPoint
-        point2 = extend.MaxPoint
+    extend = Extents3d()
+    for objref in objreflist:
+        extend.AddExtents(objref.GeometricExtents) 
+    point1 = extend.MinPoint
+    point2 = extend.MaxPoint
     return [point1.X, point1.Y, 0], [point2.X, point2.Y, 0]
 
 
 def GetRefListBoundCenterXY0(objreflist):
-    with transaction() as trans:
-        extend = Extents3d()
-        for objref in objreflist:
-            extend.AddExtents(objref.GeometricExtents) 
-        point1 = extend.MinPoint
-        point2 = extend.MaxPoint
+    extend = Extents3d()
+    for objref in objreflist:
+        extend.AddExtents(objref.GeometricExtents) 
+    point1 = extend.MinPoint
+    point2 = extend.MaxPoint
     return [(point1.X+point2.X)/2, (point1.Y+point2.Y)/2, 0]
 
 
@@ -3053,7 +3099,6 @@ def BrepCurveToDBArc(curve): # ExternalCurve3d
 
 
 
-
 def DBObjectConvertRegionToPolylineXY0(objref):
     resultlist = []
     brep = Brep(objref)
@@ -3214,7 +3259,23 @@ def TransStardEndExtendNessHalf(objid, ness):
 
 
 
+def DBObjectBlockFromRefList(objreflist, base_point=[0,0,0]):
+    # 创建块
+    block = BlockTableRecord()
+    block.Name = CalcBlockName()
+    block.Origin = ToPoint3d(base_point)
+    for objref in objreflist:
+        block.AppendEntity(objref)
+        # block.AppendEntity(objref) # eAlreadyInDb 在 Autodesk.AutoCAD.DatabaseServices.BlockTableRecord.AppendEntity(Entity entity)
+    # 需要先往block里添加对象，才能往blocktable和db里添加对象，这样才能正确显示块
+    blocktable = trans.GetObject(db.BlockTableId, OpenMode.ForWrite)
+    blockobjid = blocktable.Add(block)
+    trans.AddNewlyCreatedDBObject(block, True)
+    return blockobjid
 
+def DBObjectBlockRef(blockobjid, pt1):
+    blockref = BlockReference(ToPoint3d(pt1), blockobjid)
+    return blockref
 
 # result = DBObjectCollection()
 # objref.Explode(result) # Line Explode 会出错，要求PL or block # Autodesk.AutoCAD.DatabaseServices.Line

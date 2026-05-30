@@ -11,7 +11,7 @@ def 命令():
 
 zhu_text_size = 50
 
-@acad.decorator_command_undo
+@acad.decorator_command
 def llcalc():
     global zhu_text_size
     string = ""
