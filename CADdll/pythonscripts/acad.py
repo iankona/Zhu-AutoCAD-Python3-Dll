@@ -1124,7 +1124,16 @@ def AddBlockRef(blockobjid, pt1):
     return blockref
 
 
+def GetObjectForRead(objid):
+    with transaction() as trans:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+    return objref
 
+
+def GetObjectForWrite(objid):
+    with transaction() as trans:
+        objref = trans.GetObject(objid, OpenMode.ForWrite)
+    return objref
 
 def TransObjectForRead(objid):
     objref = trans.GetObject(objid, OpenMode.ForRead)
@@ -1697,7 +1706,9 @@ def IsNone(objid):
         if objid.IsNull: return True
     return False
 
-
+def IsObjectIdSame(objid1, objid2):
+    if str(objid1) == str(objid2): return True
+    return False
 
 
 def IsPointInRect(pt0, ptlist=[]):
@@ -1721,6 +1732,27 @@ def IsRectInRect(ptnlist=[], ptwlist=[]):
     flag4 = IsPointInRect(pn4, ptwlist)
     if flag1 and flag2 and flag3 and flag4: return True
     return False
+
+def IsCCWUseZup(ptlist=[]):
+    # rotate_to_z_up
+    po1, po2, po3, po4 = ptlist[0:4]
+    dr1 = Direct(po1, po2)
+    dr2 = Direct(po2, po3)
+    normal = CrossNormalized(dr1, dr2)
+    angle1 = AngleFromDotDr1Dr2(normal, [0,0, 1])
+    # angle2 = acad.AngleFromDotDr1Dr2(normal, [0,0,-1])
+    # if angle1 >= angle2:
+    #     axis = acad.CrossNormalized(normal, [0, 0, -1])
+    #     angle = angle2
+    # else:
+    #     axis = acad.CrossNormalized(normal, [0, 0,  1])
+    #     angle = angle1
+    axis = CrossNormalized(normal, [0, 0,  1])
+    ptlistzup = MatrixRotationPointList(angle1, axis, po1, ptlist)
+    return ptlistzup
+
+
+
 
 
 def IsCCW(ptlist=[]): # CounterClockWise 逆时针
@@ -1779,6 +1811,13 @@ def IsPointSame(pt1, pt2, precision=0.00001):
     if abs(z2-z1) < precision: flag3 = True
     if flag1 and flag2 and flag3: return True
     return False
+
+
+def IsEdgeSame(pt1, pt2, po1, po2):
+    if IsPointSame(pt1, po1) and IsPointSame(pt2, po2) : return True
+    if IsPointSame(pt1, po2) and IsPointSame(pt2, po1) : return True
+    return False
+
 
 def IsPointInLWPolyLinePointList(pt1, ptlist): # ptlist 来自GetLWPoly not GetMkPoly
     x, y = pt1[0:2]

@@ -2,8 +2,8 @@
 import acad
 import academit
 
-import open3d as o3d
-import numpy as np
+# import open3d as o3d
+# import numpy as np
 
 def 命令(): 
     academit.添加命令("llrect-point-select-add-square-w-for", llrect_point_select_add_square_w_for)

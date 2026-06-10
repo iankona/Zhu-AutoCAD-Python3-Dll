@@ -3,8 +3,6 @@
 import acad
 import academit
 import math
-import math
-import numpy as np
 import time 
 def 命令(): 
     academit.添加命令("lldli", lldli)

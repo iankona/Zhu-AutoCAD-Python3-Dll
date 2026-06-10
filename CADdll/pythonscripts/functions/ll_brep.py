@@ -9,6 +9,7 @@ def 命令():
     academit.添加命令("ll-brep", ll_brep)
     academit.添加命令("ll-brep-test", ll_brep_test)
     academit.添加命令("ll-select-solid-edge", ll_select_solid_edge)
+    academit.添加命令("ll-imprint", ll_imprint)
 
 
 
@@ -37,6 +38,11 @@ def ll_select_solid_edge():
     acad.Prompt(objref.GetType())
 
 
+
+
+
+
+
 @acad.decorator_command
 def ll_brep_test():
     [pickpoint, objid] = acad.EntSelEntity()
@@ -52,7 +58,27 @@ def ll_brep_test():
             for face in shell.Faces:
                 print("face")
 
+# @acad.decorator_command
+# def ll_imprint():
+#     objid = acad.EntSel()
+#     pt1, pt2 = acad.GetPoint2()
+#     if pt1 == None: return 
+#     with acad.transaction() as trans:
+#         line = acad.AddLine(pt1, pt2)
+#         objref = acad.TransObjectForWrite(objid)
+#         brep = Brep(objref)
+#         brep.Surf.ProjectOnToSurface(line, acad.Vector3d(0, 0, 1))
 
+
+@acad.decorator_command
+def ll_imprint():
+    objid = acad.EntSel()
+    while True:
+        pt1, pt2 = acad.GetPoint2()
+        if pt1 == None: return 
+        with acad.transaction() as trans:
+            line = acad.AddLine(pt1, pt2)
+        acad.Command(["imprint", objid, line.ObjectId, "Y", ""])
 
 # opts = new PromptSelectionOptions();
 # opts.AllowSubSelections = true;

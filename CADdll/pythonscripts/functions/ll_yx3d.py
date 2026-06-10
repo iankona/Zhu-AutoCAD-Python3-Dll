@@ -8,7 +8,7 @@ import System
 def 命令(): 
     academit.添加命令("llyx3d-for", llyx3d_for)
     academit.添加命令("llyx3d-side3-for", llyx3d_side3_for)
-    academit.添加命令("llyx3d-region-for", llyx3d_region_for)
+    academit.添加命令("llyx3d-region-side3-for", llyx3d_region_side3_for)
     academit.添加命令("llyx3d-region-from3-for", llyx3d_region_from3_for)
     academit.添加命令("llyx3d-region-from4-for", llyx3d_region_from4_for)
     academit.添加命令("llyx3d-region-from6-for", llyx3d_region_from6_for)
@@ -57,8 +57,12 @@ def llyx3d_side3_for():
             acad.AddLine(pt2, po2)
             acad.AddLine(po1, po2)
 
+
+
+
+
 @acad.decorator_command
-def llyx3d_region_for():
+def llyx3d_region_side3_for():
     zhu_ui_llyx_offset()
     while True:
         pt1, pt2, pt3 = acad.GetPoint3("请选择第1个顶点: ", "请选择第2个顶点: ", "请点击方向顶点: ")

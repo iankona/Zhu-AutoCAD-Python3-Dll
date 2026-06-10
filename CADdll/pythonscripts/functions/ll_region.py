@@ -12,7 +12,7 @@ from Autodesk.AutoCAD.DatabaseServices import DBPoint, Extents3d, Polyline, Poly
 
 def 命令(): 
     academit.添加命令("llregion", llregion)
-    # academit.添加命令("llregion-cut", llregion_cut)
+    academit.添加命令("llregion-cut", llregion_cut)
     # academit.添加命令("llregion-sheet", llregion_sheet)
     academit.添加命令("llregion-alignX", llregion_alignX)
     academit.添加命令("llregion-alignY", llregion_alignY)
@@ -517,26 +517,26 @@ def llregion_align_point4():
 
 
 
-# @acad.decorator_command
-# def llregion_cut():
-#     dbobj_collect = acad.SSGetDbObjectCollection()
-#     with acad.transaction() as trans:
-#         regions = acad.AddRegion(dbobj_collect, "面域1", 35)
-#         max_area, max_objref = 0, None
-#         dbobj_list = []
-#         for objref in regions:
-#         # for objid in objidlist:
-#         #     objref = acad.TransObjectForWrite(objid)
-#             dbobj_list.append(objref)
-#             if objref.Area > max_area:
-#                 max_area = objref.Area
-#                 max_objref = objref
-#         # print(max_area, max_objref)
-#         if max_objref != None:
-#             # dbobj_list.remove(max_objref)
-#             index = dbobj_list.index(max_objref)
-#             obj_list = dbobj_list[0:index] + dbobj_list[index+1:]
-#             for objref in obj_list: max_objref.BooleanOperation(BooleanOperationType.BoolSubtract, objref)
+@acad.decorator_command
+def llregion_cut():
+    dbobj_collect = acad.SSGetDbObjectCollection()
+    with acad.transaction() as trans:
+        regions = acad.AddRegion(dbobj_collect, "面域1", 35)
+        max_area, max_objref = 0, None
+        dbobj_list = []
+        for objref in regions:
+        # for objid in objidlist:
+        #     objref = acad.TransObjectForWrite(objid)
+            dbobj_list.append(objref)
+            if objref.Area > max_area:
+                max_area = objref.Area
+                max_objref = objref
+        # print(max_area, max_objref)
+        if max_objref != None:
+            # dbobj_list.remove(max_objref)
+            index = dbobj_list.index(max_objref)
+            obj_list = dbobj_list[0:index] + dbobj_list[index+1:]
+            for objref in obj_list: max_objref.BooleanOperation(BooleanOperationType.BoolSubtract, objref)
 
 
 # @acad.decorator_command
