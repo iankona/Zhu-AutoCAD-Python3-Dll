@@ -1,16 +1,18 @@
+import acadconfig
+
+
 import math
 import copy
 import time
 import clr
 import sys
 import traceback
-import coredumpy
 
 import System
 
 
 from Autodesk.AutoCAD.ApplicationServices import Application, DocumentExtension
-from Autodesk.AutoCAD.EditorInput import SelectionMethod, PromptStringOptions, SubtractedKeywords, AddedKeywords, PromptStatus, SelectionFilter, PromptSelectionOptions, SelectionSet, PromptIntegerOptions, PromptPointOptions, PromptDoubleOptions, PromptSaveFileOptions
+from Autodesk.AutoCAD.EditorInput import SelectionMethod, PromptStringOptions, SubtractedKeywords, AddedKeywords, PromptStatus, SelectionFilter, PromptSelectionOptions, SelectionSet, PromptIntegerOptions, PromptPointOptions, PromptDoubleOptions, PromptSaveFileOptions, PromptStatus
 from Autodesk.AutoCAD.EditorInput import SelectedObject, SelectionMethod, PromptNestedEntityOptions, PromptDistanceOptions
 
 # from Autodesk.AutoCAD.Runtime
@@ -19,18 +21,18 @@ from Autodesk.AutoCAD.DatabaseServices import Entity, DBPoint, Extents3d, Polyli
 from Autodesk.AutoCAD.DatabaseServices import RotatedDimension, AlignedDimension, FullSubentityPath, AssocPersSubentityIdPE
 
 
-from Autodesk.AutoCAD.Geometry import Point2d, Point3d, Point3dCollection, Matrix3d, Vector2d, Vector3d, DoubleCollection
+from Autodesk.AutoCAD.Geometry import Point2d, Point3d, Point3dCollection, Matrix3d, Vector2d, Vector3d, DoubleCollection, Plane
 from Autodesk.AutoCAD.Colors import Color, ColorMethod
 from Autodesk.AutoCAD.Internal import Utils
 
-from Autodesk.AutoCAD.DatabaseServices import SubentityId, SubentityType, FullSubentityPath, MeshFaceterData, IdMapping, ObjectIdCollection, SubDMesh, Curve, Extents3d, Polyline, Polyline3d, Line, Circle, Poly3dType, DBText, Region, BooleanOperationType
-from Autodesk.AutoCAD.Geometry import Point2d, Point3d, Point3dCollection, Matrix3d, Vector3d, NurbCurve3d
+from Autodesk.AutoCAD.DatabaseServices import SubentityId, SubentityType, FullSubentityPath, MeshFaceterData, IdMapping, ObjectIdCollection, SubDMesh, Curve, Extents3d, Polyline, Polyline3d, Line, Circle, Poly3dType, DBText, Region, BooleanOperationType, Solid3d
+from Autodesk.AutoCAD.Geometry import Point2d, Point3d, Point3dCollection, Matrix3d, Vector3d, NurbCurve3d, Scale3d
 import System
 from Autodesk.AutoCAD.BoundaryRepresentation import PointContainment, Brep, Face, BrepEntity
 
 from System.Reflection import Assembly
 
-assemly = Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\Acdbmgd.dll")
+assemly = Assembly.LoadFile(f"{acadconfig.acaddir}\\Acdbmgd.dll")
 AssocPersSubentityIdPEType = assemly.GetType("Autodesk.AutoCAD.DatabaseServices.AssocPersSubentityIdPE")
 TypeObjectId = assemly.GetType("Autodesk.AutoCAD.DatabaseServices.ObjectId")
 
@@ -265,12 +267,15 @@ def GetPoint(string="", base_point=[]):
     return None
 
 
-def GetPoint2(string1="", string2=""):
+def GetPoint2(string1="", string2="", baseptflag=False):
     if string1 == "": string1 = "请选择第1个点:"
     if string2 == "": string2 = "请选择第2个点:"
     pt1 = GetPoint(string1)
     if pt1 == None: return None, None
-    pt2 = GetPoint(string2, pt1)
+    if baseptflag:
+        pt2 = GetPoint(string2, pt1)
+    else:
+        pt2 = GetPoint(string2)
     if pt2 == None: return None, None
     return pt1, pt2
 
@@ -290,20 +295,55 @@ def GetPoint3(string1="", string2="", string3="", baseptflag=False):
     if pt3 == None: return None, None, None
     return pt1, pt2, pt3
 
-def GetPoint4(string1="", string2="", string3="", string4=""):
+def GetPoint4(string1="", string2="", string3="", string4="", baseptflag=False):
     if string1 == "": string1 = "请选择第1个点:"
     if string2 == "": string2 = "请选择第2个点:"
     if string3 == "": string3 = "请选择第3个点:"
     if string4 == "": string3 = "请选择第4个点:"
+
     pt1 = GetPoint(string1)
     if pt1 == None: return None, None, None, None
-    pt2 = GetPoint(string2)
+
+    if baseptflag:
+        pt2 = GetPoint(string2, pt1)
+    else:
+        pt2 = GetPoint(string2)
     if pt2 == None: return None, None, None, None
-    pt3 = GetPoint(string3)
+
+    if baseptflag:
+        pt3 = GetPoint(string3, pt2)
+    else:
+        pt3 = GetPoint(string3)
     if pt3 == None: return None, None, None, None
-    pt4 = GetPoint(string4)
+
+    if baseptflag:
+        pt4 = GetPoint(string4, pt3)
+    else:
+        pt4 = GetPoint(string4)
     if pt4 == None: return None, None, None, None
+
     return pt1, pt2, pt3, pt4
+
+
+
+def GetPointX(string1="", baseptflag=False):
+    return GetPointList(string1, baseptflag)
+
+def GetPointList(string1="", baseptflag=False):
+    if string1 == "": string1 = "请选择顶点:"
+
+    pt1 = None
+
+    ptlist = []
+    while True:
+        if baseptflag and pt1 != None:
+            pt2 = GetPoint(string1, pt1)
+        else:
+            pt2 = GetPoint(string1)
+        if pt2 == None: break 
+        ptlist.append(pt2)
+        pt1 = pt2
+    return ptlist
 
 
 def GetCorner(string, base_point):
@@ -393,11 +433,41 @@ def GetSelectCornerCross(pt1, pt2, dxfcode_filter_list=[]): # 边界相交会被
     ss1 = result.Value
     return ss1
 
+
+
 def GetSelectCornerCrossIdList(pt1, pt2, dxfcode_filter_list=[]):
     ss1 = GetSelectCornerCross(pt1, pt2, dxfcode_filter_list)
     if ss1 == None: return []
     return [objid for objid in ss1.GetObjectIds()]
 
+
+def GetSelectPolygon(ptlist, dxfcode_filter_list=[]):  # 边界相交不会被选择
+    collection = Point3dCollection()
+    for pt1 in ptlist: collection.Add(ToPoint3d(pt1))
+    if dxfcode_filter_list != []:
+        typevalue_list = []
+        for [dxfcode, checkchar] in dxfcode_filter_list:
+            typevalue_list.append(TypedValue(System.Int32(dxfcode), checkchar))
+        filter = SelectionFilter(typevalue_list)
+        result = ed.SelectWindowPolygon(collection, filter)
+    else:
+        result = ed.SelectWindowPolygon(collection)
+    ss1 = result.Value
+    return ss1
+
+def GetSelectPolygonCross(ptlist, dxfcode_filter_list=[]):  # 边界相交不会被选择
+    collection = Point3dCollection()
+    for pt1 in ptlist: collection.Add(ToPoint3d(pt1))
+    if dxfcode_filter_list != []:
+        typevalue_list = []
+        for [dxfcode, checkchar] in dxfcode_filter_list:
+            typevalue_list.append(TypedValue(System.Int32(dxfcode), checkchar))
+        filter = SelectionFilter(typevalue_list)
+        result = ed.SelecCrossingPolygon(collection, filter)
+    else:
+        result = ed.SelecCrossingPolygon(collection)
+    ss1 = result.Value
+    return ss1
 
 
 def GetSelectPick(pt1, dxfcode_filter_list=[]):
@@ -407,6 +477,7 @@ def GetSelectPick(pt1, dxfcode_filter_list=[]):
 
 def GetSelectPickId(pt1, dxfcode_filter_list=[]):
     ss1 = GetSelectCornerCross(pt1, pt1, dxfcode_filter_list)
+    if IsNone(ss1): return None
     objidlist = ss1.GetObjectIds()
     return objidlist[0]
 
@@ -425,8 +496,19 @@ def EntLastSet():
     if ss1 == None: raise ValueError(f"SelectionSet为None, 未能获取到entlastset...")
     return ss1
 
-def SelectionSetFromID(objid:ObjectId):
-    return SelectionSet.FromObjectIds([objid])
+def SelectionSetFromId(objid:ObjectId):
+    array = System.Array[ObjectId](1)
+    array[0] = objid
+    return SelectionSet.FromObjectIds(array)
+
+
+def SelectionSetFromIdList(objidlist):
+    numb = len(objidlist)
+    array = System.Array[ObjectId](numb)
+    for i, objid in enumerate(objidlist): 
+        array[i] = objid 
+    return SelectionSet.FromObjectIds(array)
+
 
 def Prompt(string):
     ed.WriteMessage(str(string))
@@ -519,6 +601,12 @@ def EntSel(dxfcode_filter_list=[], string: str=""):
 #     ed.SetImpliedSelection(ids)
 
 def SSGet(dxfcode_filter_list=[], sel_method="", string="", sssetfirst=False): # [[0, "Circle"], [0, "Line"]]
+    result = ed.SelectImplied() # PromptSelectionResult
+    if result.Status == PromptStatus.OK:
+        ss1 = result.Value
+        return ss1
+
+    # ed.SetImpliedSelection(None)
     if string == "": string = "选择对象:"
     option = PromptSelectionOptions()
     option.MessageForAdding = string
@@ -570,15 +658,25 @@ def SSGet(dxfcode_filter_list=[], sel_method="", string="", sssetfirst=False): #
     else:
         result = ed.GetSelection(option)
 
-    str(result)
+    # str(result)
+    Prompt(result.Status)
     # result = ed.SelectImplied() #  need cad pickfirst set 1
     ss1 = result.Value # SelectionSet
     # ids = ss1.GetObjectIds()
     # ss2 = SelectionSet.FromObjectIds([ids[-1]])
     str(ss1) # 原理不明但有用，处理Error: eInvalidInput 在 Autodesk.AutoCAD.EditorInput.SelectionSetDelayMarshalled.GetObjectIds()
-    if sssetfirst:
-        ed.SetImpliedSelection(ss1) # Highlight(ss1) # (sssetfirst nil ss1)
-    return ss1 
+
+    # 代码失效，原因未知
+    # if sssetfirst:
+    #     objidlist = [objid for objid in ss1.GetObjectIds()]
+    #     # Prompt(objidlist)
+    #     ss2 = SelectionSetFromIdList(objidlist)
+    #     ed.SetImpliedSelection(ss2)  # (sssetfirst nil ss1)
+    #     return ss2
+    # else:
+    #     return ss1
+    Command(["select", ss1, ""])
+    return ss1
 
 # 6. SelectImplied 选择当前图形中已经选择的实体
 # 7. SelectLast 选择图形中最后一盒绘制的实体
@@ -616,6 +714,7 @@ def SSSetFirst(ss1):
     ed.SetImpliedSelection(ss1) # (sssetfirst nil ss1)
 
 
+
 def GetExplode(objid):
     with transaction() as trans:
         entity = trans.GetObject(objid, OpenMode.ForWrite)
@@ -651,6 +750,9 @@ def TransCopy(objid, sourcept=[0,0,0], targetpt=[0,0,0], layer_name="", color_in
     copyentity = entity.GetTransformedCopy(matrix4x4)
     AddDBObject(copyentity, layer_name, color_index)
     return copyentity
+
+
+
 
 
 def TransRoationCopy(objid, angle, axis=[], center=[], layer_name="", color_index=0):
@@ -694,6 +796,59 @@ def TransRoation(objid, angle, axis=[], center=[], layer_name="", color_index=0)
     entity = trans.GetObject(objid, OpenMode.ForWrite)
     entity.TransformBy(matrix4x4)
     return entity
+
+# blockRef.ScaleFactors = new Scale3d(2.0, 2.0, 1.0)
+def TransScale(objid, base_point=[0,0,0], sx=1.0, sy=1.0, sz=1.0, layer_name="", color_index=0):
+
+    # # eCannotScaleNonUniformly
+    # array = System.Array[System.Double](16)
+    # # print(array) # System.Double[]
+    # array[0]= sx
+    # array[1]= 0.0
+    # array[2]= 0.0
+    # array[3]= 0.0
+    # array[4]= 0.0
+    # array[5]= sy
+    # array[6]= 0.0
+    # array[7]= 0.0
+    # array[8]= 0.0
+    # array[9]= 0.0
+    # array[10]= sz
+    # array[11]= 0.0
+    # array[12]= 0.0
+    # array[13]= 0.0
+    # array[14]= 0.0
+    # array[15]= 1.0
+    # # print(array) # System.Double[]
+    # matrix4x4 = Matrix3d(array)
+    # print(matrix4x4) # ((0.5,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
+
+    # # Error
+    # array = System.Array[System.Double](1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1) # System.Double[,,,,,,,,,,,,,,,]
+    # print(array)
+    # matrix4x4 = Matrix3d(array)
+    # print(matrix4x4)
+    
+    # # Error
+    # matrix4x4 = Matrix3d.Identity # 单位矩阵 # ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
+    # matrix4x4[0, 0] = sx # TypeError: 'Matrix3d' object does not support item assignment
+
+    # # eCannotScaleNonUniformly
+    # scale = Scale3d(sx, sy, sz)
+    # matrix4x4 = scale.GetMatrix()
+    base_point = Point3d(base_point)
+    xaxis = Vector3d(sx, 0, 0)
+    yaxis = Vector3d(0, 1, 0)
+    zaxis = Vector3d(0, 0, 1)
+    xaxis = xaxis.GetNormal()
+    # yaxis = yaxis.GetNormal()
+    # zaxis = xaxis.CrossProduct(yaxis).GetNormal()
+    matrix4x4 = Matrix3d.AlignCoordinateSystem(Point3d.Origin, Vector3d.XAxis, Vector3d.YAxis, Vector3d.ZAxis,
+                                               base_point, xaxis, yaxis, zaxis)
+    entity = trans.GetObject(objid, OpenMode.ForWrite)
+    entity.TransformBy(matrix4x4)
+    return entity
+
 
 
 
@@ -830,6 +985,19 @@ def AddText(pt1, string="单行文字", size=50, angle=0, layer_name="", color_i
     AddDBObject(text, layer_name, color_index)
     return text
 
+def AddMText(pt1, string="多行文字", size=50, angle=0, layer_name="", color_index=0):
+    text = MText()
+    text.Location = ToPoint3d(pt1) 
+    text.Contents = string
+    text.TextHeight = size
+    text.Height = 15*size
+    text.Width = 25*size
+    text.Rotation = Angle2Rad(angle)
+    # text.IsMirroredInX = True # 在X轴镜像
+    # text.HorizontalMode = TextHorizontalMode.TextCenter # 设置对齐方式
+    # text.AlignmentPoint = text.Position # 设置对齐点
+    AddDBObject(text, layer_name, color_index)
+    return text
 
 
 
@@ -895,6 +1063,24 @@ def AddRotatedDimension(pt1, pt2, pt3, dimstylename="", height=None, layer_name=
         
     AddDBObject(dim, layer_name, color_index)
     return dim
+
+
+def AddDli(pt1, pt2, pt3, dimstylename="", layer_name="", color_index=0):
+    angle = AngleFromCrossDr1Dr2(Direct(pt1, pt2), [1,0,0])
+    if angle <  45: angle = 0
+    if angle >= 45: angle = 90
+    dim = RotatedDimension()
+    dim.XLine1Point = ToPoint3d(pt1)
+    dim.XLine2Point = ToPoint3d(pt2)
+    dim.Rotation = Angle2Rad(angle)
+    dim.DimLinePoint = ToPoint3d(pt3)
+    # # dim.TextPosition = txtpt,
+    # dim.DimensionText = txtpt,
+    dim.DimensionStyle = TransFindDimStyle(dimstylename) # dim.DimensionStyle need ObjectId    
+    print(dim) 
+    AddDBObject(dim, layer_name, color_index)
+    return dim
+
 
 
 def AddDimLinear(pt1, pt2, direct="+x", dle=50, dimflagnum=50):
@@ -969,6 +1155,12 @@ def AddCircle(center, radius, normal=[0,0,1], layer_name="", color_index=0):
     circle.Radius = radius
     AddDBObject(circle, layer_name, color_index)
     return circle
+
+
+
+def AddArc():
+    # Arc arc=new Arc();arc.Center =new Point3d(100，100，0);0，1);arc.Normal =new Vector3d(0arc.Radius =20;arc.StartAngle =0arc.EndAngle =Math.PI/2;
+    pass
 
 
 def AddDBObject(dbobjref, layer_name="", color_index=0):
@@ -1124,6 +1316,18 @@ def AddBlockRef(blockobjid, pt1):
     return blockref
 
 
+def AddExturdeFromRegion(region, height, angle):
+    solid = Solid3d()
+    solid.Extrude(region, height, angle)
+    AddDBObject(solid)
+    return solid
+    
+
+
+
+
+
+
 def GetObjectForRead(objid):
     with transaction() as trans:
         objref = trans.GetObject(objid, OpenMode.ForRead)
@@ -1143,6 +1347,24 @@ def TransObjectForRead(objid):
 def TransObjectForWrite(objid):
     objref = trans.GetObject(objid, OpenMode.ForWrite)
     return objref
+
+
+def TransObjectIdListForRead(objidlist):
+    objreflist = []
+    for objid in objidlist:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        objreflist.append(objref)
+    return objreflist
+
+
+def TransObjectIdListForWrite(objidlist):
+    objreflist = []
+    for objid in objidlist:
+        objref = trans.GetObject(objid, OpenMode.ForWrite)
+        objreflist.append(objref)
+    return objreflist
+
+
 
 
 def TransFindDimStyle(stylename=""):
@@ -1592,6 +1814,11 @@ def TransObjectIdListBoundLengthWidthHeight(objidlist):
     return point2.X-point1.X, point2.Y-point1.Y, point2.Z-point1.Z
 
 
+
+
+
+
+
 def BoundPointToRectPointListXY0(ptmin, ptmax):
     x1, y1 = ptmin[0:2]
     x2, y2 = ptmax[0:2]
@@ -1921,6 +2148,13 @@ def Direct(pt1, pt2):
     x2, y2, z2 = Vec2toVec3(pt2)
     return [x2-x1, y2-y1, z2-z1]
 
+def DirectResetLength(pt1, pt2, length):
+    x1, y1, z1 = Vec2toVec3(pt1)
+    x2, y2, z2 = Vec2toVec3(pt2)
+    xr, yr, zr = Normalized(x2-x1, y2-y1, z2-z1)
+    xr, yr, zr = xr*length, yr*length, zr*length
+    return [xr, yr, zr]
+
 
 def Dot(dr1, dr2):
     x1, y1, z1 = Vec2toVec3(dr1)
@@ -2010,11 +2244,25 @@ def MatrixRotationPointList(angle, axis, center, ptlist=[]):
         resultlist.append(pt1)
     return resultlist
         
+def PointRotateByRad(pt1, rad, axis, center):
+    point1 = ToPoint3d(pt1)
+    point2 = point1.RotateBy(rad, Vector3d(*axis), ToPoint3d(center))
+    pt1 = [point2.X, point2.Y, point2.Z]
+    return pt1
+
+
+
+def PlaneFromPt1Pt2Pt3(pt1, pt2, pt3):
+    dr1 = Direct(pt2, pt1)
+    dr2 = Direct(pt2, pt3)
+    normal = CrossNormalized(dr1, dr2)
+    return pt2, normal
+
         
-def PointToPointNormalPlane(pt1, pt0, normal):
+def PointToPointNormalPlane(pt1, pn0, normal):
     # 平面 点法式
     # Ax + By + Cz - (Ax0 + By0 + Cz0) = 0
-    x0, y0, z0 = pt0
+    x0, y0, z0 = pn0
     A , B , C  = normal
     D = -(A*x0 + B*y0 + C*z0)
     x1, y1, z1 = pt1
@@ -2023,6 +2271,38 @@ def PointToPointNormalPlane(pt1, pt0, normal):
     y = y1 - B*t
     z = z1 - C*t
     return [x, y, z]
+
+def PointToPlaneNPoint(pt1, pn0, normal):
+    return PointToPointNormalPlane(pt1, pn0, normal)
+
+
+
+
+
+def LineToPlanePoint(pt1, pt2, pn0, normal): 
+    # 平面 点法式
+    # Ax + By + Cz - (Ax0 + By0 + Cz0) = 0
+    x0, y0, z0 = pn0
+    A , B , C  = normal
+    D = -(A*x0 + B*y0 + C*z0)
+    x1, y1, z1 = pt1
+    x2, y2, z2 = pt2
+    m =  abs( (A*x1 + B*y1 + C*z1 + D) / (A*(x2-x1)+B*(y2-y1)+C*(z2-z1)) )
+    dr1 = [m*(x2-x1), m*(y2-y1), m*(z2-z1)]
+    pd1 = Vec3Add(pt1, dr1)
+    return pd1
+
+def AxisDirect(pt1, pt2):
+    dr1 = Direct(pt1, pt2)
+    angle1 = AngleFromDotDr1Dr2(dr1, [ 1, 0, 0])
+    angle2 = AngleFromDotDr1Dr2(dr1, [-1, 0, 0])
+    angle3 = AngleFromDotDr1Dr2(dr1, [0,  1, 0])
+    angle4 = AngleFromDotDr1Dr2(dr1, [0, -1, 0])
+    if angle1 < 45: flagd = "+X"
+    if angle2 < 45: flagd = "-X"
+    if angle3 < 45: flagd = "+Y"
+    if angle4 < 45: flagd = "-Y"
+    return flagd
 
 
 def GetAttachGapAGapBPt1Pt2(pt1, pt2, gapa, gapb):
@@ -2088,10 +2368,70 @@ def GetAttachWDirectPointPt2(pt1, pt2, length):
     dr2 = Vec3ResetLength(dr2, length)    
     return Vec3Add(pt2, dr2)
 
+
+
+
+def PtXYZtoPtXY0(ptlist):
+    result = []
+    for pt1 in ptlist:
+        x1, y1, z1 = Vec2toVec3(pt1)
+        result.append([x1, y1, 0])
+    return result
+
+# def MidePt1Pt2(pt1, pt2):
+#     return MidPt1Pt2(pt1, pt2)
 def MidPt1Pt2(pt1, pt2):
     x1, y1, z1 = Vec2toVec3(pt1)
     x2, y2, z2 = Vec2toVec3(pt2)
     return [(x2+x1)/2, (y2+y1)/2, (z2+z1)/2]
+
+def HorizontalPt1Pt2(pt1, pt2):
+    x1, y1, z1 = Vec2toVec3(pt1)
+    x2, y2, z2 = Vec2toVec3(pt2)
+    return pt1, [x2, y1, z2]
+
+def VerticalPt1Pt2(pt1, pt2):
+    x1, y1, z1 = Vec2toVec3(pt1)
+    x2, y2, z2 = Vec2toVec3(pt2)
+    return pt1, [x1, y2, z2]
+
+
+def MidPt1Pt2XY0(pt1, pt2):
+    x1, y1, z1 = Vec2toVec3(pt1)
+    x2, y2, z2 = Vec2toVec3(pt2)
+    return [(x2+x1)/2, (y2+y1)/2, 0]
+
+def HorizontalPt1Pt2XY0(pt1, pt2):
+    x1, y1, z1 = Vec2toVec3(pt1)
+    x2, y2, z2 = Vec2toVec3(pt2)
+    return [x1, y1, 0], [x2, y1, 0]
+
+def VerticalPt1Pt2XY0(pt1, pt2):
+    x1, y1, z1 = Vec2toVec3(pt1)
+    x2, y2, z2 = Vec2toVec3(pt2)
+    return [x1, y1, 0], [x1, y2, 0]
+
+def Pt1Pt3toPt1Pt2Pt3Pt4XY0(pt1, pt3, ccw=False): # 顺时针
+    x1, y1, z1 = Vec2toVec3(pt1)
+    x3, y3, z3 = Vec2toVec3(pt3)
+    pt1 = [x1, y1, 0]
+    pt2 = [x3, y1, 0]
+    pt3 = [x3, y3, 0]
+    pt4 = [x1, y3, 0]
+    if ccw == True: return [pt1, pt4, pt3, pt2]
+    return [pt1, pt2, pt3, pt4]
+
+def Pt1Pt3toPt1Pt2Pt3Pt4XYZ(pt1, pt3, ccw=False): # 顺时针
+    x1, y1, z1 = Vec2toVec3(pt1)
+    x3, y3, z3 = Vec2toVec3(pt3)
+    pt1 = [x1, y1, z1]
+    pt2 = [x3, y1, z1]
+    pt3 = [x3, y3, z1]
+    pt4 = [x1, y3, z1]
+    if ccw == True: return [pt1, pt4, pt3, pt2]
+    return [pt1, pt2, pt3, pt4]
+
+
 
 
 def WhichSideOfLineXY(pt1, pt2, pt3):
@@ -2130,7 +2470,8 @@ def GetPerDirectWithPerflagResetLengthXY(pt1, pt2, perflag, length):
     x, y, z = Normalized(*perdirect)
     return [x*length, y*length, z*length]
 
-
+def GetPerDirect(pt1, pt2, pt3):
+    return GetPerDirectXY(pt1, pt2, pt3)
 def GetPerDirectXY(pt1, pt2, pt3):
     perflag = WhichSideOfLineXY(pt1, pt2, pt3)
     direct  = Direct(pt1, pt2)
@@ -2295,6 +2636,12 @@ def GetEntityArea(objid:ObjectId):
         area = objref.Area
     return area
 
+def GetEntityRadius(objid:ObjectId):
+    with transaction() as trans:
+        objref = trans.GetObject(objid, OpenMode.ForRead)
+        radius = objref.Radius
+    return radius
+
 
 def GetEntityLength(objid:ObjectId):
     with transaction() as trans:
@@ -2311,6 +2658,9 @@ def GetEntityNormal(objid:ObjectId):
         objref = trans.GetObject(objid, OpenMode.ForRead)
         normal = objref.Normal
     return normal
+
+
+
 
 
 def GetIdListBoundXYZ(objidlist):
@@ -2441,10 +2791,13 @@ def GetMKPolyLinePointList(objid:ObjectId):
     result = []
     with transaction() as trans:
         pline = trans.GetObject(objid, OpenMode.ForRead)            
-        if pline.Closed:
-            for i in range(pline.NumberOfVertices):
-                point = pline.GetPoint3dAt(i)
-                result.append([point.X, point.Y, point.Z])
+        # if pline.Closed:
+        #     for i in range(pline.NumberOfVertices):
+        #         point = pline.GetPoint3dAt(i)
+        #         result.append([point.X, point.Y, point.Z])
+        for i in range(pline.NumberOfVertices):
+            point = pline.GetPoint3dAt(i)
+            result.append([point.X, point.Y, point.Z])
     return result
 
 def GetLWPolyLinePointList(objid:ObjectId, pt1=None):
@@ -3315,6 +3668,50 @@ def DBObjectBlockFromRefList(objreflist, base_point=[0,0,0]):
 def DBObjectBlockRef(blockobjid, pt1):
     blockref = BlockReference(ToPoint3d(pt1), blockobjid)
     return blockref
+
+
+
+
+def BrepWithSubEntityFromRef(objref):
+    array = System.Array[ObjectId]([objref.ObjectId]) # [ObjectId]
+    fullpath  = FullSubentityPath(array, SubentityId(SubentityType.Null, System.Int64(0)))
+    brep = Brep(fullpath)
+    return brep
+
+
+def BrepWithSubEntityFromId(objid):
+    array = System.Array[ObjectId]([objid]) # [ObjectId]
+    fullpath  = FullSubentityPath(array, SubentityId(SubentityType.Null, System.Int64(0)))
+    brep = Brep(fullpath)
+    return brep
+
+
+def BrepEdgeToDBObjectCurve(edge):
+    nc3d = edge.GetCurveAsNurb()
+    dbcurve = Curve.CreateFromGeCurve(nc3d)
+    return dbcurve
+
+
+
+# def BrepWithSubEntityFromRefList(objreflist):
+#     numb = len(objreflist)
+#     array = System.Array[ObjectId](numb) # [ObjectId]
+#     for i in range(numb):
+#         array[i] = objreflist[i].ObjectId
+#     fullpath  = FullSubentityPath(array, SubentityId(SubentityType.Null, System.Int64(0)))
+#     brep = Brep(fullpath)
+#     return brep
+
+
+# def BrepWithSubEntityFromIdList(objidlist):
+#     numb = len(objidlist)
+#     array = System.Array[ObjectId](numb) # [ObjectId]
+#     for i in range(numb):
+#         array[i] = objidlist[i]
+#     fullpath  = FullSubentityPath(array, SubentityId(SubentityType.Null, System.Int64(0)))
+#     brep = Brep(fullpath)
+#     return brep
+
 
 # result = DBObjectCollection()
 # objref.Explode(result) # Line Explode 会出错，要求PL or block # Autodesk.AutoCAD.DatabaseServices.Line

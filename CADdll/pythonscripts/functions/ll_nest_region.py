@@ -17,7 +17,7 @@ from System.Reflection import Assembly, AssemblyName, TypeAttributes, FieldAttri
 from System.Reflection.Emit import AssemblyBuilderAccess, AssemblyBuilder, ModuleBuilder, TypeBuilder, FieldBuilder, MethodBuilder, PropertyBuilder, ConstructorBuilder, ILGenerator, OpCodes, ParameterBuilder, LocalBuilder, CustomAttributeBuilder
 
 
-assemly = Assembly.LoadFile("f:\\CADdll\\Clipper2Lib.dll")
+# assemly = Assembly.LoadFile("f:\\CADdll\\Clipper2Lib.dll")
 
 # print(dir(assemly))
 

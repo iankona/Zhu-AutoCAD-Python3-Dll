@@ -9,6 +9,9 @@ import academit
 import System
 
 def 命令(): 
+
+
+    academit.添加命令("llsl-viewport", llsl_viewport)
     academit.添加命令("llslto0", llslto0)
     academit.添加命令("llsl-layerto0", llsl_layerto0)
     academit.添加命令("llsl-move", llsl_move)
@@ -136,6 +139,11 @@ def llsl():
 
 
 @acad.decorator_command
+def llsl_viewport(): 
+    acad.SSGet([[0, "VIEWPORT"]], sssetfirst=True)
+
+
+@acad.decorator_command
 def llsl_point(): 
     acad.SSGet([[0, "POINT"]], sssetfirst=True)
 
@@ -230,6 +238,8 @@ def llsl_dtext():
 @acad.decorator_command
 def llsl_mtext(): 
     acad.SSGet([[0, "MTEXT"]], sssetfirst=True)
+
+
 
 @acad.decorator_command
 def llsl_dim(): 

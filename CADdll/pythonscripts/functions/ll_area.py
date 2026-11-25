@@ -47,11 +47,11 @@ def llarea_rec_for():
     if size == None: size = 50
     zhu_text_size = size
 
-    objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]]) 
+    objidlist = acad.SSGetIdList()  # 填充，面域，多段线
     with acad.transaction() as trans:
         sumarea = 0.0 
         for i, objid in enumerate(objidlist):
-            pt1 = acad.GetEntityBoundCenterXY0(objid)
+            pt1 = acad.GetEntityBoundCenterXYZ(objid)
             area = acad.GetEntityArea(objid) / 1000000
             sumarea += area
             char = f"{i+1}面积{area:.2f}平米"

@@ -13,16 +13,16 @@ def 命令():
 
     academit.添加命令("llpl-connet-pl-and-pl-for", llpl_connet_pl_and_pl_for)
 
-    academit.添加命令("llpl-to-midpl", llpl_to_midpl)
-    academit.添加命令("llpl-print", llpl_print)
-    academit.添加命令("llpl-add", llpl_add)
-    academit.添加命令("llpl-findstart", llpl_findstart)
-    # academit.添加命令("llpl-change-copy-pl", llpl_change_copy_pl)
-    academit.添加命令("llpl-sweep", llpl_sweep)
-    academit.添加命令("llpl-sweep-set", llpl_sweep_set)
-    academit.添加命令("llpl-change-xy-to-xz-plfor", llpl_change_xy_to_xz_plfor)
-    academit.添加命令("llpl-change-xy-to-xz-4pl", llpl_change_xy_to_xz_4pl)
-    academit.添加命令("llpl-loft", llpl_loft)
+    # academit.添加命令("llpl-to-midpl", llpl_to_midpl)
+    # academit.添加命令("llpl-print", llpl_print)
+    # academit.添加命令("llpl-add", llpl_add)
+    # academit.添加命令("llpl-findstart", llpl_findstart)
+    # # academit.添加命令("llpl-change-copy-pl", llpl_change_copy_pl)
+    # academit.添加命令("llpl-sweep", llpl_sweep)
+    # academit.添加命令("llpl-sweep-set", llpl_sweep_set)
+    # academit.添加命令("llpl-change-xy-to-xz-plfor", llpl_change_xy_to_xz_plfor)
+    # academit.添加命令("llpl-change-xy-to-xz-4pl", llpl_change_xy_to_xz_4pl)
+    # academit.添加命令("llpl-loft", llpl_loft)
     pass
 
 

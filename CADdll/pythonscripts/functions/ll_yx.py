@@ -6,7 +6,21 @@ import academit
 import System
 
 def 命令(): 
+    academit.添加命令("llyx", llyx_for)
     academit.添加命令("llyx-for", llyx_for)
+
+    academit.添加命令("llyx-square-for", llyx_square_for)
+    academit.添加命令("llyx-square600-for", llyx_square600_for)
+
+    academit.添加命令("llyx-line2-for", llyx_line2_for)
+    academit.添加命令("llyx-line2-x-for", llyx_line2_x_for)
+    academit.添加命令("llyx-line2-y-for", llyx_line2_y_for)
+
+
+
+    academit.添加命令("llyx-mide-for", llyx_mide_for)
+
+
     academit.添加命令("llyx-side3-for", llyx_side3_for)
     academit.添加命令("llyx-sidex-for", llyx_sidex_for)
     academit.添加命令("llyx-sidex-n-for", llyx_sidex_n_for)
@@ -25,8 +39,8 @@ def 命令():
     academit.添加命令("llyx-rect-sidex-n-for", llyx_rect_sidex_n_for)
     academit.添加命令("llyx-rect-sidex-w-for", llyx_rect_sidex_w_for)
 
-    academit.添加命令("llyx-rect-sidex-panjiayuan-for", llyx_rect_sidex_panjiayuan_for)
-    academit.添加命令("llyx-rect-sidex-pengquan-for", llyx_rect_sidex_pengquan_for)
+    academit.添加命令("llyx-rect-sidex-panjiayuan-for", llyx_rect_sidex_panjiayuan_for) # 1n1w
+    academit.添加命令("llyx-rect-sidex-pengquan-for", llyx_rect_sidex_pengquan_for) # 1w1n
 
 
 
@@ -41,7 +55,8 @@ def zhu_ui_llyx_ness():
 zhu_llyx_offset_length = 50
 def zhu_ui_llyx_offset():
     global zhu_llyx_offset_length
-    length = acad.GetDouble(zhu_llyx_offset_length, "请输入偏移大小: ")
+    # length = acad.GetDouble(zhu_llyx_offset_length, "请输入偏移大小: ")
+    length = acad.GetDistance(zhu_llyx_offset_length, "请输入偏移大小: ")
     if length != None: zhu_llyx_offset_length = length
 
 zhu_llyx_attach_length = 2
@@ -165,6 +180,34 @@ def zhu_trans_llyx_per_w_lengthlist(pt1, pt2, dr1, lengthlist):
 
 
 
+
+@acad.decorator_command
+def llyx_square_for():
+    while True:
+        pt1, pt2, pt3 = acad.GetPoint3("请选择第1个顶点: ", "请选择第2个顶点: ", "请点击方向顶点: ")
+        if pt1 == None: break
+        with acad.transaction() as trans:
+            dis = acad.Distance(pt1, pt2)
+            dr1 = acad.GetPerDirectResetLengthXY(pt1, pt2, pt3, dis) # 点在线上，WhichSideOfLineXY 会出现cannot access local variable 'result' where it is not associated with a value
+            po1 = acad.Vec3Add(pt1, dr1)
+            po2 = acad.Vec3Add(pt2, dr1)
+            acad.AddMKPolyLine([pt1, pt2, po2, po1])
+
+
+
+@acad.decorator_command
+def llyx_square600_for():
+    while True:
+        pt1, pt2, pt3 = acad.GetPoint3("请选择第1个顶点: ", "请选择第2个顶点: ", "请点击方向顶点: ")
+        if pt1 == None: break
+        with acad.transaction() as trans:
+            dr1 = acad.GetPerDirectResetLengthXY(pt1, pt2, pt3, 600) # 点在线上，WhichSideOfLineXY 会出现cannot access local variable 'result' where it is not associated with a value
+            po1 = acad.Vec3Add(pt1, dr1)
+            po2 = acad.Vec3Add(pt2, dr1)
+            acad.AddMKPolyLine([pt1, pt2, po2, po1])
+
+
+
 @acad.decorator_command
 def llyx_for():
     zhu_ui_llyx_offset()
@@ -176,6 +219,110 @@ def llyx_for():
             po1 = acad.Vec3Add(pt1, dr1)
             po2 = acad.Vec3Add(pt2, dr1)
             acad.AddLine(po1, po2)
+
+
+
+
+
+@acad.decorator_command
+def llyx_line2_for():
+    zhu_ui_llyx_offset()
+    while True:
+        pt1, pt2, pt3 = acad.GetPoint3("请选择第1个顶点: ", "请选择第2个顶点: ", "请点击方向顶点: ", True)
+        if pt1 == None: break
+        with acad.transaction() as trans:
+            dr1 = acad.GetPerDirectResetLengthXY(pt1, pt2, pt3, zhu_llyx_offset_length) # 点在线上，WhichSideOfLineXY 会出现cannot access local variable 'result' where it is not associated with a value
+            po1 = acad.Vec3Add(pt1, dr1)
+            po2 = acad.Vec3Add(pt2, dr1)
+            acad.AddLine(pt1, pt2)
+            acad.AddLine(po1, po2)
+
+
+
+@acad.decorator_command
+def llyx_line2_x_for():
+    zhu_ui_llyx_offset()
+    while True:
+        pt1, pt2, pt3 = acad.GetPoint3("请选择第1个顶点: ", "请选择第2个顶点: ", "请点击方向顶点: ", True)
+        if pt1 == None: break
+        with acad.transaction() as trans:
+            pt1, pt2 = acad.HorizontalPt1Pt2(pt1, pt2)
+            dr1 = acad.GetPerDirectResetLengthXY(pt1, pt2, pt3, zhu_llyx_offset_length) # 点在线上，WhichSideOfLineXY 会出现cannot access local variable 'result' where it is not associated with a value
+            po1 = acad.Vec3Add(pt1, dr1)
+            po2 = acad.Vec3Add(pt2, dr1)
+            acad.AddLine(pt1, pt2)
+            acad.AddLine(po1, po2)
+
+
+@acad.decorator_command
+def llyx_line2_y_for():
+    zhu_ui_llyx_offset()
+    while True:
+        pt1, pt2, pt3 = acad.GetPoint3("请选择第1个顶点: ", "请选择第2个顶点: ", "请点击方向顶点: ", True)
+        if pt1 == None: break
+        with acad.transaction() as trans:
+            pt1, pt2 = acad.VerticalPt1Pt2(pt1, pt2)
+            dr1 = acad.GetPerDirectResetLengthXY(pt1, pt2, pt3, zhu_llyx_offset_length) # 点在线上，WhichSideOfLineXY 会出现cannot access local variable 'result' where it is not associated with a value
+            po1 = acad.Vec3Add(pt1, dr1)
+            po2 = acad.Vec3Add(pt2, dr1)
+            acad.AddLine(pt1, pt2)
+            acad.AddLine(po1, po2)
+
+
+
+
+
+# @acad.decorator_command
+# def llyx_linex_for():
+#     列表 = acad.GetDoubleListLimitCount()
+#     if 列表 == None: return
+#     while True:
+#         pt1, pt2, pt3 = acad.GetPoint3("请选择第1个顶点: ", "请选择第2个顶点: ", "请点击方向顶点: ", True)
+#         if pt1 == None: break
+#         with acad.transaction() as trans:
+#             dr1 = acad.GetPerDirectXY(pt1, pt2, pt3)
+#             acad.AddLine(pt1, pt2)
+#             for length in 列表:
+#                 dr1 = acad.Vec3ResetLength(dr1, length)
+#                 po1 = acad.Vec3Add(pt1, dr1)
+#                 po2 = acad.Vec3Add(pt2, dr1)
+#                 acad.AddLine(po1, po2)   
+#                 pt1, pt2 = po1, po2
+
+@acad.decorator_command
+def llyx_linex_from_edge1_for():
+    列表 = acad.GetDoubleListLimitCount()
+    if 列表 == None: return
+    while True:
+        pt1, pt2, pt3 = acad.GetPoint3("请选择第1个顶点: ", "请选择第2个顶点: ", "请点击方向顶点: ", True)
+        if pt1 == None: break
+        with acad.transaction() as trans:
+            dr1 = acad.GetPerDirectXY(pt1, pt2, pt3)
+            acad.AddLine(pt1, pt2)
+            for length in 列表:
+                dr1 = acad.Vec3ResetLength(dr1, length)
+                po1 = acad.Vec3Add(pt1, dr1)
+                po2 = acad.Vec3Add(pt2, dr1)
+                acad.AddLine(po1, po2)   
+                # pt1, pt2 = po1, po2
+
+
+@acad.decorator_command
+def llyx_mide_for():
+    # zhu_ui_llyx_offset()
+    while True:
+        pt1, pt2, pt3 = acad.GetPoint3("请选择第1个顶点: ", "请选择第2个顶点: ", "请点击方向顶点: ")
+        if pt1 == None: break
+        with acad.transaction() as trans:
+            dr1 = acad.GetPerDirectXY(pt1, pt2, pt3) # 点在线上，WhichSideOfLineXY 会出现cannot access local variable 'result' where it is not associated with a value
+            po1 = acad.MidPt1Pt2(pt1, pt2)
+            po2 = acad.Vec3Add(po1, dr1)
+            acad.AddLine(po1, po2)
+
+
+
+
+
 
 @acad.decorator_command_undo
 def llyx_side3_for():
@@ -260,7 +407,7 @@ def llyx_rect_side3_extend_for():
                 pt1, pt2, line3 = zhu_trans_llyx_att_w_line2_layer_dabiao1(pt1, pt2, zhu_llyx_ness_length)
                 pt1, pt2, line3 = zhu_trans_llyx_per_p_line3(pt1, pt2, dr1, zhu_llyx_offset_length)
             else:
-                zhu_trans_llyx_att_n_line2_layer_dabiao1(pt1, pt2, 1.0)
+                zhu_trans_llyx_att_n_line2_layer_dabiao1(pt1, pt2, zhu_llyx_ness_length)
                 pt1, pt2, line3 = zhu_trans_llyx_per_p_point2(pt1, pt2, dr1, zhu_llyx_ness_length)
                 pt1, pt2, line3 = zhu_trans_llyx_per_p_line3(pt1, pt2, dr1, zhu_llyx_offset_length-zhu_llyx_ness_length)
             line3.Layer = "0"

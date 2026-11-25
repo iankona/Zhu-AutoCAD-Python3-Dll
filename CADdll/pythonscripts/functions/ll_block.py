@@ -7,7 +7,10 @@ import academit
 import System
 
 def 命令(): 
-    # academit.添加命令("llblock", llblock)
+    academit.添加命令("llblock", llblock)
+    academit.添加命令("llblock-dim", llblock_dim)
+
+
     academit.添加命令("llblock-for", llblock_for)
     academit.添加命令("llblock-auto-for", llblock_auto_for)
     # academit.添加命令("llblock-offset", llblock_offset)
@@ -41,6 +44,19 @@ def llblock():
     pt1, pt2 = acad.GetIdListBoundXY0(objidlist)
     with acad.transaction() as trans:
         acad.AddBlockFromIdList(objidlist, pt1)
+
+
+@acad.decorator_command
+def llblock_dim():
+    flist = [
+        [-4, "<OR"], [0, "DIMENSION"], [0, "*LEADER"], [-4, "OR>"]
+        ]
+    objidlist =  acad.SSGetIdList(flist)   
+    pt1, pt2 = acad.GetIdListBoundXY0(objidlist)
+    with acad.transaction() as trans:
+        acad.AddBlockFromIdList(objidlist, pt1)
+
+
 
 @acad.decorator_command
 def llblock_for():

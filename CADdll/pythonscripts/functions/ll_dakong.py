@@ -13,6 +13,7 @@ def 命令():
     academit.添加命令("lldk-copy-subcount-for", lldk_copy_subcount_for)
     academit.添加命令("lldk-copy-sublength-for", lldk_copy_sublength_for)
     academit.添加命令("lldk-jiaoma-for", lldk_jiaoma_for)
+    academit.添加命令("lldk-jiaoma-curve-for", lldk_jiaoma_curve_for)    
     academit.添加命令("lldk-circle-lujing-subcount-for", lldk_circle_lujing_subcount_for)
     academit.添加命令("lldk-circle-lujing-sublength-for", lldk_circle_lujing_sublength_for)
 
@@ -352,3 +353,94 @@ def lldk_circle_lujing_sublength_for():
     with acad.transaction() as trans:
         for pt1 in ptlist:
             acad.AddCircle(pt1, llzhu_dk_r)  
+
+
+@acad.decorator_command
+def lldk_jiaoma_curve_for():
+    uizhu_dk_offset()
+    uizhu_dk_copy_sublength()
+    pt1, pt2 = acad.GetPoint2("请选择打孔图像第1点:", "请选择打孔图像第2点:")
+    mid = acad.MidPt1Pt2(pt1, pt2)
+    objidlist = acad.GetSelectCornerCrossIdList(pt1, pt2)
+    while True:
+        objid = acad.EntSel()
+        po1, po2, po3 = acad.GetPoint3()
+        with acad.transaction() as trans:
+            curve = trans_near_offset_curve_objref(objid, llzhu_dk_offset, po3)
+            ptlist = trans_curve_objref_distance_pointlist(po1, po2, po3, curve, llzhu_dk_gapa, llzhu_dk_sublength)
+            for pd1, dr2 in ptlist:
+                dr1 = acad.Direct(pt1, pt2)
+                angle = acad.AngleFromDotDr1Dr2(dr1, dr2)
+                axis = acad.CrossNormalized(dr1, dr2)
+                copyidlist = acad.TransRoationCopyIdList(objidlist, angle, axis, mid)
+                acad.TransMoveIdList(copyidlist, mid, pd1)
+
+
+
+def trans_near_offset_curve_objref(objid, offset, pt1):
+    objref = acad.TransObjectForRead(objid)
+    curve1 = objref.GetOffsetCurves(offset)[0]
+    curve2 = objref.GetOffsetCurves(-offset)[0]
+    point1 = curve1.GetClosestPointTo(acad.ToPoint3d(pt1), False) # extend = false
+    point2 = curve2.GetClosestPointTo(acad.ToPoint3d(pt1), False)
+    po1 = [point1.X, point1.Y, point1.Z]
+    po2 = [point2.X, point2.Y, point2.Z]
+    if acad.Distance(pt1, po1) < acad.Distance(pt1, po2): return curve1
+    return curve2
+
+
+
+def trans_curve_objref_distance_pointlist(pt1, pt2, pt3, objref, gapa, sublength):
+    distance = objref.GetDistanceAtParameter(objref.EndParam)
+    numb = int((distance-gapa) // sublength + 1)
+    if numb < 2: return []
+    start, final = [objref.StartPoint.X, objref.StartPoint.Y, objref.StartPoint.Z], [objref.EndPoint.X, objref.EndPoint.Y, objref.EndPoint.Z]
+    if acad.Distance(pt1, start) < acad.Distance(pt1, final):
+        buflist = []
+        sumlength = gapa
+        for i in range(numb):
+            point = objref.GetPointAtDist(sumlength)        
+            po1 = [point.X, point.Y, point.Z]
+            direct = objref.GetFirstDerivative(point)
+            dr1 = [direct.X, direct.Y, direct.Z]
+            # dr1 = [ direct.Y, -direct.X, direct.Z]
+            # dr2 = [-direct.Y,  direct.X, direct.Z]
+            # dr1 = acad.Vec3ResetLength(dr1, 1)
+            # dr2 = acad.Vec3ResetLength(dr2, 1)
+            # po2 = acad.Vec3Add(po1, dr1)
+            # po3 = acad.Vec3Add(po1, dr2)
+            # if acad.Distance(pt3, po2) < acad.Distance(pt3, po3):
+            #     buflist.append([po1, dr1])
+            # else:
+            #     buflist.append([po1, dr2])
+            buflist.append([po1, dr1])
+            sumlength += sublength
+    else:
+        buflist = []
+        sumlength = distance-gapa
+        for i in range(numb):
+            point = objref.GetPointAtDist(sumlength)        
+            po1 = [point.X, point.Y, point.Z]
+            direct = objref.GetFirstDerivative(point)
+            dr1 = [direct.X, direct.Y, direct.Z]
+            # dr1 = [ direct.Y, -direct.X, direct.Z]
+            # dr2 = [-direct.Y,  direct.X, direct.Z]
+            # dr1 = acad.Vec3ResetLength(dr1, 1)
+            # dr2 = acad.Vec3ResetLength(dr2, 1)
+            # po2 = acad.Vec3Add(po1, dr1)
+            # po3 = acad.Vec3Add(po1, dr2)
+            # if acad.Distance(pt3, po2) < acad.Distance(pt3, po3):
+            #     buflist.append([po1, dr1])
+            # else:
+            #     buflist.append([po1, dr2])
+            buflist.append([po1, dr1])
+            sumlength -= sublength
+            
+    return buflist
+
+
+
+
+ 
+
+

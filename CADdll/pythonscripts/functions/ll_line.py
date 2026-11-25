@@ -24,6 +24,7 @@ def 命令():
     academit.添加命令("llxy-for", llxy_for)
     academit.添加命令("llline-for", llline_for)
     academit.添加命令("llline-to-z0-for", llline_to_z0_for)
+    academit.添加命令("llcircle-to-z0-for", llcircle_to_z0_for)
     # academit.添加命令("ll-pline-point", ll_pline_point)
     # academit.添加命令("ll-offset", ll_offset)
     # academit.添加命令("ll-get-osmode", 函数2)
@@ -52,6 +53,22 @@ def llline_to_z0_for():
                 pt2 = [objref.EndPoint.X, objref.EndPoint.Y, 0]
                 objref.StartPoint = acad.ToPoint3d(pt1)
                 objref.EndPoint = acad.ToPoint3d(pt2)
+
+
+@acad.decorator_command
+def llcircle_to_z0_for():
+    while True:
+        objidlist = acad.SSGetIdList([[0, "CIRCLE"]])
+        if objidlist == []: return
+        with acad.transaction() as trans:
+            for objid in objidlist:
+                objref = acad.TransObjectForWrite(objid)
+                pt1 = [objref.Center.X, objref.Center.Y, 0]
+                nor = [0, 0, objref.Normal.Z]
+                objref.Center = acad.ToPoint3d(pt1)
+                objref.Normal = acad.ToVector3d(nor)
+
+
 
 
 

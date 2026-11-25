@@ -20,6 +20,7 @@ def 命令():
     academit.添加命令("llsheet-to-bc", llsheet_to_bc_for)
     academit.添加命令("llsheet-to-wj", llsheet_to_wj_for)
     academit.添加命令("llsheet-to-n-rect-for", llsheet_to_n_rect_for)
+    academit.添加命令("llsheet-to-rad-rect-for", llsheet_to_rad_rect_for)
     academit.添加命令("llsheet_from_nj_for", llsheet_from_nj_for)
     academit.添加命令("llsheet_from_wj_for", llsheet_from_wj_for)
 
@@ -221,6 +222,54 @@ def llsheet_to_n_rect_for():
                 pt3 = acad.Vec3Add(pt3, dr1)
                 pt4 = acad.Vec3Add(pt4, dr1)
                 acad.AddMKPolyLine([pt1, pt2, pt3, pt4])
+
+
+
+
+@acad.decorator_command
+def llsheet_to_rad_rect_for():
+    po1, po2 = acad.GetPoint2()
+    if po1 == None: return
+    dr1 = acad.Direct(po1, po2)
+    while True:
+        objidlist = acad.SSGetIdList([[0, "LWPOLYLINE"]])
+        pr1, pr2 = acad.GetPoint2("请选择弧面圆心方向第1点:","请选择弧面圆心方向第1点:")
+        if objidlist == None: return
+        with acad.transaction() as trans:
+            buflist = acad.TransNRectPointListFromSheet(objidlist[0], objidlist[1])
+            for pt1, pt2, pt3, pt4 in buflist:
+                pt1, pt2, pt3, pt4 = pt1pt2pt3pt4_extend_2ness(pt1, pt2, pt3, pt4, pr1, pr2)
+                pt1 = acad.Vec3Add(pt1, dr1)
+                pt2 = acad.Vec3Add(pt2, dr1)
+                pt3 = acad.Vec3Add(pt3, dr1)
+                pt4 = acad.Vec3Add(pt4, dr1)
+                acad.AddMKPolyLine([pt1, pt2, pt3, pt4])
+
+
+
+def pt1pt2pt3pt4_extend_2ness(pt1, pt2, pt3, pt4, pr1, pr2):
+    length1 = acad.Distance(pt1, pt2)
+    length2 = acad.Distance(pt2, pt3)
+
+    if length1 < length2:
+        br1 = acad.Direct(pt2, pt3)
+        dr1 = acad.Direct(pr1, pr2)
+        angle = acad.AngleFromCrossDr1Dr2(br1, dr1)
+        if angle > 45: return pt1, pt2, pt3, pt4
+    else:
+        br1 = acad.Direct(pt1, pt2)
+        dr1 = acad.Direct(pr1, pr2)
+        angle = acad.AngleFromCrossDr1Dr2(br1, dr1)
+        if angle > 45: return pt1, pt2, pt3, pt4
+
+    if length1 < length2:
+        pt2, pt3 = acad.GetAttachWDirectPt1Pt2(pt2, pt3, length1)
+        pt4, pt1 = acad.GetAttachWDirectPt1Pt2(pt4, pt1, length1)
+    else:
+        pt1, pt2 = acad.GetAttachWDirectPt1Pt2(pt1, pt2, length2)
+        pt3, pt4 = acad.GetAttachWDirectPt1Pt2(pt3, pt4, length2)
+    return pt1, pt2, pt3, pt4
+
 
 
 

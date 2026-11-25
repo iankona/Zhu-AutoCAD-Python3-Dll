@@ -361,7 +361,7 @@ def lljf_line_sublength():
 def lljf_line_subcount():
     llzhu_ui_jf_input_subcount()
     while True:
-        pt1, pt2, pt3 = acad.GetPoint3() 
+        pt1, pt2, pt3 = acad.GetPoint3("", "", "", True) 
         if pt1 == None: return
         llzhu_ui_jf_input_subcount_distance(acad.Distance(pt1, pt2))
         result = llzhu_calc_line_distance_pointlist(pt1, pt2, pt3)

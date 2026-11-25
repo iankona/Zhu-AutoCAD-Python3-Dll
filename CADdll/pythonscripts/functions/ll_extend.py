@@ -11,6 +11,20 @@ def 命令():
     academit.添加命令("llextend-to-entity-for", llextend_to_entity_for)
     academit.添加命令("llextend-to-connect-for", llextend_to_connect_for)
 
+    academit.添加命令("llextend-arc-for", llextend_arc_for)
+
+
+@acad.decorator_command
+def llextend_arc_for():
+    objid = acad.EntSel([[0, "ARC"]])
+    length = acad.GetDouble(2000, "请输入弧长:")
+    pt1 = acad.GetPoint()
+    r = acad.GetEntityRadius(objid)
+    pc1 = acad.Vec3Add(pt1, [0, r, 0])
+    rad = length / r
+    pt2 = acad.PointRotateByRad(pt1, rad, [0,0,1], pc1)
+    acad.Command(["ARC", "C", acad.ToPoint3d(pc1), acad.ToPoint3d(pt1), acad.ToPoint3d(pt2)])
+
 
 @acad.decorator_command
 def llextend_to_circle_for():

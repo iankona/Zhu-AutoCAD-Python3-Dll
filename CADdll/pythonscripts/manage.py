@@ -1,15 +1,13 @@
+import acadconfig
+
+
 import os 
 import sys
 import importlib
 
 
-dirpath = os.path.dirname(__file__)
-# sys.path.append(dirpath+"\\libs") # 已经由dll加载
-sys.path.append(dirpath+"\\ttks")
-sys.path.append(dirpath+"\\libk")
-sys.path.append(dirpath+"\\liby")
-os.environ['TK_LIBRARY'] = dirpath+"\\ttks\\tcl\\tk8.6"
-os.environ['TCL_LIBRARY'] = dirpath+"\\ttks\\tcl\\tcl8.6"
+
+workdir = acadconfig.workdir
 
 
 import clr
@@ -24,7 +22,7 @@ class NetConsole:
         message = str(message)
         # if message == '\n': return
         # if message[-1] != '\n': message += "\n"
-        with open(r"F:\CADdll\pythonscripts\outputlog.txt", "a+") as log:
+        with open(f"{workdir}\\pythonscripts\\outputlog.txt", "a+") as log:
             log.write(message)
 
     def flush(self):
@@ -35,19 +33,20 @@ sys.stderr = NetConsole()
 
 
 # print(os.getcwd()) # C:\Users\Administrator\user\Documents
-os.chdir("F:\\CADdll")
+os.chdir(workdir)
 
-import coredumpy
-coredumpy.patch_except(directory='F:\\CADdll\\pythonscripts\\dumps')
-from coredumpy import config
-# The dump depth if not specified
-config.default_recursion_depth: int = 5
 
-# Best effort timeout for dump - not guaranteed. Only checked for each new depth.
-config.dump_timeout: int = 60
+# import coredumpy
+# coredumpy.patch_except(directory='F:\\CADdll\\pythonscripts\\dumps')
+# from coredumpy import config
+# # The dump depth if not specified
+# config.default_recursion_depth: int = 5
 
-# Whether dump all threads
-config.dump_all_threads: bool = False
+# # Best effort timeout for dump - not guaranteed. Only checked for each new depth.
+# config.dump_timeout: int = 60
+
+# # Whether dump all threads
+# config.dump_all_threads: bool = False
 
 # # Whether hide strings that match config.secret_patterns
 # config.hide_secret: bool = True
@@ -68,7 +67,7 @@ import academit
 
 def 生成命令():
     名称列表 = []
-    basenamelist = os.listdir(r"F:\CADdll\pythonscripts\functions")
+    basenamelist = os.listdir(f"{workdir}\\pythonscripts\\functions")
     for basename in basenamelist:
         if '__pycache__' in basename: continue
         charlist = basename.split('.')
@@ -79,9 +78,9 @@ def 生成命令():
         try:
             module = importlib.import_module(name)
             module.命令()
-            print(f"Python: '{name}' 加载成功 ... ")
+            print(f"Python: {name} 加载成功 ... ")
         except Exception as e:
-            print(f"Python: '{name}' 加载出错 ??? ")
+            print(f"Python: {name} 加载出错 ??? ")
             print(e)
 
     academit.保存程序集()

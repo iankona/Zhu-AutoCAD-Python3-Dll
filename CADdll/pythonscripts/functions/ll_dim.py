@@ -5,13 +5,97 @@ import academit
 import math
 import time 
 def 命令(): 
-    academit.添加命令("lldli", lldli)
+    # academit.添加命令("lldli", lldli)
     academit.添加命令("lldal", lldal)
     academit.添加命令("lldim-for", lldim_for)
     academit.添加命令("lldim-entsel-for", lldim_entsel_for)
     academit.添加命令("lldim-fence-qdim-for", lldim_fence_qdim_for)
     academit.添加命令("lldim-align-for", lldim_align_for)
     # academit.添加命令("lldim-layer-for", lldim_layer_for)
+
+
+    academit.添加命令("lldli-jiao-for", lldli_jiao_for)
+    academit.添加命令("lldlix-ptlist-for",lldlix_ptlist_for)
+    academit.添加命令("lldliy-ptlist-for",lldliy_ptlist_for)
+
+
+
+@acad.decorator_command
+def lldli_jiao_for():
+    llzhu_ui_dim_biaohao_to_height()
+    while True:
+        pt1, pt3 = acad.GetPoint2(baseptflag=True)
+        if pt1 == None: return
+        pt1, pt2, pt3, pt4 = acad.Pt1Pt3toPt1Pt2Pt3Pt4XY0(pt1, pt3) 
+        perflag_w = -acad.GetPerflagXY(pt2, pt3, pt4)
+        mid1 = acad.MidPt1Pt2(pt2, pt3)
+        mid2 = acad.MidPt1Pt2(pt3, pt4)
+        per1 = acad.GetPerDirectWithPerflagResetLengthXY(pt2, pt3, perflag_w, llzhu_dim_height)
+        per2 = acad.GetPerDirectWithPerflagResetLengthXY(pt3, pt4, perflag_w, llzhu_dim_height)
+        po1, po2 = mid1, acad.Vec3Add(mid1, per1)
+        pd1, pd2 = mid2, acad.Vec3Add(mid2, per2)
+        with acad.transaction() as trans:
+            acad.AddDli(pt2, pt3, po2)
+            acad.AddDli(pt3, pt4, pd2)
+
+
+        
+
+@acad.decorator_command
+def lldlix_ptlist_for():
+    llzhu_ui_dim_biaohao_to_height()
+    while True:
+        objidlist = acad.SSGetIdList()
+        objid = acad.EntSel([[0, "LWPOLYLINE"]], "请选择房间内框线:")
+        if acad.IsNone(objid): return
+        with acad.transaction() as trans:
+            pc1 = acad.TransObjectIdListBoundCenterXY0(objidlist)
+            [x1,y1,z1], [x2,y2,z2]= acad.TransEntityBoundXY0(objid) # ptmin, ptmax
+
+            ptlist = [[x1,pc1[1],z1], [x2,pc1[1],z2]]
+            for objid in objidlist:
+                pc1 = acad.TransEntityBoundCenterXY0(objid)
+                ptlist.append(pc1)
+            ptlist.sort(key = lambda item: item[0], reverse=False) # 默认为 False 表示升序排序，设置为 True 表示降序排序
+
+            perflag_l = 1 # perflag_u = -1 # perflag_n = -1 
+            for i in range(len(ptlist)-1):
+                pt1, pt2 = ptlist[i], ptlist[i+1]
+                mid1 = acad.MidPt1Pt2(pt1, pt1)
+                per1 = acad.GetPerDirectWithPerflagResetLengthXY(pt1, pt2, perflag_l, llzhu_dim_height)
+                po2 = acad.Vec3Add(mid1, per1)
+                acad.AddDli(pt1, pt2, po2)
+
+
+
+@acad.decorator_command
+def lldliy_ptlist_for():
+    llzhu_ui_dim_biaohao_to_height()
+    while True:
+        objidlist = acad.SSGetIdList()
+        objid = acad.EntSel([[0, "LWPOLYLINE"]], "请选择房间内框线:")
+        if acad.IsNone(objid): return
+        with acad.transaction() as trans:
+            pc1 = acad.TransObjectIdListBoundCenterXY0(objidlist)
+            [x1,y1,z1], [x2,y2,z2]= acad.TransEntityBoundXY0(objid) # ptmin, ptmax
+
+            ptlist = [[pc1[0],y1,z1], [pc1[0],y2,z2]]
+            for objid in objidlist:
+                pc1 = acad.TransEntityBoundCenterXY0(objid)
+                ptlist.append(pc1)
+            ptlist.sort(key = lambda item: item[1], reverse=False) # 默认为 False 表示升序排序，设置为 True 表示降序排序
+
+            perflag_r = -1 # perflag_d = -1 # perflag_w = -1 
+            for i in range(len(ptlist)-1):
+                pt1, pt2 = ptlist[i], ptlist[i+1]
+                mid1 = acad.MidPt1Pt2(pt1, pt1)
+                per1 = acad.GetPerDirectWithPerflagResetLengthXY(pt1, pt2, perflag_r, llzhu_dim_height)
+                po2 = acad.Vec3Add(mid1, per1)
+                acad.AddDli(pt1, pt2, po2)
+
+
+
+
 
 llzhu_dim_biaohao = 15
 llzhu_dim_height = 60
@@ -21,6 +105,16 @@ def llzhu_ui_dim_input():
     height = acad.GetInt(llzhu_dim_height, "请输入标注高:")
     if biaohao != None: llzhu_dim_biaohao = biaohao
     if height != None: llzhu_dim_height = height
+
+
+
+def llzhu_ui_dim_biaohao_to_height():
+    global llzhu_dim_biaohao, llzhu_dim_height
+    biaohao = acad.GetInt(llzhu_dim_biaohao, "请输入标注号:")
+    if biaohao != None: 
+        llzhu_dim_biaohao = biaohao
+        llzhu_dim_height = biaohao * 5
+
 
 
 llzhu_dim_direct_flag = 1

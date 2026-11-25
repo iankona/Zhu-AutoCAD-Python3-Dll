@@ -6,10 +6,10 @@ import academit
 import System
 
 def 命令(): 
-    academit.添加命令("llprint", llprint0)
+    academit.添加命令("llprint", llprint)
     # academit.添加命令("llprint-bound", llprint_bound)    
-    academit.添加命令("llprint-group", llprint_group)    
-    academit.添加命令("llprint-corner", llprint_corner)
+    # academit.添加命令("llprint-group", llprint_group)    
+    # academit.添加命令("llprint-corner", llprint_corner)
     # academit.添加命令("llprint-corner-cross", llprint_corner_cross)
     # academit.添加命令("llprint-frence", llprint_frence)
     # academit.添加命令("llprint-entsel", llprint_entsel)
@@ -99,9 +99,16 @@ def llprint_include():
 
 @acad.decorator_command
 def llprint():
-    objid = acad.EntSelSub()
+    # objid = acad.EntSelSub()
     with acad.transaction() as trans:
-        pass
+        # 
+        result = acad.ed.SelectImplied() # PromptSelectionResult
+        if result.Status == acad.PromptStatus.Error:
+            acad.Prompt("没有选择集\n")
+        ss1 = result.Value
+        
+        acad.Prompt(ss1) # None or (((2530242239968),Crossing,2,)((2530233339280),Crossing,0,)((2530233322768),Crossing,0,)((2530233261584),Crossing,0,))
+        acad.Prompt("\n")
         # objref = acad.TransObjectForRead(objid)
         # acad.Prompt(objref.GetType()) # Autodesk.AutoCAD.DatabaseServices.DBPoint
 

@@ -13,6 +13,7 @@ from Autodesk.AutoCAD.DatabaseServices import DBPoint, Extents3d, Polyline, Poly
 def 命令(): 
     academit.添加命令("llregion", llregion)
     academit.添加命令("llregion-cut", llregion_cut)
+    academit.添加命令("llregion-cut2", llregion_cut2)
     # academit.添加命令("llregion-sheet", llregion_sheet)
     academit.添加命令("llregion-alignX", llregion_alignX)
     academit.添加命令("llregion-alignY", llregion_alignY)
@@ -224,6 +225,31 @@ def __trans_flatten_(buflist):
 @acad.decorator_command
 def llregion_rotate():
     objidlist = acad.SSGetIdList()
+    po1, po2 = acad.GetPoint2("请选择旋转轴第1点:", "请选择旋转轴第2点:")
+    if po1 == None: return 
+    pt1, pt3 = acad.GetPoint2()
+    if pt1 == None: return 
+    normal = acad.Direct(po1, po2)
+    normal = acad.Vec3ResetLength(normal, 1)
+    pt1 = acad.PointToPointNormalPlane(pt1, po2, normal)
+    pt3 = acad.PointToPointNormalPlane(pt3, po2, normal)
+    # pt1, po2，pt3
+    dr2 = acad.Direct(pt1, po2)
+    dr1 = acad.Direct(po2, pt3)
+    dr1 = acad.Vec3ResetLength(dr1, 10)
+    dr2 = acad.Vec3ResetLength(dr2, 10)
+    normal = acad.CrossNormalized(dr1, dr2)
+    angle = acad.AngleFromDotDr1Dr2(dr1, dr2)
+    with acad.transaction() as trans:
+        acad.TransRoationIdList(objidlist, angle, normal, po2)
+
+
+
+
+
+@acad.decorator_command
+def llregion_rotate_with_base():
+    objidlist = acad.SSGetIdList()
     objid0 = acad.EntSel(string="请选择基准对象:")
     objidlist.remove(objid0)
     while True:
@@ -248,6 +274,10 @@ def llregion_rotate():
             acad.TransRoationIdList(objidlist, angle, normal, po2)
         objidlist.remove(objid1)
         objid0 = objid1
+
+
+
+
 
 
 
@@ -460,6 +490,81 @@ def llregion_align_point4():
                 acad.TransMove(objid, pt2, po2)
 
 
+
+
+
+@acad.decorator_command
+def llregion_cut2():
+    objidlist = acad.SSGetIdList([[0, "REGION"]])
+    with acad.transaction() as trans:
+        regionlist = []
+        for objid in objidlist:
+            objref = acad.TransObjectForWrite(objid)
+            regionlist.append(objref)
+
+        area_objref_list = []
+        for objref in regionlist: area_objref_list.append([objref.Area, objref])
+        area_objref_list.sort(key = lambda item: item[0], reverse=True) # 默认为 False 表示升序排序，设置为 True 表示降序排序
+
+        objref = area_objref_list[0][1]
+        for area, chiref in area_objref_list[1:]:
+            objref.BooleanOperation(BooleanOperationType.BoolSubtract, chiref)
+
+
+
+
+@acad.decorator_command
+def llregion_cut():
+    objidlist = acad.SSGetIdList([[0, "REGION"]])
+    with acad.transaction() as trans:
+        regionlist = []
+        for objid in objidlist:
+            objref = acad.TransObjectForWrite(objid)
+            regionlist.append(objref)
+
+        result = find_region_inside(regionlist)
+        for objref, insidelist in result:
+            for chiref in insidelist: objref.BooleanOperation(BooleanOperationType.BoolSubtract, chiref)
+
+
+
+
+
+def find_region_inside(regionlist):
+    area_dbobj_list = []
+    for objref in regionlist: area_dbobj_list.append([objref.Area, objref])
+
+    area_dbobj_list.sort(key = lambda item: item[0], reverse=True) # 默认为 False 表示升序排序，设置为 True 表示降序排序
+    area_dbobj_list[0][1].Erase(True)
+    area_dbobj_list = area_dbobj_list[1:]
+
+    obj_chi_list = []
+    check_index_list = []
+    for i, [area, objref] in enumerate(area_dbobj_list):
+        if i in check_index_list: continue
+        check_index_list.append(i)
+
+        brep = Brep(objref)
+
+        child_objref_list = []
+        for j, [area, chiref] in enumerate(area_dbobj_list[i+1:]):
+            extend = chiref.GeometricExtents
+            center = Point3d( (extend.MinPoint.X+extend.MaxPoint.X)/2, (extend.MinPoint.Y+extend.MaxPoint.Y)/2, 0) # (extend.MinPoint.Z+extend.MaxPoint.Z)/2 )
+            result = brep.GetPointContainment(center, PointContainment.Outside) # out ref 被自动处理成结果返回
+            brep_entity = result[0]
+            if brep_entity == None: continue
+            if str(brep_entity.GetType()) == "Autodesk.AutoCAD.BoundaryRepresentation.Face": # 点在面内
+                check_index_list.append(i+1+j)
+                child_objref_list.append(chiref)
+        if  child_objref_list == []: continue
+        obj_chi_list.append([objref, child_objref_list])
+    return obj_chi_list
+
+
+
+
+
+
 # @acad.decorator_command
 # def llregion_rotate_point_cloud_to_z_up():
 #     objid1 = acad.EntSel([[0, "REGION"]], string="请选择参考面:")
@@ -490,25 +595,7 @@ def llregion_align_point4():
 #     dbobj_collect = acad.SSGetDbObjectCollection()
 #     with acad.transaction() as trans:
 #         regions = acad.AddRegion(dbobj_collect, "面域1", 35)
-#         area_dbobj_list = []
-#         for objref in regions: area_dbobj_list.append([objref.Area, objref])
-#         area_dbobj_list.sort(key = lambda item: item[0], reverse=True) # 数值差距大，导致python调用了C#的排序出错，使用lambda使运行正常，原理不明
-#         check_index_list = [0]
-#         for i, [area, objref] in enumerate(area_dbobj_list):
-#             if i in check_index_list: continue
-#             check_index_list.append(i)
-#             large_objref = objref
-#             child_objref_list = []
-#             for j, [area, objref] in enumerate(area_dbobj_list[i+1:]):
-#                 extend = objref.GeometricExtents
-#                 center = Point3d( (extend.MinPoint.X+extend.MaxPoint.X)/2, (extend.MinPoint.Y+extend.MaxPoint.Y)/2, (extend.MinPoint.Z+extend.MaxPoint.Z)/2 )
-#                 brep = Brep(large_objref)
-#                 result = brep.GetPointContainment(center, PointContainment.Outside) # out ref 被自动处理成结果返回
-#                 brep_entity = result[0]
-#                 if brep_entity == None: continue
-#                 if str(brep_entity.GetType()) == "Autodesk.AutoCAD.BoundaryRepresentation.Face": # 点在面内
-#                     check_index_list.append(i+1+j)
-#                     child_objref_list.append(objref)
+# ...
 #             for objref in child_objref_list: large_objref.BooleanOperation(BooleanOperationType.BoolSubtract, objref)
 #         area_dbobj_list[0][1].Erase(True)
 # # (<Autodesk.AutoCAD.BoundaryRepresentation.Face object at 0x00000227DE697380>, <PointContainment.OnBoundary: 2>) Autodesk.AutoCAD.BoundaryRepresentation.Face
@@ -517,26 +604,11 @@ def llregion_align_point4():
 
 
 
-@acad.decorator_command
-def llregion_cut():
-    dbobj_collect = acad.SSGetDbObjectCollection()
-    with acad.transaction() as trans:
-        regions = acad.AddRegion(dbobj_collect, "面域1", 35)
-        max_area, max_objref = 0, None
-        dbobj_list = []
-        for objref in regions:
-        # for objid in objidlist:
-        #     objref = acad.TransObjectForWrite(objid)
-            dbobj_list.append(objref)
-            if objref.Area > max_area:
-                max_area = objref.Area
-                max_objref = objref
-        # print(max_area, max_objref)
-        if max_objref != None:
-            # dbobj_list.remove(max_objref)
-            index = dbobj_list.index(max_objref)
-            obj_list = dbobj_list[0:index] + dbobj_list[index+1:]
-            for objref in obj_list: max_objref.BooleanOperation(BooleanOperationType.BoolSubtract, objref)
+
+
+
+
+
 
 
 # @acad.decorator_command

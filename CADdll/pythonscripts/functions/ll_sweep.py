@@ -18,7 +18,7 @@ def 命令():
     academit.添加命令("llsweep-subtract-ness-cube-for", llsweep_subtract_ness_cube_for)
     # academit.添加命令("llsweep-rotation-to-flatten", llsweep_rotation_to_flatten)
     # academit.添加命令("llsweep-flatten-to-rotation", llsweep_flatten_to_rotation)
-    academit.添加命令("llsweep-subtract-sheet-cube-for", llsweep_subtract_sheet_cube_for)
+    # academit.添加命令("llsweep-subtract-sheet-cube-for", llsweep_subtract_sheet_cube_for) # 不常用
 
 def llzhu_trans_find_ness_length_pointlist(objid, ness_length):
     limit1 = ness_length + 0.05

@@ -1,33 +1,39 @@
+import acadconfig
+
 import clr
 
 import System
 from System.Reflection import Assembly, AssemblyName, TypeAttributes, FieldAttributes, MethodAttributes, CallingConventions, PropertyAttributes, ParameterAttributes
 from System.Reflection.Emit import AssemblyBuilderAccess, AssemblyBuilder, ModuleBuilder, TypeBuilder, FieldBuilder, MethodBuilder, PropertyBuilder, ConstructorBuilder, ILGenerator, OpCodes, ParameterBuilder, LocalBuilder, CustomAttributeBuilder
 
+
+
+acaddir = acadconfig.acaddir
 # from Autodesk.AutoCAD.Runtime import CommandClassAttribute, CommandMethodAttribute # accoremgd.dll
 # Use Brep
-Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\acdbmgdbrep.dll")
-Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\AcMPolygonMGD.dll")
+Assembly.LoadFile(f"{acaddir}\\acdbmgdbrep.dll")
+Assembly.LoadFile(f"{acaddir}\\AcMPolygonMGD.dll")
 
 # Use Autodesk.AutoCAD.Internal.Utils
-Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\Acmgd.dll")
+Assembly.LoadFile(f"{acaddir}\\Acmgd.dll")
 # # Com的方式
-# Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\Autodesk.AutoCAD.Interop.dll")
-# Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\Autodesk.AutoCAD.Interop.Common.dll")
+# Assembly.LoadFile(f"{acaddir}\\Autodesk.AutoCAD.Interop.dll")
+# Assembly.LoadFile(f"{acaddir}\\Autodesk.AutoCAD.Interop.Common.dll")
 
-# assemly = Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\Acdbmgd.dll")
+# assemly = Assembly.LoadFile(f"{acaddir}\\Acdbmgd.dll")
 # classattribute = assemly.GetType("Autodesk.AutoCAD.DatabaseServices.AssocPersSubentityIdPE")
 
 
-assemly = Assembly.LoadFile("E:\\AutoCAD\AutoCAD 2023\\accoremgd.dll")
+assemly = Assembly.LoadFile(f"{acaddir}\\accoremgd.dll")
 classattribute = assemly.GetType("Autodesk.AutoCAD.Runtime.CommandClassAttribute")
 methodattribute = assemly.GetType("Autodesk.AutoCAD.Runtime.CommandMethodAttribute")
 commandflags = assemly.GetType("Autodesk.AutoCAD.Runtime.CommandFlags")
+print()
 
 # print(System.Type.GetType("Autodesk.AutoCAD.Runtime.CommandClassAttribute")) # None # 不能用
 # print(System.Type.GetType("Autodesk.AutoCAD.Runtime.CommandMethodAttribute")) # None # 不能用
 
-程序集名称 = "ZhuAcadPlugin"
+程序集名称 = acadconfig.zhuddll
 程序集 = System.AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName(程序集名称), AssemblyBuilderAccess.RunAndSave)
 模块 = 程序集.DefineDynamicModule(程序集名称, 程序集名称 + ".dll")
 
@@ -53,7 +59,7 @@ def 添加命令(命令:str, Python函数):
     设置名称 = "SetAction"
     方法名称 = "函数"
 
-    if 类型名称 in 类型名称列表: raise ValueError("CAD命令:{命令}重复......")
+    if 类型名称 in 类型名称列表: raise ValueError(f"CAD命令:{命令}重复......")
     类型名称列表.append(类型名称)
 
     类型 = 模块.DefineType(类型名称, TypeAttributes.Public)
@@ -72,10 +78,10 @@ def 添加命令(命令:str, Python函数):
     IL.Emit(OpCodes.Ret)
 
     方法 = 类型.DefineMethod(方法名称, MethodAttributes.Public, System.Void, []) 
-    特性构造 = methodattribute.GetConstructor([System.String])
-    # 特性构造 = methodattribute.GetConstructor([System.String, commandflags]) # Thanks, 当使用CommandFlags.Session时，无法使用ed.command()
-    特性 = CustomAttributeBuilder(特性构造, [命令])
-    # 特性 = CustomAttributeBuilder(特性构造, [命令, System.Int32(0x200000)])
+    # 特性构造 = methodattribute.GetConstructor([System.String])
+    # 特性 = CustomAttributeBuilder(特性构造, [命令])
+    特性构造 = methodattribute.GetConstructor([System.String, commandflags]) # Thanks, 当使用CommandFlags.Session时，无法使用ed.command()
+    特性 = CustomAttributeBuilder(特性构造, [命令, System.Int32(0x2)]) # UsePickSet = 2
     方法.SetCustomAttribute(特性)
 
     IL = 方法.GetILGenerator()
@@ -97,9 +103,9 @@ def 添加命令(命令:str, Python函数):
 # 添加命令("LL-HelloWorld2", 测试2)
 # 保存程序集()
 
-
+工作目录 = acadconfig.workdir
 def 设置程序集():
-    assemly = Assembly.LoadFile(f"F:\\CADdll\\{程序集名称}.dll")
+    assemly = Assembly.LoadFile(f"{工作目录}\\{程序集名称}.dll")
     for typename, [classtype, 委托实例] in 类型字典.items():
         classtype = assemly.GetType(typename)
         classtype.GetMethod("SetAction").Invoke(System.Void,[委托实例]) 
